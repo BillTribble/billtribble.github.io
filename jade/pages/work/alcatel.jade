@@ -1,0 +1,28 @@
+extends ../../_partials/_layout
+
+block header
+  //- http://ogp.me/
+  //- Helping you change the world with digital products.
+  title Alcatel Lucent | Make Us Proud
+  meta(name="twitter:card" content="summary_large_image")
+  meta(name="twitter:site" content="@Make_Us_Proud")
+  meta(name="twitter:title" content="Make Us Proud - Alcatel Lucent")
+  meta(name="twitter:description" content="How we brought a human perspective to an incredible technology company, through powerful content & interactive set-pieces.")
+  meta(name='description', content='Alcatel Lucent - How we brought a human perspective to an incredible technology company, through powerful content & interactive set-pieces.')
+  meta(name='og:description', content='Alcatel Lucent - How we brought a human perspective to an incredible technology company, through powerful content & interactive set-pieces.')
+  meta(name="og:url" content="http://www.makeusproud.com/work/alcatel-lucent/")
+  meta(name="og:title" content="Make Us Proud & Alcatel Lucent")
+  meta(name="og:type" content="website")
+  meta(name="og:image" content="http://www.makeusproud.com/img/social-media/alcatel-twitter-card.png")
+
+block content
+  .page-name.alcatel-study
+    include ../../_partials/_work/_alcatel-splash
+    include ../../_partials/_work/_alcatel-body
+    include ../../_partials/_work/_alcatel-process
+    include ../../_partials/_general/_bottom-cta
+    section.next
+      a(href='/work/discovery/')
+        .text-container
+          h2.next-case-study Next case study
+          p.study-name Discovery Channel

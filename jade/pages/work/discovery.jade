@@ -1,0 +1,28 @@
+extends ../../_partials/_layout
+
+block header
+  //- http://ogp.me/
+  //- Helping you change the world with digital products.
+  title Discovery | Make Us Proud
+  meta(name="twitter:card" content="summary_large_image")
+  meta(name="twitter:site" content="@Make_Us_Proud")
+  meta(name="twitter:title" content="Make Us Proud - Discovery")
+  meta(name="twitter:description" content="How we designed a delightful, simple cross-platform on-demand video service, that helps users discover great content.")
+  meta(name='description', content='Discovery - How we designed a delightful, simple cross-platform on-demand video service, that helps users discover great content.')
+  meta(name='og:description', content='Discovery - How we designed a delightful, simple cross-platform on-demand video service, that helps users discover great content.')
+  meta(name="og:url" content="http://www.makeusproud.com/work/discovery/")
+  meta(name="og:title" content="Make Us Proud & Discovery")
+  meta(name="og:type" content="website")
+  meta(name="og:image" content="http://www.makeusproud.com/img/social-media/discovery-twitter-card.png")
+
+block content
+  .page-name.discovery-study
+    include ../../_partials/_work/_discovery-splash
+    include ../../_partials/_work/_discovery-body
+    include ../../_partials/_work/_discovery-process
+    include ../../_partials/_general/_bottom-cta
+    section.next
+      a(href='/work/geniac/')
+        .text-container
+          h2.next-case-study Next case study
+          p.study-name Geniac

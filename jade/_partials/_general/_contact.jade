@@ -1,0 +1,32 @@
+.overlay-module.contact
+  .background-shroud
+  .card.minor
+    button.close-top-module &times;
+    img(src='/img/mup-branding/logotype-red-small.jpg', alt='make us proud')
+    .col-2
+      h3 Phone
+      a(href='tel:+447899960733', target='_blank')
+        p
+          | Anthony Mann, Founder
+          span.phone +44 789 996 0733
+      h3 Email
+      a(href='mailto:hello@makeusproud.com', target='_blank')
+        p hello@makeusproud.com
+      h3 Or drop by
+      a(href='https://www.google.co.uk/maps/dir//London+N1+6AH/@51.5286909,-0.0876456,17z/data=!4m13!1m4!3m3!1s0x48761ca425ddff5d:0xf5f9f53b2768e72f!2sLondon+N1+6AH!3b1!4m7!1m0!1m5!1m1!1s0x48761ca425ddff5d:0xf5f9f53b2768e72f!2m2!1d-0.0878062!2d51.5287767', target='_blank')
+        address
+          p 3rd Floor,
+          p 77 East Road,
+          p London N1 6AH
+        p
+          span.big-blue Get directions
+    .col-2.show-over-650
+      h3 Drop us a message
+      form(action='/contact', method='POST', class='mail-form')
+        label.name
+          input(type='text', name='name', class='name' placeholder='Name' required)
+        label.email
+          input(type='email', name='email', class='email' placeholder='Email' required)
+        textarea(name='message', placeholder="What's on your mind?")
+        button(type='submit', class='submit') Send
+      

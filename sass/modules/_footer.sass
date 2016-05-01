@@ -1,0 +1,74 @@
+.footer
+  padding-top: 3em
+  +section-color(#0E0E0E)
+  padding-bottom: 2em
+  img
+    max-width: 250px
+    min-width: 100px
+    width: 25vw
+    display: block
+    margin: 1em 0
+    position: relative
+    left: -1em
+  .centered-container
+    text-align: left
+    min-width: 860px
+    max-width: 1200px
+    width: 70vw
+  h2.contact-method
+    color: $light-grey
+    font-weight: 300
+    font-size: 1.2em
+  a,
+  p.contact-detail,
+  address p,
+    color: $light-grey
+    font-family: $gotham
+    font-weight: 100
+    font-size: 1em
+    text-decoration: none
+  span.phone,
+  span.email,
+  span.twitter,
+  address
+    padding-left: 24px
+    position: relative
+    &::before
+      content: ''
+      position: absolute
+      left: 0
+      z-index: 100
+      width: 18px
+      height: 1em
+      background-repeat: no-repeat
+      background-position: center
+      background-size: 90%
+  span.phone::before
+    top: 4px
+    background-image: url(/img/common-elements/phone-icon.svg)
+  span.email::before
+    top: -1px
+    background-image: url(/img/common-elements/email-icon.svg)
+  span.twitter::before
+    top: -2px
+    background-image: url(/img/common-elements/twitter-icon.svg)
+  address::before
+    top: 3px
+    background-image: url(/img/common-elements/building-icon.svg)
+
+@media (max-width: 920px)
+  .footer
+    img
+      min-width: 200px
+      max-width: 100%
+    .centered-container
+      min-width: 0
+      width: 90vw
+    .col-3 
+      margin: 0
+      width: 48%
+
+@media (max-width: 700px)
+  .footer
+    .col-3 
+      width: 100%

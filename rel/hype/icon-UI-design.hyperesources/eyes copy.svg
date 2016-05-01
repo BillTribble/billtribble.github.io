@@ -1,0 +1,15 @@
+<?xml version="1.0" encoding="UTF-8" standalone="no"?>
+<svg width="10px" height="5px" viewBox="0 0 10 5" version="1.1" xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink" xmlns:sketch="http://www.bohemiancoding.com/sketch/ns">
+    <!-- Generator: Sketch 3.3.3 (12081) - http://www.bohemiancoding.com/sketch -->
+    <title>eyes copy</title>
+    <desc>Created with Sketch.</desc>
+    <defs></defs>
+    <g id="Page-1" stroke="none" stroke-width="1" fill="none" fill-rule="evenodd" sketch:type="MSPage">
+        <g id="anim-elements" sketch:type="MSArtboardGroup" transform="translate(-967.000000, -427.000000)" fill="#4EA4EF">
+            <g id="eyes-copy" sketch:type="MSLayerGroup" transform="translate(967.090909, 427.409091)">
+                <ellipse id="Oval-64" sketch:type="MSShapeGroup" cx="1.09344727" cy="2.18213351" rx="1.09344727" ry="2.18213351"></ellipse>
+                <path d="M8.50503995,4.36426703 C9.1089342,4.36426703 9.59848722,3.38729257 9.59848722,2.18213351 C9.59848722,0.976974452 9.1089342,0 8.50503995,0 C7.9011457,0 7.41159268,0.976974452 7.41159268,2.18213351 C7.41159268,3.38729257 7.9011457,4.36426703 8.50503995,4.36426703 Z" id="Oval-64-Copy" sketch:type="MSShapeGroup"></path>
+            </g>
+        </g>
+    </g>
+</svg>

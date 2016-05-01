@@ -1,0 +1,126 @@
+.alcatel-study
+  .section.body
+    +section-color(white, $dark-blue)
+  .splash,
+  .section.process
+    +section-color($dark-blue)
+  section.next
+    background-image: url(/img/work-alcatel/next-discovery.jpg)
+
+  .click-through
+    margin-top: 4em
+
+  .achievements
+    padding-bottom: 1px
+
+// SPLASH
+.alcatel-study .splash
+  .animation-container
+    position: relative
+    min-width: 1000px
+    width: 96%
+    height: 100%
+    left: 50%
+    transform: translateX(-50%)
+    &::before,
+    &::after
+      content: ''
+      position: absolute
+      left: 0
+      width: 100%
+      height: 40%
+      z-index: 100
+    &::before
+      top: 0
+      background: linear-gradient(rgba($dark-blue, 1) 20%, rgba($dark-blue, 0))
+    &::after
+      bottom: 0
+      background: linear-gradient(rgba($dark-blue, 0), rgba($dark-blue, 1) 80%)
+  .title-container
+    z-index: 1000
+
+$world-map-countries: AE AF AL AM AO AR AT AU AZ BA BD BE BF BG BI BJ BN BO BR BS BT BW BY BZ CA CD CF CG CH CI CL CM CN CO CR CU CY CZ DE DJ DK DO DZ EC EE EG EH ER ES ET FK FI FJ FR GA GB GE GF GH GL GM GN GQ GR GT GW GY HN HR HT HU ID IE IL IN IQ IR IS IT JM JO JP KE KG KH KP KR XK KW KZ LA LB LK LR LS LT LU LV LY MA MD ME MG MK ML MM MN MR MW MX MY MZ NA NC NE NG NI NL NO NP NZ OM PA PE PG PH PL PK PR PS PT PY QA RO RS RU RW SA SB SD SE SI SJ SK SL SN SO SR SS SV SY SZ TD TF TG TH TJ TL TM TN TR TT TW TZ UA UG US UY UZ VE VN VU YE ZA ZM ZW
+
+@each $country in $world-map-countries
+  $i: index($world-map-countries, $country)
+  ##{$country}
+    transform-origin: 50% 50%
+    transform: scale(0)
+  .animate ##{$country}
+    animation: alcatel-scale-in 2500ms linear both
+    animation-delay: calc(#{$i}s / 100)
+
+// COLLAGE
+.sub-section.key-point
+  overflow: hidden
+  
+.alcatel-study .achievements
+  @media (max-width: 600px)
+    padding: 70px 0 1px
+
+.alcatel-study .collage
+  max-height: 1370px
+  height: 80vw
+  margin-top: 70px
+  img
+    position: absolute
+    margin: 0
+    box-shadow: 0px 2px 8px 0px rgba(0,0,0,0.50)
+  .collage-image-1
+    top: 70%
+    right: 10%
+    width: 30%
+    z-index: 100
+  .collage-image-2
+    top: 28%
+    right: 18.5%
+    width: 6%
+  .collage-image-3
+    top: 2%
+    right: 7%
+    width: 40%
+    z-index: -100
+  .collage-image-4
+    top: 20%
+    left: 5%
+    width: 25%
+  .collage-image-5
+    top: 40%
+    left: 18%
+    width: 25%
+    z-index: 100
+  .collage-image-6
+    top: 60%
+    left: 40%
+    width: 35%
+  .collage-image-7
+    top: 50%
+    right: 3%
+    width: 35%
+  .collage-image-8
+    top: 20%
+    left: 25%
+    width: 50%
+  .collage-image-9
+    top: 0
+    left: 10%
+    width: 40%
+  .collage-image-10
+    top: 55%
+    left: 0
+    width: 15%
+  .collage-image-11
+    top: 50%
+    left: 10%
+    width: 30%
+  .collage-image-12
+    top: 15%
+    right: 0
+    width: 18%
+
+@for $i from 1 through 12
+  .collage-image-#{$i}
+    transform: translateY(100vh)
+    .animate &
+      animation: alcatel-collage 2000ms linear both
+      animation-delay: calc(2s / #{$i})

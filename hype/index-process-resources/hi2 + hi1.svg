@@ -1,0 +1,43 @@
+<?xml version="1.0" encoding="UTF-8" standalone="no"?>
+<svg width="23px" height="24px" viewBox="0 0 23 24" version="1.1" xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink" xmlns:sketch="http://www.bohemiancoding.com/sketch/ns">
+    <!-- Generator: Sketch 3.3.3 (12081) - http://www.bohemiancoding.com/sketch -->
+    <title>hi2 + hi1</title>
+    <desc>Created with Sketch.</desc>
+    <defs>
+        <path id="path-1" d="M15.935,15.536 C14.325,16.644 12.375,17.292 10.274,17.292 C4.751,17.292 0.274,12.815 0.274,7.292 C0.274,4.894 1.117,2.694 2.524,0.972 C4.619,2.505 6.612,4.212 8.483,6.083 C11.368,8.968 13.861,12.141 15.935,15.536 L15.935,15.536 Z"></path>
+        <path id="path-3" d="M5,10 C7.761,10 10,7.761 10,5 C10,2.239 7.761,0 5,0 C2.239,0 0,2.239 0,5 C0,7.761 2.239,10 5,10 L5,10 Z"></path>
+    </defs>
+    <g id="Page-1" stroke="none" stroke-width="1" fill="none" fill-rule="evenodd" sketch:type="MSPage">
+        <g id="Home-Copy" sketch:type="MSArtboardGroup" transform="translate(-307.000000, -5365.000000)">
+            <g id="what-we-offer" sketch:type="MSLayerGroup" transform="translate(201.000000, 5146.000000)">
+                <g id="illus" transform="translate(33.000000, 146.000000)">
+                    <g id="earth" transform="translate(2.000000, 63.000000)">
+                        <g id="hi2-+-hi1" transform="translate(71.000000, 9.000000)">
+                            <g id="hi2" transform="translate(7.000000, 0.000000)">
+                                <mask id="mask-2" sketch:name="Shape" fill="white">
+                                    <use xlink:href="#path-1"></use>
+                                </mask>
+                                <g id="Shape"></g>
+                                <g id="Group" mask="url(#mask-2)" fill="#FFFFFF" sketch:type="MSShapeGroup">
+                                    <g transform="translate(-77.726300, -8.708200)" id="Rectangle-path">
+                                        <rect x="0" y="0" width="101" height="101"></rect>
+                                    </g>
+                                </g>
+                            </g>
+                            <g id="hi1" transform="translate(0.273700, 14.291800)">
+                                <path d="M5,10 C7.761,10 10,7.761 10,5 C10,2.239 7.761,0 5,0 C2.239,0 0,2.239 0,5 C0,7.761 2.239,10 5,10 L5,10 Z" id="Shape" fill="#BBBBBB" sketch:type="MSShapeGroup"></path>
+                                <g id="Clipped">
+                                    <mask id="mask-4" sketch:name="Shape" fill="white">
+                                        <use xlink:href="#path-3"></use>
+                                    </mask>
+                                    <g id="Shape"></g>
+                                    <rect id="Rectangle-path" fill="#FFFFFF" sketch:type="MSShapeGroup" mask="url(#mask-4)" x="-5" y="-5" width="20" height="20"></rect>
+                                </g>
+                            </g>
+                        </g>
+                    </g>
+                </g>
+            </g>
+        </g>
+    </g>
+</svg>

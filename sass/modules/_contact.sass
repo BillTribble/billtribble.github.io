@@ -1,0 +1,199 @@
+.overlay-module
+  position: fixed
+  top: 0
+  left: 0
+  // padding: 128px 0 28px 0
+  width: 100vw
+  // min-height: 800px
+  height: 100vh
+  // overflow: scroll
+  z-index: 9500
+  // background-image: url(/img/contact-module/office-map.jpg)
+  // background-position: center
+  // background-size: cover
+  // before element adds block at top
+  // after element adds drop shadow at top
+  button.close-top-module
+    position: absolute
+    border: none
+    background: none
+    z-index: 9600
+    top: 12px
+    width: 50px
+    right: 28px
+    padding: 0px
+    color: black
+    font-size: 4em
+    font-family: $gotham
+    font-weight: 100
+    cursor: pointer
+    outline: none
+    &:focus
+      color: $red
+  .centered-container
+    height: 100vh
+    width: 100vh
+    overflow: visible
+    // height: 0
+
+.top-module-title
+  position: absolute
+  top: 0
+  left: 0
+  font-size: 0
+  .overlay-logo-container,
+  h2
+    display: inline-block
+    vertical-align: middle
+  .overlay-logo-container
+    width: 36px
+    margin: 10px 0 0 18px
+  h2
+    text-transform: uppercase
+    font-weight: 400
+    font-size: 20px
+    color: white
+
+.overlay-module.contact
+  transform: translateY(-100vh)
+  &.open
+    transform: translateY(0)
+    .background-shroud
+      opacity: 1
+    .card
+      // display: block
+      animation: contact-module-enter 800ms linear both
+  &.close
+    transform: translateY(-100vh)
+    transition-delay: 300ms
+    .card
+      // display: block
+      animation: contact-module-exit 300ms ease-in
+
+  .card
+    position: absolute
+    // display: none;
+    top: 50%
+    padding: 2em 1em
+    max-width: 900px
+    min-width: 800px
+    transform: translateY(-100vh) translateX(-50%)
+
+  .background-shroud
+    opacity: 0
+    height: 100vh
+    width: 100vw
+    transition: opacity .3s ease-out
+    background: rgba(0,0,0,0.5)
+    
+
+  img
+    width: 350px
+    margin: 0 0 0 1em
+    display: block
+  .col-2
+    margin-top: -1.5em
+    text-align: left
+    padding: 0 1em
+  h3
+    font-size: 1.3em
+    margin: 1.5em 0 0.5em 0
+  p
+    font-family: $gotham
+    font-weight: 300
+    font-size: 1em
+  a
+    text-decoration: none
+
+.contact form.show-errors
+  input[data-isvalid=false]
+    border: 1px solid $red
+
+.contact form
+  input,
+  button.submit,
+  textarea
+    width: 100%
+    margin-bottom: 1.2em
+    font-weight: 200
+    color: #909090
+    outline: none
+    &:focus
+      border-color: $teal
+  input,
+  button.submit
+    padding: 1em
+    border: 1px solid rgb(211,211,211)
+    border-radius: 2px
+    &[type='text'],
+    &[type='email']
+      background: white
+      &.large
+        height: 200px
+    &.submit
+      background: white
+      transition: 0.3s
+      margin-bottom: 0
+      &:hover
+        background: white
+      &:focus
+        color: $teal
+      &.success
+        border-color: $teal
+        background: $teal
+        color: white
+      &.failure
+        border-color: $red !important
+        background: $red !important
+        color: white !important
+  textarea
+    resize: none
+    min-rows: 1
+    height: 128px
+    border: none
+    border-bottom: 1px solid rgb(211,211,211)
+    transition: 0.3s
+      
+
+label.name,
+label.email
+  display: block
+  & input
+    padding-left: 2.8em
+    position: relative
+  &::before
+    content: ''
+    background-repeat: no-repeat
+    background-position: center
+    background-size: 42%
+    position: absolute
+    height: calc(3em + 4px)
+    width: 3em
+    z-index: 200
+label.name::before
+  background-image: url(/img/common-elements/name-icon.svg)
+label.email::before
+  background-image: url(/img/common-elements/email-icon-alt.svg)
+    
+
+@media (max-width: 820px)
+  .overlay-module
+    button.close-top-module
+      color: $black-headings
+    &.contact
+      .card
+        min-width: 0
+        width: 90%
+        border-radius: 4px  
+        img
+          width: 40vw
+
+@media (max-width: 650px)
+  .overlay-module.contact
+    .col-2
+      width: 100%
+
+@media (max-width: 430px)
+  .overlay-module.contact
+    img
+      max-width: 90%

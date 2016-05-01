@@ -1,0 +1,28 @@
+extends ../../_partials/_layout
+
+block header
+  //- http://ogp.me/
+  //- Helping you change the world with digital products.
+  title Geniac | Make Us Proud
+  meta(name="twitter:card" content="summary_large_image")
+  meta(name="twitter:site" content="@Make_Us_Proud")
+  meta(name="twitter:title" content="Make Us Proud - Geniac")
+  meta(name="twitter:description" content="How we designed a simpler way to run your business.")
+  meta(name='description', content='Geniac - How we designed a simpler way to run your business.')
+  meta(name='og:description', content='Geniac - How we designed a simpler way to run your business.')
+  meta(name="og:url" content="http://www.makeusproud.com/work/geniac/")
+  meta(name="og:title" content="Make Us Proud & Geniac")
+  meta(name="og:type" content="website")
+  meta(name="og:image" content="http://www.makeusproud.com/img/social-media/geniac-twitter-card.jpg")
+
+block content
+  .page-name.geniac-study
+    include ../../_partials/_work/_geniac-splash
+    include ../../_partials/_work/_geniac-body
+    include ../../_partials/_work/_geniac-process
+    include ../../_partials/_general/_bottom-cta
+    section.next
+      a(href='/work/alcatel-lucent/')
+        .text-container
+          h2.next-case-study Next case study
+          p.study-name Alcatel-Lucent

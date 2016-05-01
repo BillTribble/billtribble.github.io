@@ -1,0 +1,177 @@
+nav.markup
+  +scut-hide-visually
+
+nav.main
+  position: fixed
+  z-index: 9000
+  transform: translateX(0)
+  top: 0
+  left: 0
+  width: 100vw
+  height: 57px
+  transition: transform .5s ease-out
+  &::after
+    content: ''
+    width: 100vw
+    height: 12px
+    position: absolute
+    left: 0
+    bottom: -12px
+    background: linear-gradient(rgba(0,0,0,0.08), rgba(0,0,0,0))
+  img
+    width: 56px
+    vertical-align: middle
+  &.hide
+    transform: translateY(-200%)
+  .svg-logo-container
+    display: inline-block
+    width: 36px
+    vertical-align: middle
+    margin: 8px
+    position: relative
+    top: 2px
+    left: 10px
+
+ul.nav-items
+  padding: 0
+  display: inline-block
+  width: calc(95vw - 56px)
+  margin-left: 1vw
+  list-style: none
+  font-size: 0
+  li
+    color: white
+    font-size: 16px
+    display: inline-block
+    width: 20%
+    text-transform: uppercase
+    text-align: center
+    transition: 0.3s
+    cursor: pointer
+    &.mouse-in
+      background: white
+  a,
+  button.unstyled
+    color: white
+    text-decoration: none
+    display: inline-block
+    position: relative
+    width: 100%
+    height: 100%
+    background: none
+    padding: 1em 0
+    border: none
+    text-transform: uppercase
+
+.mobile-nav-burger
+  display: none
+
+@media (max-width: 930px)
+  ul.nav-items a li,
+  ul.nav-items li
+    font-weight: 300
+    font-size: 14px
+
+@media (max-width: 730px)
+  ul.nav-items a li,
+  ul.nav-items li
+    font-size: 12px
+
+@media (max-width: 630px)
+  nav.main
+    background: none !important
+    pointer-events: none
+    &.shown
+      path
+        fill: white !important
+    &::after
+      height: 0
+    .svg-logo-container
+      pointer-events:all
+      width: 50px //!important
+      height: 50px
+      left: 2px
+  .mobile-nav-burger
+    pointer-events: all
+    display: block
+    position: fixed
+    top: 10px
+    right: 10px
+    border: none
+    background: none
+    width: 50px
+    height: 50px
+    outline: none
+    padding: 0
+    svg
+      width: 100%
+      height: 100%
+  .burger-3d-container
+    width: 100%
+    height: 100%
+    position: relative
+    perspective: 200px
+  .burger-3d-object
+    width: 100%
+    height: 100%
+    position: absolute
+    transform-style: preserve-3d
+    transition: transform 300ms
+    .front,
+    .back
+      margin: 0
+      display: block
+      position: absolute
+      width: 100%
+      height: 100%
+      backface-visibility: hidden
+    .back
+      transform: rotateY( 180deg )
+    .shown &
+      transform: rotateY( 180deg )
+  ul.nav-items
+    pointer-events: all
+    position: fixed
+    background: $red 0
+    opacity: 0
+    top: 0
+    left: 0
+    width: 100vw
+    height: 100vh
+    margin: 0
+    padding-top: 16vh
+    z-index: -100
+    transform: translateY(-200%)
+    transition: opacity 150ms ease
+    .shown &
+      transform: translateY(0)
+      background: $red
+      opacity: 0.95
+    li
+      width: 100%
+      height: 14vh
+      font-size: 3.5vh
+      transform: translateY(100vh)
+      position: relative
+      &:hover,
+      &.mouse-in
+        background: white !important
+      a,
+      button
+        display: inline
+        position: absolute
+        top: 0
+        left: 0
+        width: 100%
+        height: 100%
+        padding: calc(7vh - 1.75vh) 0
+        color: white !important
+        &:hover,
+        &.mouse-in
+          background: white !important
+          color: $red !important
+
+  @for $i from 1 through 5
+    .shown .nav-items li:nth-child(#{$i})
+      animation: mobile-nav-elements 800ms linear both
+      animation-delay: calc(150ms * #{$i})

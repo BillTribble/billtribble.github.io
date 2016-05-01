@@ -1,0 +1,30 @@
+=section-color($primary-color, $secondary-color: white)
+  // text colour is same as primary colour, or secondary color if primary is white
+  $local-text-color: if($primary-color == white, $secondary-color, $primary-color)
+  background: $primary-color
+  nav.main
+    background: lighten($primary-color, 3%)  
+    path
+      fill: $secondary-color
+    ul
+      // border-color: $secondary-color
+      li,
+      a,
+      button
+        color: $secondary-color
+        &.mouse-in
+          color: $primary-color
+          @if $primary-color == white
+            background: $secondary-color
+        &.mouse-in a,
+        &.mouse-in button.unstyled
+          color: $primary-color
+  a.cta,
+  button.cta
+    border-color: $secondary-color
+    color: $secondary-color
+  a.cta:hover,
+  button.cta:hover,
+  blockquote p.quote,
+  h3.stat
+    color: $local-text-color

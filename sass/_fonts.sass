@@ -1,0 +1,18 @@
+// GOTHAM
++scut-font-face('gotham', '/fonts/gotham-black', 900)
++scut-font-face('gotham', '/fonts/gotham-bold', 600)
++scut-font-face('gotham', '/fonts/gotham-medium', 400)
++scut-font-face('gotham', '/fonts/gotham-book', 300)
++scut-font-face('gotham', '/fonts/gotham-light', 200)
++scut-font-face('gotham', '/fonts/gotham-thin', 100)
+
+// replace thin with light on tablet/phone
+@media (max-width: 800px)
+  +scut-font-face('gotham', '/fonts/gotham-light', 100)
+
+// METASERIF
++scut-font-face('metaserif', '/fonts/metaserif-book')
+
+// VARIABLES
+$gotham: 'gotham', sans-serif
+$metaserif: 'metaserif', serif

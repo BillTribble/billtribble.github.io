@@ -1,0 +1,22 @@
+nav(tabindex='-1').markup
+  a(href='/', class='img')
+    .svg-logo-container
+      include ../../../img/mup-branding/logotype-white.svg
+  ul.nav-items
+    li.work-nav-item
+      a(href='/#work') Our Work
+    li.clients-nav-item
+      a(href='/#clients') Our Clients
+    li.process-nav-item
+      a(href='/#process') What we do
+    li.blog-nav-item
+      a(href='/#team') Our Team
+    li.contact-nav-item
+      button.unstyled.show-contact-modal Get in Touch
+  button.mobile-nav-burger
+    .burger-3d-container
+      .burger-3d-object
+        .front
+          include ../../../img/common-elements/burger.svg
+        .back
+          include ../../../img/common-elements/close.svg

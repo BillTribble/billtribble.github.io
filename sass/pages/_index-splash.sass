@@ -1,0 +1,72 @@
+.nav-please
+  position: relative
+  +section-color($blue)
+
+.index
+  .splash
+    +section-color(#051923)
+    // height: 100vh
+    h2
+      color: white
+    .text-container
+      @media (max-width: 930px)
+        width: 90vw  
+      width: 75vw
+      max-width: 1300px
+      position: absolute
+      top: 52%
+      left: 50%
+      transform: translateX(-50%) translateY(-45%)
+      z-index: 1
+    h1
+      color: white
+      font-size: 1.8em
+      line-height: 1.5
+      font-weight: 600
+      text-align: center
+      text-transform: uppercase
+      margin: -0.5em 0 0 0
+
+    img.title-logo
+      width: 100%
+      margin-bottom: .5em
+
+.full-page 
+  height: 100vh
+  position: absolute
+  width: 100vw
+
+.logo-sketch-wrapper
+  width: 100%
+  margin-bottom: -.4em
+
+@media (max-width: 930px)
+  .index .splash h1
+    font-size: 1.8em
+
+@media (max-width: 770px)
+  .index .splash h1
+    font-size: 1.5em
+
+@media (max-width: 620px)
+  .index .splash h1
+    font-weight: 400
+    font-size: 1em
+
+.lip-block
+  perspective: 1500
+  transform-style: preserve-3d
+  height: 60px
+  position: absolute
+  bottom:0
+  width: 100vw
+  .lip
+    width: 100vw
+    height: 140px
+    position: absolute
+    bottom:0
+    transform: rotateX(65deg)
+    transform-origin: 50% 100%
+    // transition: transform 1s ease-out
+    background: #0C82BD
+    // background: #5E235F

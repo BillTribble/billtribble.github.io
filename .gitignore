@@ -1,0 +1,16 @@
+.DS_Store
+
+# LOGS
+logs
+*.log
+
+# RUNTIME
+pids
+*.pid
+*.seed
+
+# DEPENDENCIES
+node_modules/*
+bower_components/*
+.sass-cache
+.tmp

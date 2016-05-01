@@ -1,0 +1,139 @@
+.discovery-study
+  .section.body
+    +section-color(white, $teal)
+    .sub-section.native-prototyping
+      background: linear-gradient(to bottom, rgba(233,233,233,1) 0%,rgba(255,255,255,1) 40%);
+  .splash,
+  .section.process
+    +section-color($teal)
+  section.next
+    background-image: url(/img/work-discovery/next-geniac.jpg)
+
+  .details
+    padding-bottom: 0
+  .results
+    margin-top: -120px
+  img
+    display: inline-block
+    vertical-align: top
+  .results1
+    width: 55%
+    margin-right: 4%
+  .results2
+    width: 40%
+    margin-top: 100px
+  .fast1
+    width: 25%
+    margin-right: 9%
+  .fast2
+    width: 65%
+
+  .animation-container
+    position: absolute
+    min-width: 1000px
+    width: 100%
+    height: 100%
+    left: 50%
+    transform: translateX(-50%)
+    &.animate
+      svg
+        position: absolute
+        opacity: 0.7
+        // transform: scale(.8)
+        path
+          fill: #FFF
+      .palm-1
+        opacity: 0.8
+        transform: translateX(-40%) rotate(30deg) scale(1)
+      .palm-2
+        opacity: 1
+        transform: translateX(40%) rotate(-10deg) scale(1)
+      .palm-3
+        opacity: 1
+        transform: translateX(-35%) rotate(40deg) scale(1)
+      .palm-4
+        opacity: 0.2
+        transform: translateX(30%) rotate(-40deg) scale(1)
+      .palm-5
+        opacity: 0.2
+        transform: translateX(0%) rotate(0deg) scale(1)
+    svg
+      opacity:0
+      width: 100%
+      height: 100%
+      // transition: transform 15s ease-out, opacity 1s ease-in
+      // transform: scale(1)
+      // opacity: .2
+    div[class*="palm-"]
+      position: absolute
+      transition-property: opacity, transform
+      transition-duration: 5s
+      // opacity: 0
+    
+    .palm-1
+      width: 100%
+      height: 100%
+      opacity: 0
+      transition-delay: 0s
+      transform: translateX(-40%) rotate(28deg) scale(.9)
+      
+      // transition: palm-animate-left 10s linear infinite 1s
+    .palm-2
+      width: 100%
+      height: 100%
+      opacity: 0
+      transition-delay: 0.5s
+      transform: translateX(40%) rotate(-8deg) scale(.9)
+      // transition: palm-animate-right 10s linear infinite 2s
+    .palm-3
+      width: 100%
+      opacity: 0
+      height: 50%
+      bottom: 5%
+      transition-delay: 1s
+      transform: translateX(-35%) rotate(38deg) scale(.9)
+      // transition: palm-animate-left 10s linear infinite 3s
+    .palm-4
+      opacity: 0
+      width: 100%
+      height: 80%
+      bottom: 0
+      transition-delay: 0.8s
+      transform: translateX(30%) rotate(-38deg) scale(.9)
+      // transition: palm-animate-right 10s linear infinite 4s
+    .palm-5
+      opacity: 0
+      width: 100%
+      height: 100%
+      bottom: 0
+      transition-delay: .75s
+      transform: translateX(0%) rotate(2deg) scale(.9)
+      // animation: palm-animate-left 10s linear infinite 5s
+    &::before,
+    &::after
+      content: ''
+      position: absolute
+      width: 100%
+      height: 80%
+      z-index: 100
+      left: 0
+    &::before
+      top: 0
+      // background: linear-gradient(rgba($teal, 0.9) 10%, rgba($teal, 0))
+    &::after
+      bottom: 0
+      background: linear-gradient(rgba($teal, 0), rgba($teal, 1) 90%)
+
+@media (max-width: 750px)
+  .splash
+    min-height: 650px
+
+@media (max-width: 550px)
+  .discovery-study
+    .splash
+      min-height: 770px
+    .results1
+      width: 100%
+      margin-right: 0
+    .results2
+      display: none

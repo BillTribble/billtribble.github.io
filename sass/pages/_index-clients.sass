@@ -1,0 +1,43 @@
+section.clients
+  +section-color($dark-blue)
+  blockquote.card.major
+    position: absolute
+    bottom: 0
+    transform: translateY(50%) translateX(-50%)
+    z-index: 1000
+    padding: 6em 6em 3em 6em
+  h3.inner-header
+    color: white
+    font-weight: 200
+    font-size: 1.4em
+    text-align: center
+    margin: 3em 0 1.3em 0;
+
+.split-card-before,
+.split-card-after
+  transition: 0.5s
+  height: 150px
+
+@media (max-width: 750px)
+  section.clients
+    padding-bottom: 120px
+    h3.inner-header
+      margin: 2em 0 0 0
+    blockquote.card.major
+      transform: translateX(-50%) translateY(100%)
+
+@media (max-width: 600px)
+  p.attribution
+    position: relative
+    top: 1.5em
+
+@media (max-width: 500px)
+  section.clients blockquote.card.major
+    padding: 7em 2em 3em 2em
+    p::before,
+    p::after
+      font-size: 4.2em
+
+@media (max-width: 450px)
+  span.role
+    display: block

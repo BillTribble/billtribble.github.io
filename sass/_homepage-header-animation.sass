@@ -1,0 +1,47 @@
+.homepage-header-animation-container
+	width: 100vw
+	height: 105vh
+	@media (max-width: 770px)
+	  height: 100vh
+	// position: absolute
+	top: 0
+	left: 0
+
+.logo-sketch-wrapper
+	transform: translateZ(0)
+	transition: all .6s ease-out
+	opacity: 1
+	will-change: transform, opacity
+
+.splash .tagline
+	transform: translateZ(0)
+	transition: transform .6s ease-out, opacity .6s ease-out
+	opacity: 1
+	width: 70%
+	line-height: 1.5
+	@media (max-width: 400px)
+		width: 90%
+	margin: 0 auto
+	will-change: transform, opacity
+
+.text-container
+	perspective: 1000
+	transform-style: preserve-3d 
+
+.intro nav.main
+	will-change: transform
+
+.intro
+	.splash
+		.text-container
+			opacity: 0
+		nav.main
+			transform: translateY(-200%)
+
+	.tagline
+		opacity: 0
+		transform: translateZ(-100px);
+
+	.logo-sketch-wrapper
+		transform: translateZ(-100px)
+		opacity: 0

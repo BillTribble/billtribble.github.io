@@ -1,0 +1,25 @@
+<?xml version="1.0" encoding="UTF-8" standalone="no"?>
+<svg width="152px" height="152px" viewBox="0 0 152 152" version="1.1" xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink" xmlns:sketch="http://www.bohemiancoding.com/sketch/ns">
+    <!-- Generator: Sketch 3.3.3 (12081) - http://www.bohemiancoding.com/sketch -->
+    <title>blue circle</title>
+    <desc>Created with Sketch.</desc>
+    <defs>
+        <circle id="path-1" cx="76" cy="76" r="76"></circle>
+    </defs>
+    <g id="Page-1" stroke="none" stroke-width="1" fill="none" fill-rule="evenodd" sketch:type="MSPage">
+        <g id="Home-Copy" sketch:type="MSArtboardGroup" transform="translate(-239.000000, -6135.000000)">
+            <g id="what-we-offer" sketch:type="MSLayerGroup" transform="translate(201.000000, 5146.000000)">
+                <g id="what-we-offer-text" transform="translate(0.000000, 412.000000)">
+                    <g id="Approach-section-Copy-3" transform="translate(38.000000, 577.000000)">
+                        <g id="icon">
+                            <mask id="mask-2" sketch:name="blue circle" fill="white">
+                                <use xlink:href="#path-1"></use>
+                            </mask>
+                            <use id="blue-circle" opacity="0.445429104" fill="#4EA4EF" sketch:type="MSShapeGroup" xlink:href="#path-1"></use>
+                        </g>
+                    </g>
+                </g>
+            </g>
+        </g>
+    </g>
+</svg>

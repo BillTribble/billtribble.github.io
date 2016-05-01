@@ -1,0 +1,234 @@
+.lead-in
+  // background: linear-gradient(#051923, rgba(0, 158, 236, 1), rgba(0, 0, 0, 0.09)) #1192d5;
+  // position: relative
+
+  background: rgba(21, 153, 219, 1);
+  // background: #782B79;
+  height: 100px
+  z-index: 100
+  h2
+    color: white;
+    position: relative;
+    margin-top: 0;
+    font-size: 3em;
+
+    @media (max-width: 930px)
+      font-size: 2.3em
+
+    transform: translateY(13px);
+    z-index: 1000;
+    // font-weight: 300
+
+section.work-teaser
+  position: relative
+  .image-container
+    position: absolute
+    top: 0
+    left: 0
+    width: 100vw
+    height: 34vw
+    min-height: 150px
+    // background: linear-gradient(rgba(0,0,0,0.08), rgba(0,0,0,0.16))
+    background: linear-gradient(rgba(255,255,255,0.08), rgba(255,255,255,0.4))
+    perspective: 1500
+    transform-style: preserve-3d
+    .center,
+    .center-left,
+    .center-right,
+    .left,
+    .right
+      position: absolute
+      max-height: 1000px
+      display: inline
+      img
+        max-width: 170%
+        box-shadow: $drop-shadow
+  .center
+    position: relative
+    left: 50%
+    transform: translateX(-50%)
+    height: 36vw
+    top: 90px
+    z-index: 1000
+    img
+      position: relative
+      left: 50%
+      transform: translateX(-50%)
+  .center-left,
+  .center-right
+    top: calc(90px + 3vw)
+    height: 31vw
+    z-index: 900
+    &::before
+      content: ''
+      position: absolute
+      top: 0
+      left: 0
+      width: 100%
+      height: 100%
+      background: rgba(0,0,0,0.03)
+  .left,
+  .right
+    top: calc(90px + 6vw)
+    height: 26vw
+    z-index: 800
+    &::before
+      content: ''
+      position: absolute
+      top: 0
+      left: 0
+      width: 100%
+      height: 100%
+      background: rgba(0,0,0,0.05)
+  .title-container
+    margin-top: 40.5vw
+
+section.work-teaser.alcatel
+  +section-color($dark-blue)
+  .center-left
+    left: 13vw
+  .center-right
+    right: 13vw
+  .left
+    left: 7vw
+  .right
+    right: 7vw
+
+section.work-teaser.discovery
+  +section-color($teal)
+  .center-left
+    left: 14vw
+  .center-right
+    right: 14vw
+  .left
+    left: 7vw
+  .right
+    right: 7vw
+
+section.work-teaser.geniac
+  +section-color($light-purple)
+  .center-left
+    left: 11vw
+  .center-right
+    right: 11vw
+  .left
+    left: 7vw
+  .right
+    right: 7vw
+
+section.work-teaser
+  .left,
+  .center-left
+    transform: scale(0)
+  .right,
+  .center-right
+    transform: scale(0)
+  &.animate
+    .left
+      animation: work-teaser-left 2000ms linear both
+      animation-delay: .3s
+    .center-left
+      animation: work-teaser-left 2000ms linear both
+    .center-right
+      animation: work-teaser-right 2000ms linear both
+    .right
+      animation: work-teaser-right 2000ms linear both
+      animation-delay: .3s
+
+@media (max-width: 930px)
+  section.work-teaser
+    .image-container
+      height: 35vw
+    .center
+      height: 38vw
+      top: 45px
+    .center-left,
+    .center-right
+      top: calc(45px + 2vw)
+      height: 34vw
+      z-index: 900
+    .left,
+    .right
+      top: calc(45px + 4vw)
+      height: 30vw
+      z-index: 800
+    .title-container
+      margin-top: 40vw
+
+  section.work-teaser.alcatel
+    .center-left
+      left: 14vw
+    .center-right
+      right: 14vw
+    .left
+      left: 8vw
+    .right
+      right: 8vw
+
+  section.work-teaser.discovery
+    .center-left
+      left: 16vw
+    .center-right
+      right: 16vw
+    .left
+      left: 10vw
+    .right
+      right: 10vw
+
+  section.work-teaser.geniac
+    .center-left
+      left: 12vw
+    .center-right
+      right: 12vw
+    .left
+      left: 6vw
+    .right
+      right: 6vw
+
+@media (max-width: 500px)
+  section.work-teaser
+    .image-container
+      height: 47vw
+    .center
+      height: 50vw
+      top: 30px
+    .center-left,
+    .center-right
+      top: calc(30px + 2vw)
+      height: 45vw
+    .left,
+    .right
+      top: calc(30px + 4vw)
+      height: 42vw
+    .title-container
+      margin-top: 48vw
+
+  section.work-teaser.alcatel,
+    .center-left
+      left: 7vw
+    .center-right
+      right: 7vw
+    .left
+      left: 3vw
+    .right
+      right: 3vw
+
+  section.work-teaser.discovery
+    .center-left
+      left: 9vw
+    .center-right
+      right: 9vw
+    .left
+      left: 5vw
+    .right
+      right: 5vw
+
+  section.work-teaser.geniac
+    .center-left
+      left: 4vw
+    .center-right
+      right: 4vw
+    .left
+      left: 2vw
+    .right
+      right: 2vw

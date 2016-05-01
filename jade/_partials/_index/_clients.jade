@@ -1,0 +1,23 @@
+section.clients
+  .title-container#clients
+    h1.title
+      | We
+      span.heart 
+      | our Clients
+    p.description We’ve had the opportunity to work with some amazing companies since we founded in 2014 - from startups to world-leading brands.
+  .centered-container.width-narrow
+    - var clientNames = ['google', 'microsoft', 'discovery', 'alcatel', 'tate', 'geniac']
+    - for (var num = 0; num < clientNames.length; num++)
+        .col-3.logo
+          img(src='/img/client-logos/#{clientNames[num]}.png', alt='#{clientNames[num]}', class='client-#{clientNames[num]} logo')
+    h3.inner-header
+      | ... and our clients
+      span.heart 
+      | us
+  .split-card-before
+  blockquote.card.major.split-card-to-space.width-normal
+    img(src='/img/portraits/matt.jpg', alt='matt wood', class='headshot')
+    p.quote Make Us Proud left a real impression on our business, helping us to transform our product into something our&nbsp;customers&nbsp;truly&nbsp;love.
+    p.attribution
+      span.name Matthew Wood 
+      span.role Geniac Product Owner 

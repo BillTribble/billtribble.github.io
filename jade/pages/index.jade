@@ -1,0 +1,29 @@
+extends ../_partials/_layout
+
+block header
+  //- http://ogp.me/
+  //- Helping you change the world with digital products.
+  title Bill Tribble - UX and Digital Product Designer
+  meta(name="twitter:card" content="summary_large_image")
+  meta(name="twitter:site" content="@bill_tribble")
+  meta(name="twitter:title" content="Bill Tribble")
+  meta(name="twitter:description" content="UX & Digital Product Designer")
+  meta(name='description', content='Award winning UX & Digital Product Designer')
+  meta(name="og:title" content="Bill Tribble")
+  meta(name="og:url" content="http://btribble.com/")
+  meta(name="og:image" content="http://btribble.com/img/social-media/index-twitter-card.png")
+  meta(name='og:description', content='Award winning UX & Digital Product Designer')
+  meta(name="og:type" content="website")
+
+block content
+  script.
+    document.documentElement.classList.add('intro')
+  script(src='/js/dist/intro-main.output.js')
+
+  .page-name.index
+    include ../_partials/_index/_splash
+    include ../_partials/_index/_work
+    include ../_partials/_index/_clients
+    include ../_partials/_index/_process
+    include ../_partials/_index/_team
+    include ../_partials/_general/_bottom-cta

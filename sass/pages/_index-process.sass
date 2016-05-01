@@ -1,0 +1,74 @@
+section.index-process
+  +section-color(white, $dark-blue)
+  background: $light-grey
+  padding-bottom: 120px
+  h1.title
+    color: $black-headings
+  h3.inner-header
+    color: white
+    font-weight: 600
+    font-size: 1.8em
+    text-align: center
+    margin: 2em 0 6em 0
+  .centered-container
+    margin: 80px 0 0 0
+  .animation-container
+    margin: 60px 0 60px 0
+    height: 230px
+  
+  .animated-process-icon
+    max-width: 100%
+    width: 152px
+    margin: 0
+
+  .process-icon,
+  .process-icon-container,
+  .process-copy
+    vertical-align: middle
+    display: inline-block
+    position: relative
+    width: 152px
+
+  .process-diagram-container
+    width: 735px
+
+  .process-icon,
+  .process-icon-container
+    margin: 0 20px 0 0
+  .process-copy
+    width: calc(100% - 180px)
+    h2.name
+      margin: 0 0 0.5em 0
+      text-align: left
+    p
+      margin: 0
+
+@media (max-width: 817px)
+  section.index-process .animation-container
+    height: 42vw
+    margin: 40px 0 0 0
+
+@media (max-width: 745px)
+  section.index-process
+    .process-icon-container
+      margin: 0 auto
+    .process-icon,
+    .process-icon-container
+      width: 152px
+      margin-bottom: 2em
+    .process-copy
+      width: 90%
+      h2.name
+        margin: 1em 0
+        text-align: center
+
+@media (max-width: 600px)
+  section.index-process .animation-container
+    margin: 20px 0 0 0
+
+
+@media (max-width: 520px)
+  section.index-process .animation-container
+    margin: 20px 0 0 0
+    height: 48vw
+    min-height: 220px

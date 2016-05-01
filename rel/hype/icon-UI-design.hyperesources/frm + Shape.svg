@@ -1,0 +1,25 @@
+<?xml version="1.0" encoding="UTF-8" standalone="no"?>
+<svg width="125px" height="92px" viewBox="0 0 125 92" version="1.1" xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink" xmlns:sketch="http://www.bohemiancoding.com/sketch/ns">
+    <!-- Generator: Sketch 3.3.3 (12081) - http://www.bohemiancoding.com/sketch -->
+    <title>frm + Shape</title>
+    <desc>Created with Sketch.</desc>
+    <defs></defs>
+    <g id="Page-1" stroke="none" stroke-width="1" fill="none" fill-rule="evenodd" sketch:type="MSPage">
+        <g id="Home-Copy" sketch:type="MSArtboardGroup" transform="translate(-255.000000, -6393.000000)" fill="#4EA4EF">
+            <g id="what-we-offer" sketch:type="MSLayerGroup" transform="translate(201.000000, 5146.000000)">
+                <g id="what-we-offer-text" transform="translate(0.000000, 412.000000)" sketch:type="MSShapeGroup">
+                    <g id="Approach-section-Copy-4" transform="translate(40.000000, 798.000000)">
+                        <g id="icon-all">
+                            <g id="big-scrn-copy" transform="translate(14.000000, 37.000000)">
+                                <g id="frm-+-Shape">
+                                    <rect id="frm" x="0" y="0" width="125" height="75" rx="6"></rect>
+                                    <path d="M75.925,88.2918407 C74.192,86.5030464 74.007,83.8177504 74.007,83.8177504 L73.358,77.9897882 L52.643,77.9897882 L51.991,83.8149444 C51.991,83.8149444 51.81,86.5030464 50.077,88.2904377 C48.345,90.0792321 46.978,91.6140878 48.345,91.8736383 C49.662,92.1233681 62.085,91.896086 63.001,91.8736383 C63.919,91.896086 76.339,92.1233681 77.656,91.8736383 C79.021,91.6154908 77.654,90.083441 75.925,88.2918407 L75.925,88.2918407 Z" id="Shape"></path>
+                                </g>
+                            </g>
+                        </g>
+                    </g>
+                </g>
+            </g>
+        </g>
+    </g>
+</svg>

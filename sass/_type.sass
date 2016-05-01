@@ -1,0 +1,166 @@
+h1, h2, h3, h4, h5, h6
+  font-family: $gotham
+  font-weight: 900
+  color: $black-headings
+
+h1.title
+  color: white
+  font-size: 3em
+  margin: 0
+
+h2.title
+  font-style: normal
+  font-size: 2em
+  margin: 0.2em 0 0.6em 0
+
+h2.name
+  font-size: 1.4em
+  font-weight: 400
+  margin-bottom: 0
+
+h2.tagline
+  font-weight: 100
+  font-size: 2.4em
+
+h3.inner-header,
+h3.minor-header
+  text-align: center
+  font-weight: 600
+  font-size: 1.8em
+  margin-bottom: 0
+
+h3.stat
+  font-weight: 100
+  font-size: 4em
+  text-transform: uppercase
+  margin-bottom: -1rem
+  margin-top: 0.5em
+  vertical-align: bottom
+  span.small-caps
+    font-size: 0.3em
+
+p
+  font-family: $metaserif
+  line-height: 1.6
+  font-size: 18px
+  color: $black-text
+
+p.description
+  color: white
+  font-size: 1.3em
+  margin-bottom: 3em
+
+p.copy
+  font-size: 1.25em
+  line-height: 1.8
+  text-align: left
+
+p.caption
+  text-align: left
+  margin-top: 0.5em
+  font-family: $gotham
+  font-weight: 100
+  font-size: 0.9em
+
+p.qualifier,
+  font-weight: 300
+  font-size: 0.9em
+  text-transform: uppercase
+  font-family: $gotham
+
+.project-stage p
+  font-size: 1em
+  font-family: $gotham
+  font-weight: 100
+  text-transform: uppercase
+  margin: 2em 0 1.8em 0
+  color: white
+
+p.role
+  font-weight: 300
+  font-family: $gotham
+
+p.about
+  font-weight: 200
+  font-family: $gotham
+  font-size: 1em
+  text-align: left
+
+p.copyright
+  color: $light-grey
+  font-family: $gotham
+  font-weight: 100
+  font-size: 0.8em
+  margin-top: 6em
+
+address
+  p,
+  .big-blue
+    color: $black-text
+    font-style: normal
+    font-size: 0.9em
+    margin: 0
+.big-blue
+  margin-top: 1em
+  text-decoration: none
+  color: $dark-blue
+  font-weight: 500
+
+.project.splash .title-container p.description.centered-text
+  text-align: center
+
+.left-text
+  text-align: left
+
+a.cta,
+button.cta
+  text-decoration: none
+  color: white
+  padding: 1em 2.5em
+  border: 2px solid white
+  border-radius: 0.3em
+  font-style: bold
+  font-size:1.1em
+  background: none
+  transition: 0.3s
+  &:hover
+    background: white
+
+
+
+span.phone
+  display: block
+
+span.heart
+  display: inline-block
+  height: 0.8em
+  width: 0.86em
+  background-image: url(/img/common-elements/heart.svg)
+  background-position: center
+  background-size: cover
+  margin: 0 0.3em
+
+@media (max-width: 945px)
+  h1.title
+    font-size: 3.2em
+  p.description
+    font-size: 1.1em
+
+@media (max-width: 800px)
+  p.about
+    font-size:1.1em
+
+@media (max-width: 600px)
+  a.cta,
+  button.cta
+    padding: 1em 1em;
+
+@media (max-width: 500px)
+  h1.title
+    font-size: 2.2em
+  h2.title
+    font-size: 1.8em
+
+@media (max-width: 400px)
+  html body .lead-in h2
+    font-size: 2em

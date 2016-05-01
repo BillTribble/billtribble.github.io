@@ -1,0 +1,15 @@
+doctype html
+html.no-js(lang='en')
+  head
+    include ./_general/_head
+    block header
+
+  body
+    include ./_general/_contact
+    include ./_general/_nav
+    
+    main(role="main")
+      block content
+
+    include ./_general/_footer
+    include ./_general/_scripts
