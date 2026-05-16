@@ -133,8 +133,8 @@
                     card.target = '_blank';
                     card.className = 'link-card';
 
-                    // Use description if available, otherwise fallback text
-                    const description = repo.description ? repo.description : 'View repository on GitHub';
+                    // Use description if available, otherwise leave blank
+                    const description = repo.description ? repo.description : '';
 
                     card.innerHTML = `
                         <span class="repo-name">📁 ${repo.name}</span>
