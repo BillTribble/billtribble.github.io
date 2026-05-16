@@ -117,9 +117,12 @@
                 container.innerHTML = ''; // Clear loading text
 
                 // Filter out the profile pages repo itself if you don't want it listed
-                const filteredRepos = repos.filter(repo => 
-                    repo.name.toLowerCase() !== `${GITHUB_USERNAME}.github.io`.toLowerCase() && !repo.fork
-                );
+                const filteredRepos = repos.filter(repo => {
+                    const isProfileRepo = repo.name.toLowerCase() === `${GITHUB_USERNAME}.github.io`.toLowerCase();
+                    const isPrismaAudio = repo.name.toLowerCase() === 'prisma-audio';
+                    const isPrismataUI = repo.name.toLowerCase() === 'prismata-ui';
+                    return !isProfileRepo && !isPrismaAudio && (!repo.fork || isPrismataUI);
+                });
 
                 if (filteredRepos.length === 0) {
                     container.innerHTML = '<div class="loading">No public repositories found.</div>';
