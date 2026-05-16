@@ -88,8 +88,8 @@
 <body>
 
     <div class="profile">
-        <h1 id="user-title">My Projects</h1>
-        <p>Automatically updating from GitHub</p>
+        <h1 id="user-title">Bill Tribble</h1>
+        <p>Projects</p>
     </div>
 
     <div id="links-container" class="links-container">
@@ -125,7 +125,7 @@
                 // Loop through repos and create elements
                 filteredRepos.forEach(repo => {
                     const card = document.createElement('a');
-                    card.href = repo.html_url;
+                    card.href = `https://${GITHUB_USERNAME}.github.io/${repo.name}`;
                     card.target = '_blank';
                     card.className = 'link-card';
 
