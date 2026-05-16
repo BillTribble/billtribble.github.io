@@ -1,0 +1,154 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>My GitHub Projects</title>
+    <style>
+        :root {
+            --bg-color: #121212;
+            --text-color: #ffffff;
+            --accent-color: #1a1a1a;
+            --hover-color: #252525;
+            --border-color: #333333;
+        }
+
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+            background-color: var(--bg-color);
+            color: var(--text-color);
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            padding: 40px 20px;
+            margin: 0;
+        }
+
+        .profile {
+            text-align: center;
+            margin-bottom: 30px;
+        }
+
+        .profile h1 {
+            font-size: 1.5rem;
+            margin: 0 0 5px 0;
+            font-weight: 600;
+        }
+
+        .profile p {
+            color: #888;
+            margin: 0;
+            font-size: 0.9rem;
+        }
+
+        .links-container {
+            width: 100%;
+            max-width: 500px;
+            display: flex;
+            flex-direction: column;
+            gap: 14px;
+        }
+
+        .link-card {
+            background-color: var(--accent-color);
+            color: var(--text-color);
+            text-decoration: none;
+            padding: 16px;
+            border-radius: 8px;
+            transition: background-color 0.2s ease, transform 0.1s ease;
+            border: 1px solid var(--border-color);
+            display: flex;
+            flex-direction: column;
+            gap: 4px;
+        }
+
+        .link-card:hover {
+            background-color: var(--hover-color);
+            transform: translateY(-2px);
+        }
+
+        .repo-name {
+            font-weight: 600;
+            font-size: 1.05rem;
+        }
+
+        .repo-desc {
+            font-size: 0.85rem;
+            color: #aaa;
+            font-weight: 400;
+        }
+
+        .loading {
+            text-align: center;
+            color: #666;
+            font-style: italic;
+        }
+    </style>
+</head>
+<body>
+
+    <div class="profile">
+        <h1 id="user-title">My Projects</h1>
+        <p>Automatically updating from GitHub</p>
+    </div>
+
+    <div id="links-container" class="links-container">
+        <div class="loading">Loading repositories...</div>
+    </div>
+
+    <script>
+        // 1. CHANGE THIS TO YOUR EXACT GITHUB USERNAME
+        const GITHUB_USERNAME = 'BillTribble'; 
+
+        async function fetchRepos() {
+            const container = document.getElementById('links-container');
+            
+            try {
+                // Fetches public repos, sorted by recently updated
+                const response = await fetch(`https://api.github.com/users/${GITHUB_USERNAME}/repos?sort=updated&per_page=100`);
+                
+                if (!response.ok) throw new Error('Failed to fetch repositories');
+                
+                const repos = await response.json();
+                container.innerHTML = ''; // Clear loading text
+
+                // Filter out the profile pages repo itself if you don't want it listed
+                const filteredRepos = repos.filter(repo => 
+                    repo.name.toLowerCase() !== `${GITHUB_USERNAME}.github.io`.toLowerCase() && !repo.fork
+                );
+
+                if (filteredRepos.length === 0) {
+                    container.innerHTML = '<div class="loading">No public repositories found.</div>';
+                    return;
+                }
+
+                // Loop through repos and create elements
+                filteredRepos.forEach(repo => {
+                    const card = document.createElement('a');
+                    card.href = repo.html_url;
+                    card.target = '_blank';
+                    card.className = 'link-card';
+
+                    // Use description if available, otherwise fallback text
+                    const description = repo.description ? repo.description : 'View repository on GitHub';
+
+                    card.innerHTML = `
+                        <span class="repo-name">📁 ${repo.name}</span>
+                        <span class="repo-desc">${description}</span>
+                    `;
+                    
+                    container.appendChild(card);
+                });
+
+            } catch (error) {
+                console.error(error);
+                container.innerHTML = '<div class="loading">Error loading repositories. Please try again later.</div>';
+            }
+        }
+
+        // Run the function on page load
+        fetchRepos();
+    </script>
+
+</body>
+</html>
