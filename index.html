@@ -63,21 +63,6 @@
             border: 1px solid var(--border-color);
             display: flex;
             flex-direction: column;
-            gap: 12px;
-        }
-
-        .repo-thumbnail {
-            width: 100%;
-            height: auto;
-            border-radius: 6px;
-            border: 1px solid var(--border-color);
-            aspect-ratio: 1200 / 630;
-            object-fit: cover;
-        }
-
-        .repo-info {
-            display: flex;
-            flex-direction: column;
             gap: 4px;
         }
 
@@ -162,15 +147,9 @@
                     // Use description if available, otherwise leave blank
                     const description = repo.description ? repo.description : '';
 
-                    // Add a thumbnail for repos that have GitHub Pages enabled
-                    const thumbnailHtml = repo.has_pages ? `<img src="https://opengraph.githubassets.com/1/${repo.full_name}" class="repo-thumbnail" alt="Thumbnail for ${repo.name}">` : '';
-
                     card.innerHTML = `
-                        ${thumbnailHtml}
-                        <div class="repo-info">
-                            <span class="repo-name">📁 ${repo.name}</span>
-                            <span class="repo-desc">${description}</span>
-                        </div>
+                        <span class="repo-name">📁 ${repo.name}</span>
+                        <span class="repo-desc">${description}</span>
                     `;
                     
                     container.appendChild(card);
