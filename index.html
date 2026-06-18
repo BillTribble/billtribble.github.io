@@ -122,7 +122,8 @@
                     const isPrismaAudio = repo.name.toLowerCase() === 'prisma-audio';
                     const isPrismataUI = repo.name.toLowerCase() === 'prismata-ui';
                     const isAppleNotesLiberator = repo.name.toLowerCase() === 'apple-notes-liberator';
-                    return !isProfileRepo && !isPrismaAudio && (!repo.fork || isPrismataUI || isAppleNotesLiberator);
+                    const isBilltribbleStatic = repo.name.toLowerCase() === 'billtribble-static';
+                    return !isProfileRepo && !isPrismaAudio && !isAppleNotesLiberator && !isBilltribbleStatic && (!repo.fork || isPrismataUI);
                 });
 
                 if (filteredRepos.length === 0) {
@@ -134,18 +135,16 @@
                 filteredRepos.forEach(repo => {
                     const card = document.createElement('a');
                     
-                    // If it's Apple Notes Liberator, link to the repo. Otherwise, link to the GitHub Pages site.
-                    if (repo.name.toLowerCase() === 'apple-notes-liberator') {
-                        card.href = repo.html_url;
-                    } else {
-                        card.href = `https://${GITHUB_USERNAME}.github.io/${repo.name}`;
-                    }
+                    card.href = `https://${GITHUB_USERNAME}.github.io/${repo.name}`;
                     
                     card.target = '_blank';
                     card.className = 'link-card';
 
                     // Use description if available, otherwise leave blank
-                    const description = repo.description ? repo.description : '';
+                    let description = repo.description ? repo.description : '';
+                    if (repo.name.toLowerCase() === 'lifesim') {
+                        description = 'An interactive 3D ecosystem simulation built with Three.js.';
+                    }
 
                     card.innerHTML = `
                         <span class="repo-name">📁 ${repo.name}</span>
