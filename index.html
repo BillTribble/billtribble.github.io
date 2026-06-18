@@ -11,6 +11,7 @@
             --accent-color: #1a1a1a;
             --hover-color: #252525;
             --border-color: #333333;
+            --color-primary: #A7C7FA;
         }
 
         body {
@@ -50,36 +51,40 @@
             max-width: 500px;
             display: flex;
             flex-direction: column;
-            gap: 14px;
+            gap: 20px;
         }
 
         .link-card {
-            background-color: var(--accent-color);
             color: var(--text-color);
             text-decoration: none;
-            padding: 16px;
-            border-radius: 8px;
-            transition: background-color 0.2s ease, transform 0.1s ease;
-            border: 1px solid var(--border-color);
             display: flex;
             flex-direction: column;
             gap: 4px;
-        }
-
-        .link-card:hover {
-            background-color: var(--hover-color);
-            transform: translateY(-2px);
+            padding: 4px 16px;
+            box-sizing: border-box;
         }
 
         .repo-name {
             font-weight: 600;
             font-size: 1.05rem;
+            text-decoration: underline;
+            text-decoration-color: color-mix(in srgb, var(--color-primary) 30%, transparent);
+            text-underline-offset: 3px;
+            text-decoration-thickness: 1px;
+            transition: text-decoration-color 0.2s, color 0.2s;
+            display: inline-block;
+        }
+
+        .link-card:hover .repo-name {
+            color: var(--color-primary);
+            text-decoration-color: var(--color-primary);
         }
 
         .repo-desc {
             font-size: 0.85rem;
             color: #aaa;
             font-weight: 400;
+            padding-left: 24px; /* Align with name (after folder icon) */
         }
 
         .loading {
