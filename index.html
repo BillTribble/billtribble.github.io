@@ -150,6 +150,9 @@
                     if (repo.name.toLowerCase() === 'lifesim') {
                         description = 'An interactive 3D ecosystem simulation.';
                     }
+                    if (repo.name.toLowerCase() === 'prismata-ui' || repo.name.toLowerCase() === 'prismata') {
+                        description = 'Visualising LLM structure';
+                    }
 
                     card.innerHTML = `
                         <span class="repo-name">📁 ${repo.name}</span>
