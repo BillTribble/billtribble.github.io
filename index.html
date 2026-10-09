@@ -131,6 +131,14 @@
                     return !isProfileRepo && !isPrismaAudio && !isAppleNotesLiberator && !isBilltribbleStatic && (!repo.fork || isPrismataUI);
                 });
 
+                // Resilient fallback: ensure Enso-Soundscapes appears even before GitHub API index catches up
+                if (!filteredRepos.some(repo => repo.name.toLowerCase() === 'enso-soundscapes')) {
+                    filteredRepos.unshift({
+                        name: 'Enso-Soundscapes',
+                        description: 'Generative ambient soundscapes and probabilistic tape-loop studio.'
+                    });
+                }
+
                 if (filteredRepos.length === 0) {
                     container.innerHTML = '<div class="loading">No public repositories found.</div>';
                     return;
@@ -152,6 +160,9 @@
                     }
                     if (repo.name.toLowerCase() === 'prismata-ui' || repo.name.toLowerCase() === 'prismata') {
                         description = 'Visualising LLM structure';
+                    }
+                    if (repo.name.toLowerCase() === 'enso-soundscapes') {
+                        description = 'Generative ambient soundscapes and probabilistic tape-loop studio.';
                     }
 
                     card.innerHTML = `
