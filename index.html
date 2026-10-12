@@ -128,7 +128,8 @@
                     const isPrismataUI = repo.name.toLowerCase() === 'prismata-ui';
                     const isAppleNotesLiberator = repo.name.toLowerCase() === 'apple-notes-liberator';
                     const isBilltribbleStatic = repo.name.toLowerCase() === 'billtribble-static';
-                    return !isProfileRepo && !isPrismaAudio && !isAppleNotesLiberator && !isBilltribbleStatic && (!repo.fork || isPrismataUI);
+                    const isAwakeIn = repo.name.toLowerCase() === 'awake-in';
+                    return !isProfileRepo && !isPrismaAudio && !isAppleNotesLiberator && !isBilltribbleStatic && !isAwakeIn && (!repo.fork || isPrismataUI);
                 });
 
                 // Resilient fallback: ensure Enso-Soundscapes appears even before GitHub API index catches up
