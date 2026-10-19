@@ -58,8 +58,8 @@ const GEOM_KEYS = [
 /** @type {import('../../kit/types').Sketch} */
 export default function create({ canvas, P, model, degrade }) {
   const gl = canvas.getContext('webgl2', {
-    alpha: false, antialias: false, depth: false, stencil: true,
-    premultipliedAlpha: false, preserveDrawingBuffer: false, powerPreference: 'high-performance',
+    alpha: true, antialias: false, depth: false, stencil: true,
+    premultipliedAlpha: true, preserveDrawingBuffer: true, powerPreference: 'high-performance',
   });
   if (!gl) throw new Error('WebGL2 is not available in this browser.');
 
@@ -437,15 +437,17 @@ export default function create({ canvas, P, model, degrade }) {
     // never drifts downward while growing, and scale against the larger of viewBox and box
     // so it fits comfortably between the top header and bottom specimen caption.
     const isMobileSlot = cssH < 360;
-    const topPad = isMobileSlot ? 8 : 54;
-    const botPad = isMobileSlot ? 32 : 56;
-    const availW = Math.max(80, cssW * 1.08);
+    const topPad = isMobileSlot ? Math.max(10, cssH * 0.10) : Math.max(54, cssH * 0.14);
+    const botPad = isMobileSlot ? Math.max(30, cssH * 0.18) : Math.max(64, cssH * 0.18);
+    const availW = Math.max(80, cssW * 0.72);
     const availH = Math.max(80, cssH - topPad - botPad);
     const curW = Math.max(box[3] - box[1], 0.25);
     const curH = Math.max(box[2] - box[0], 0.25);
-    const targetW = Math.max(viewBox[3] - viewBox[1], curW, 0.45);
-    const targetH = Math.max(viewBox[2] - viewBox[0], curH, 0.45);
-    const sc = (P.scale ? P.scale.value : 1.0) * Math.min(availW / targetW, availH / targetH);
+    const bw = Math.max(viewBox[3] - viewBox[1], curW, 0.45);
+    const bh = Math.max(viewBox[2] - viewBox[0], curH, 0.45);
+    const targetW = Math.max(bw, bh * 0.55);
+    const targetH = bh;
+    const sc = (P.scale ? P.scale.value : 0.82) * Math.min(availW / targetW, availH / targetH);
     const cx = (box[0] + box[2]) / 2, cy = (box[1] + box[3]) / 2;
     const centerY = topPad + availH / 2;
     // Sway + 3D rotation: the whole sprig rocks gently about its base, each leaf about its node.
@@ -608,11 +610,18 @@ export default function create({ canvas, P, model, degrade }) {
       let snappedNow = false;
       if (morphPending >= 0) {
         if (morphPending === 0) {
-          for (let i = 0; i < eased.length; i++) eased[i].value = eased[i].target();
+          for (let i = 0; i < eased.length; i++) {
+            const tVal = eased[i].target();
+            eased[i].value = tVal;
+            eased[i].from = tVal;
+            eased[i].to = tVal;
+            eased[i].hold = -1;
+          }
           for (let b = 0; b < blendList.length; b++) {
-            const { p, w } = blendList[b];
+            const { p, w, from } = blendList[b];
             w.fill(0);
             w[p.options.indexOf(p.value)] = 1;
+            from.set(w);
           }
           leafGrow = 1;
           DIP.fill(1);
@@ -620,6 +629,8 @@ export default function create({ canvas, P, model, degrade }) {
           easedInit = true;
           rebuild();
           viewBox.set(box);
+          viewFrom.set(box);
+          viewTo.set(box);
           viewInit = true;
           snappedNow = true;
           needsDraw = true;
@@ -695,10 +706,10 @@ export default function create({ canvas, P, model, degrade }) {
       fView[0] = cssW; fView[1] = cssH;
       gl.bindFramebuffer(gl.FRAMEBUFFER, null);
       gl.viewport(0, 0, canvas.width, canvas.height);
-      // 1. Background.
-      use(progBg);
-      gl.bindVertexArray(vaoFull);
-      gl.drawArrays(gl.TRIANGLES, 0, 3);
+      // 1. Clear to transparent so the full-viewport #paper-backdrop shows seamlessly behind.
+      gl.stencilMask(0xff);
+      gl.clearColor(0, 0, 0, 0);
+      gl.clear(gl.COLOR_BUFFER_BIT | gl.STENCIL_BUFFER_BIT);
       // 2. The leaf (stem first).
       gl.enable(gl.BLEND);
       gl.blendFunc(gl.ONE, gl.ONE_MINUS_SRC_ALPHA);

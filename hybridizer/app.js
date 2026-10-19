@@ -118,7 +118,7 @@ function makePresetSpecimen(name, seedVal) {
   const baseVals = { ...(pool[name] || presets[name]) };
   baseVals.biomeMode = biome.biomeMode;
   baseVals.seed = seedVal;
-  baseVals.scale = 1.0;
+  baseVals.scale = 0.82;
   baseVals.sway = biome.id === 'alien' ? 0.24 : 0.14;
   baseVals.swaySpeed = biome.id === 'alien' ? 0.075 : 0.045;
   baseVals.presetLabel = false;
@@ -172,7 +172,7 @@ function createHybridSpecimen(specA, specB, generation, seedVal) {
   const leafDonorName = leafFromA ? specA.shortName : specB.shortName;
   const stemDonorName = leafFromA ? specB.shortName : specA.shortName;
 
-  const H = { ...stemDonor, scale: 1.0 };
+  const H = { ...stemDonor, scale: 0.82 };
 
   // 1. Copy primary leaf blade architecture from leafDonor
   for (const k of LEAF_BLADE_KEYS) {
@@ -601,15 +601,30 @@ function createSlot(index, createSketchFn, slotEl) {
   /**
    * Snap immediately to full adult `specimen` (used when Left slot receives the shifted Middle hybrid).
    */
-  function snapAdult(specimen, roleText, sceneTime, realTime) {
+  function snapAdult(specimen, roleText, sceneTime, realTime, fromSlot = null) {
     currentSpecimen = specimen;
     setLabels(specimen, roleText);
+    if (fromSlot && typeof fromSlot.getRotation === 'function') {
+      const r = fromSlot.getRotation();
+      rotY = r.rotY;
+      rotX = r.rotX;
+      velY = r.velY;
+      velX = r.velX;
+    }
+    if (instance.setRotation3D) {
+      instance.setRotation3D(rotY, rotX);
+    }
+    const degY = Math.sin(rotY) * 20;
+    const degX = (rotX * 180 / Math.PI);
+    canvas.style.transform = `perspective(900px) rotateY(${degY.toFixed(2)}deg) rotateX(${degX.toFixed(2)}deg)`;
+    canvas.style.transformOrigin = 'center 50%';
     store.applyValues(specimen.values, 0, false, false);
     instance.morph(0, '');
     resizeIfNeeded();
     instance.frame(sceneTime, 0.016, realTime, 0.016);
+    slotEl.style.zIndex = '';
     stageEl.style.transition = 'none';
-    stageEl.style.transform = 'translate3d(0, 0, 0)';
+    stageEl.style.transform = 'none';
     stageEl.style.opacity = '1';
     slotEl.dataset.active = 'true';
   }
@@ -620,12 +635,13 @@ function createSlot(index, createSketchFn, slotEl) {
   function clearSlot(immediate = false) {
     currentSpecimen = null;
     slotEl.dataset.active = 'false';
+    slotEl.style.zIndex = '';
     if (immediate) {
       stageEl.style.transition = 'none';
-      stageEl.style.transform = 'translate3d(0, 0, 0)';
+      stageEl.style.transform = 'none';
       stageEl.style.opacity = '0';
     } else {
-      stageEl.style.transition = 'opacity 650ms ease';
+      stageEl.style.transition = 'opacity 420ms ease';
       stageEl.style.opacity = '0';
     }
   }
@@ -665,6 +681,9 @@ function createSlot(index, createSketchFn, slotEl) {
     instance,
     get specimen() {
       return currentSpecimen;
+    },
+    getRotation() {
+      return { rotY, rotX, velY, velX };
     },
     startGrow,
     snapAdult,
@@ -760,16 +779,18 @@ export function boot() {
   }
 
   function enterShiftToLeft() {
-    // 1. Original parents on Left and Right disappear (fade out)
+    // 1. Original parents on Left and Right disappear (fade out), while Middle Hybrid stays at 100% opacity
     slotLeft.clearSlot(false);
     slotRight.clearSlot(false);
 
     // 2. Middle Hybrid moves smoothly to the Left slot (supports horizontal & mobile flex)
     const rectLeft = slotLeft.slotEl.getBoundingClientRect();
     const rectMid = slotMid.slotEl.getBoundingClientRect();
-    const dx = rectLeft.left - rectMid.left;
-    const dy = rectLeft.top - rectMid.top;
-    slotMid.stageEl.style.transition = `transform ${SHIFT_LEFT_SECS}s cubic-bezier(0.22, 1, 0.36, 1), opacity 300ms ease`;
+    const dx = (rectLeft.left + rectLeft.width / 2) - (rectMid.left + rectMid.width / 2);
+    const dy = (rectLeft.top + rectLeft.height / 2) - (rectMid.top + rectMid.height / 2);
+    slotMid.slotEl.style.zIndex = '2';
+    slotMid.stageEl.style.opacity = '1';
+    slotMid.stageEl.style.transition = `transform ${SHIFT_LEFT_SECS}s cubic-bezier(0.22, 1, 0.36, 1)`;
     slotMid.stageEl.style.transform = `translate3d(${dx}px, ${dy}px, 0)`;
 
     setPhase('SHIFT_TO_LEFT', SHIFT_LEFT_SECS);
@@ -777,10 +798,10 @@ export function boot() {
 
   function enterGrowNewRight() {
     // Handoff: Middle hybrid is now at the Left slot's exact position.
-    // Snap Left slot to the Hybrid specimen, and clear Middle slot back to center.
+    // Snap Left slot to the Hybrid specimen at 100% maturity and matching 3D rotation, and clear Middle slot back to center.
     leftSpec = midSpec;
     midSpec = null;
-    slotLeft.snapAdult(leftSpec, `${leftSpec.shortName} · Parent A`, sceneTime, realTime);
+    slotLeft.snapAdult(leftSpec, `${leftSpec.shortName} · Parent A`, sceneTime, realTime, slotMid);
     slotMid.clearSlot(true);
 
     // Pick a new random species for the Right slot and grow it
