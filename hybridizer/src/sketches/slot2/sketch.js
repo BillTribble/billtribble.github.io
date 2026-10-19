@@ -437,15 +437,15 @@ export default function create({ canvas, P, model, degrade }) {
     // never drifts downward while growing, and scale against the larger of viewBox and box
     // so it fits comfortably between the top header and bottom specimen caption.
     const isMobileSlot = cssH < 360;
-    const topPad = isMobileSlot ? 28 : 64;
-    const botPad = isMobileSlot ? 52 : 96;
-    const availW = Math.max(80, cssW * 0.78);
+    const topPad = isMobileSlot ? 8 : 54;
+    const botPad = isMobileSlot ? 32 : 56;
+    const availW = Math.max(80, cssW * 1.08);
     const availH = Math.max(80, cssH - topPad - botPad);
     const curW = Math.max(box[3] - box[1], 0.25);
     const curH = Math.max(box[2] - box[0], 0.25);
     const targetW = Math.max(viewBox[3] - viewBox[1], curW, 0.45);
     const targetH = Math.max(viewBox[2] - viewBox[0], curH, 0.45);
-    const sc = (P.scale ? P.scale.value : 0.8) * Math.min(availW / targetW, availH / targetH);
+    const sc = (P.scale ? P.scale.value : 1.0) * Math.min(availW / targetW, availH / targetH);
     const cx = (box[0] + box[2]) / 2, cy = (box[1] + box[3]) / 2;
     const centerY = topPad + availH / 2;
     // Sway + 3D rotation: the whole sprig rocks gently about its base, each leaf about its node.

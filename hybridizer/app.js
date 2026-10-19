@@ -17,11 +17,11 @@ let currentBiomeKey = (() => {
     const q = new URLSearchParams(window.location.search).get('biome')?.toLowerCase();
     if (q && BIOMES[q]) return q;
   } catch (_) {}
-  return 'original';
+  return 'tropical';
 })();
 
 function getActiveBiome() {
-  return BIOMES[currentBiomeKey] || BIOMES.original;
+  return BIOMES[currentBiomeKey] || BIOMES.tropical;
 }
 
 // Turn 'Oak, English' -> 'English oak', "Cherry, Japanese 'Kanzan'" -> "Japanese cherry 'Kanzan'"
@@ -118,7 +118,7 @@ function makePresetSpecimen(name, seedVal) {
   const baseVals = { ...(pool[name] || presets[name]) };
   baseVals.biomeMode = biome.biomeMode;
   baseVals.seed = seedVal;
-  baseVals.scale = 0.88;
+  baseVals.scale = 1.0;
   baseVals.sway = biome.id === 'alien' ? 0.24 : 0.14;
   baseVals.swaySpeed = biome.id === 'alien' ? 0.075 : 0.045;
   baseVals.presetLabel = false;
@@ -172,7 +172,7 @@ function createHybridSpecimen(specA, specB, generation, seedVal) {
   const leafDonorName = leafFromA ? specA.shortName : specB.shortName;
   const stemDonorName = leafFromA ? specB.shortName : specA.shortName;
 
-  const H = { ...stemDonor, scale: 0.76 };
+  const H = { ...stemDonor, scale: 1.0 };
 
   // 1. Copy primary leaf blade architecture from leafDonor
   for (const k of LEAF_BLADE_KEYS) {
@@ -694,8 +694,7 @@ export function boot() {
   const statusPhaseEl = document.getElementById('cycle-phase');
   const statusGenEl = document.getElementById('cycle-gen');
   const statusTimerEl = document.getElementById('cycle-timer');
-  const settingsBtn = document.getElementById('settings-btn') || document.getElementById('btn-settings');
-  const settingsPanel = document.getElementById('settings-panel');
+  const biomeToggle = document.getElementById('biome-toggle');
   const infoBtn = document.getElementById('btn-info') || document.getElementById('info-btn');
   const infoPanel = document.getElementById('info-panel');
   const playBtn = document.getElementById('play-btn') || document.getElementById('btn-pause');
@@ -809,9 +808,7 @@ export function boot() {
 
   function updateHud() {
     if (statusGenEl) {
-      const b = getActiveBiome();
-      const bPrefix = b.id === 'original' ? '' : `${b.shortLabel} · `;
-      statusGenEl.textContent = `${bPrefix}Generation ${roman(generation)}`;
+      statusGenEl.textContent = `Generation ${roman(generation)}`;
     }
     if (statusPhaseEl) {
       const labels = {
@@ -850,8 +847,8 @@ export function boot() {
     if (!BIOMES[biomeKey]) return;
     currentBiomeKey = biomeKey;
     recentPresets.length = 0;
-    if (settingsPanel) {
-      for (const btn of settingsPanel.querySelectorAll('.biome-option[data-biome]')) {
+    if (biomeToggle) {
+      for (const btn of biomeToggle.querySelectorAll('[data-biome]')) {
         btn.setAttribute('aria-checked', String(btn.dataset.biome === currentBiomeKey));
       }
     }
@@ -859,8 +856,8 @@ export function boot() {
   }
 
   // Sync initial biome radio state
-  if (settingsPanel) {
-    for (const btn of settingsPanel.querySelectorAll('.biome-option[data-biome]')) {
+  if (biomeToggle) {
+    for (const btn of biomeToggle.querySelectorAll('[data-biome]')) {
       btn.setAttribute('aria-checked', String(btn.dataset.biome === currentBiomeKey));
       btn.addEventListener('click', (e) => {
         e.stopPropagation();
@@ -878,26 +875,11 @@ export function boot() {
     infoPanel.hidden = !open;
     infoBtn.setAttribute('aria-expanded', String(open));
   };
-  const setSettingsOpen = (open) => {
-    if (!settingsPanel || !settingsBtn) return;
-    settingsPanel.hidden = !open;
-    settingsBtn.setAttribute('aria-expanded', String(open));
-  };
-
-  if (settingsBtn && settingsPanel) {
-    settingsBtn.addEventListener('click', (e) => {
-      e.stopPropagation();
-      const willOpen = settingsPanel.hidden;
-      if (willOpen) setInfoOpen(false);
-      setSettingsOpen(willOpen);
-    });
-  }
 
   if (infoBtn && infoPanel) {
     infoBtn.addEventListener('click', (e) => {
       e.stopPropagation();
       const willOpen = infoPanel.hidden;
-      if (willOpen) setSettingsOpen(false);
       setInfoOpen(willOpen);
     });
   }
@@ -906,14 +888,10 @@ export function boot() {
     if (infoPanel && !infoPanel.hidden && !infoPanel.contains(e.target) && e.target !== infoBtn) {
       setInfoOpen(false);
     }
-    if (settingsPanel && !settingsPanel.hidden && !settingsPanel.contains(e.target) && e.target !== settingsBtn) {
-      setSettingsOpen(false);
-    }
   });
   document.addEventListener('keydown', (e) => {
     if (e.key === 'Escape') {
       if (infoPanel && !infoPanel.hidden) setInfoOpen(false);
-      if (settingsPanel && !settingsPanel.hidden) setSettingsOpen(false);
     }
   });
 
