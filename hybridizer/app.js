@@ -10,11 +10,19 @@ import createSketch2 from './src/sketches/slot2/sketch.js';
 import { createModel } from './src/kit/params.js';
 import { rng } from './src/kit/random.js';
 import { FULLSCREEN_VERT, paramDecls, program, shaderParams, uploadParams } from './src/kit/gl.js';
+import { BIOMES } from './biomes.js';
 
-// Curated showcase species + all 44 presets from Jack's params.js.
-// For the very first cross on page load, we pick from visually iconic, distinct pairs (or random)
-// so every run immediately showcases unmistakable botanical characteristics.
-const ALL_PRESET_NAMES = Object.keys(presets);
+let currentBiomeKey = (() => {
+  try {
+    const q = new URLSearchParams(window.location.search).get('biome')?.toLowerCase();
+    if (q && BIOMES[q]) return q;
+  } catch (_) {}
+  return 'original';
+})();
+
+function getActiveBiome() {
+  return BIOMES[currentBiomeKey] || BIOMES.original;
+}
 
 // Turn 'Oak, English' -> 'English oak', "Cherry, Japanese 'Kanzan'" -> "Japanese cherry 'Kanzan'"
 export function spokenName(name) {
@@ -102,14 +110,17 @@ function roman(n) {
 }
 
 /**
- * Create a specimen descriptor from a preset name in Jack's params.js.
+ * Create a specimen descriptor from a preset name in the active biome.
  */
 function makePresetSpecimen(name, seedVal) {
-  const baseVals = { ...presets[name] };
+  const biome = getActiveBiome();
+  const pool = biome.presets;
+  const baseVals = { ...(pool[name] || presets[name]) };
+  baseVals.biomeMode = biome.biomeMode;
   baseVals.seed = seedVal;
   baseVals.scale = 0.88;
-  baseVals.sway = 0.14;
-  baseVals.swaySpeed = 0.045;
+  baseVals.sway = biome.id === 'alien' ? 0.24 : 0.14;
+  baseVals.swaySpeed = biome.id === 'alien' ? 0.075 : 0.045;
   baseVals.presetLabel = false;
   const sp = spokenName(name);
   return {
@@ -314,11 +325,20 @@ function createHybridSpecimen(specA, specB, generation, seedVal) {
   H.stemWash = mixHex(stemDonor.stemWash, leafDonor.stemWash, 0.35);
   H.budColour = mixHex(stemDonor.budColour, leafDonor.budColour, 0.35);
   H.budShade = mixHex(stemDonor.budShade, leafDonor.budShade, 0.35);
+  if (leafDonor.accentColour || stemDonor.accentColour) {
+    H.accentColour = mixHex(leafDonor.accentColour || '#ff2a85', stemDonor.accentColour || '#00f5d4', 0.45);
+  }
+  if (leafDonor.stomataColour || stemDonor.stomataColour) {
+    H.stomataColour = mixHex(leafDonor.stomataColour || '#e6ece6', stemDonor.stomataColour || '#e6ece6', 0.45);
+  }
+  H.biomeMode = getActiveBiome().biomeMode;
+  H.washDensity = Number(lerpNum(leafDonor.washDensity ?? 0.78, stemDonor.washDensity ?? 0.78, 0.5).toFixed(2));
+  H.bloom = Number(lerpNum(leafDonor.bloom ?? 0.5, stemDonor.bloom ?? 0.5, 0.5).toFixed(2));
 
   H.seed = seedVal;
   
-  H.sway = 0.14;
-  H.swaySpeed = 0.045;
+  H.sway = getActiveBiome().id === 'alien' ? 0.24 : 0.14;
+  H.swaySpeed = getActiveBiome().id === 'alien' ? 0.075 : 0.045;
   H.presetLabel = false;
 
   const genTag = `Hybrid ${roman(generation)}`;
@@ -674,6 +694,8 @@ export function boot() {
   const statusPhaseEl = document.getElementById('cycle-phase');
   const statusGenEl = document.getElementById('cycle-gen');
   const statusTimerEl = document.getElementById('cycle-timer');
+  const settingsBtn = document.getElementById('settings-btn') || document.getElementById('btn-settings');
+  const settingsPanel = document.getElementById('settings-panel');
   const infoBtn = document.getElementById('btn-info') || document.getElementById('info-btn');
   const infoPanel = document.getElementById('info-panel');
   const playBtn = document.getElementById('play-btn') || document.getElementById('btn-pause');
@@ -687,9 +709,10 @@ export function boot() {
   const recentPresets = [];
 
   function pickRandomPreset(excludeNames = []) {
+    const names = Object.keys(getActiveBiome().presets);
     const banned = new Set([...excludeNames, ...recentPresets]);
-    let pool = ALL_PRESET_NAMES.filter((n) => !banned.has(n));
-    if (pool.length === 0) pool = ALL_PRESET_NAMES.filter((n) => !excludeNames.includes(n));
+    let pool = names.filter((n) => !banned.has(n));
+    if (pool.length === 0) pool = names.filter((n) => !excludeNames.includes(n));
     const pick = pool[Math.floor(Math.random() * pool.length)];
     recentPresets.push(pick);
     if (recentPresets.length > 8) recentPresets.shift();
@@ -786,7 +809,9 @@ export function boot() {
 
   function updateHud() {
     if (statusGenEl) {
-      statusGenEl.textContent = `Generation ${roman(generation)}`;
+      const b = getActiveBiome();
+      const bPrefix = b.id === 'original' ? '' : `${b.shortLabel} · `;
+      statusGenEl.textContent = `${bPrefix}Generation ${roman(generation)}`;
     }
     if (statusPhaseEl) {
       const labels = {
@@ -807,6 +832,9 @@ export function boot() {
       }
     }
     window.__sprigHybridState = {
+      biome: currentBiomeKey,
+      biomeLabel: getActiveBiome().label,
+      biomeCount: Object.keys(getActiveBiome().presets).length,
       generation,
       phase,
       phaseTime: Number(phaseTime.toFixed(2)),
@@ -818,25 +846,76 @@ export function boot() {
     };
   }
 
-  // Controls
-  if (infoBtn && infoPanel) {
-    const setInfoOpen = (open) => {
-      infoPanel.hidden = !open;
-      infoBtn.setAttribute('aria-expanded', String(open));
-    };
-    infoBtn.addEventListener('click', (e) => {
-      e.stopPropagation();
-      setInfoOpen(infoPanel.hidden);
-    });
-    document.addEventListener('click', (e) => {
-      if (!infoPanel.hidden && !infoPanel.contains(e.target) && e.target !== infoBtn) {
-        setInfoOpen(false);
+  function setBiome(biomeKey) {
+    if (!BIOMES[biomeKey]) return;
+    currentBiomeKey = biomeKey;
+    recentPresets.length = 0;
+    if (settingsPanel) {
+      for (const btn of settingsPanel.querySelectorAll('.biome-option[data-biome]')) {
+        btn.setAttribute('aria-checked', String(btn.dataset.biome === currentBiomeKey));
       }
-    });
-    document.addEventListener('keydown', (e) => {
-      if (e.key === 'Escape' && !infoPanel.hidden) setInfoOpen(false);
+    }
+    enterInitialParents();
+  }
+
+  // Sync initial biome radio state
+  if (settingsPanel) {
+    for (const btn of settingsPanel.querySelectorAll('.biome-option[data-biome]')) {
+      btn.setAttribute('aria-checked', String(btn.dataset.biome === currentBiomeKey));
+      btn.addEventListener('click', (e) => {
+        e.stopPropagation();
+        const b = btn.dataset.biome;
+        if (b && b !== currentBiomeKey) {
+          setBiome(b);
+        }
+      });
+    }
+  }
+
+  // Controls
+  const setInfoOpen = (open) => {
+    if (!infoPanel || !infoBtn) return;
+    infoPanel.hidden = !open;
+    infoBtn.setAttribute('aria-expanded', String(open));
+  };
+  const setSettingsOpen = (open) => {
+    if (!settingsPanel || !settingsBtn) return;
+    settingsPanel.hidden = !open;
+    settingsBtn.setAttribute('aria-expanded', String(open));
+  };
+
+  if (settingsBtn && settingsPanel) {
+    settingsBtn.addEventListener('click', (e) => {
+      e.stopPropagation();
+      const willOpen = settingsPanel.hidden;
+      if (willOpen) setInfoOpen(false);
+      setSettingsOpen(willOpen);
     });
   }
+
+  if (infoBtn && infoPanel) {
+    infoBtn.addEventListener('click', (e) => {
+      e.stopPropagation();
+      const willOpen = infoPanel.hidden;
+      if (willOpen) setSettingsOpen(false);
+      setInfoOpen(willOpen);
+    });
+  }
+
+  document.addEventListener('click', (e) => {
+    if (infoPanel && !infoPanel.hidden && !infoPanel.contains(e.target) && e.target !== infoBtn) {
+      setInfoOpen(false);
+    }
+    if (settingsPanel && !settingsPanel.hidden && !settingsPanel.contains(e.target) && e.target !== settingsBtn) {
+      setSettingsOpen(false);
+    }
+  });
+  document.addEventListener('keydown', (e) => {
+    if (e.key === 'Escape') {
+      if (infoPanel && !infoPanel.hidden) setInfoOpen(false);
+      if (settingsPanel && !settingsPanel.hidden) setSettingsOpen(false);
+    }
+  });
 
   if (playBtn) {
     playBtn.addEventListener('click', () => {
@@ -872,6 +951,9 @@ export function boot() {
     },
     nextPhase() {
       nextBtn?.click();
+    },
+    setBiome(b) {
+      setBiome(b);
     },
     get slots() {
       return slots;

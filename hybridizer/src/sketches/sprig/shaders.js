@@ -174,6 +174,35 @@ void main() {
         : v_kind == 10 ? u_flowerCentre * mix(1.0, 0.55, shaded * u_halfShade)
         : v_kind == 11 ? mix(u_bractColour, u_leafShade, shaded * u_halfShade * 0.4)
         : mix(u_leafWash, u_leafShade, shaded * u_halfShade);
+      if (u_biomeMode > 0.5 && u_biomeMode < 1.5) {
+        float tipGrad = smoothstep(0.12, 0.92, v_bl.y);
+        float edgeGrad = smoothstep(0.25, 0.95, a);
+        if (v_kind == 9) {
+          vec3 throat = mix(pig, u_flowerCentre, (1.0 - smoothstep(0.0, 0.38, v_bl.y)) * 0.65);
+          pig = mix(throat, u_accentColour, tipGrad * 0.58 + edgeGrad * 0.25);
+        } else if (v_kind == 8 || v_kind == 14 || v_kind == 11) {
+          pig = mix(pig, u_accentColour, tipGrad * 0.45 + (1.0 - shaded) * 0.2);
+        } else if (v_kind == 0) {
+          pig = mix(pig, u_accentColour, (1.0 - smoothstep(0.0, 0.22, a)) * 0.18 + tipGrad * 0.12);
+        }
+      } else if (u_biomeMode >= 1.5) {
+        float wave1 = 0.5 + 0.5 * sin(v_bl.y * 10.0 - a * 6.5 + field(v_lp * 1.9, 3.0) * 5.5);
+        float wave2 = 0.5 + 0.5 * cos(length(v_pos) * 7.5 + a * 8.0 + field(v_lp * 2.4, 6.0) * 4.5);
+        float spots = smoothstep(0.32, 0.42, abs(field(v_lp * 5.2, 4.0)));
+        if (v_kind == 9 || v_kind == 10 || v_kind == 11) {
+          pig = mix(pig, u_accentColour, wave1 * 0.68);
+          pig = mix(pig, u_flowerCentre, wave2 * 0.42 + spots * 0.35);
+        } else if (v_kind == 8 || v_kind == 14 || v_kind == 12 || v_kind == 13) {
+          pig = mix(pig, u_accentColour, wave2 * 0.62);
+          pig = mix(pig, u_flowerCentre, spots * 0.48);
+        } else if (v_kind == 0) {
+          pig = mix(pig, u_accentColour, wave1 * 0.52);
+          pig = mix(pig, u_flowerColour, wave2 * 0.32);
+          pig = mix(pig, u_flowerCentre, spots * 0.38);
+        } else {
+          pig = mix(pig, u_accentColour, wave1 * 0.4);
+        }
+      }
       float d = u_washDensity;
       d *= 1.0 + u_bloom * field(v_lp * u_bloomScale / 6.0, 1.0) * 1.4;     // blooms
       d *= 1.0 + u_grain * grainAt() * 0.9;                                  // granulation
@@ -224,6 +253,11 @@ void main() {
         // midrib's base, the stalk's wash carrying on).
         alpha = clamp(inner - ax + 0.5, 0.0, 1.0);
         vec3 lifted = u_watercolour > 0.5 ? wash(paper, mix(u_leafWash, u_leafShade, 0.3), u_washDensity * (1.0 - u_veinLift)) : paper;
+        if (u_biomeMode >= 1.5 && u_watercolour > 0.5) {
+          lifted = mix(lifted, wash(paper, u_flowerCentre, 0.92), 0.65);
+        } else if (u_biomeMode > 0.5 && u_watercolour > 0.5) {
+          lifted = mix(lifted, wash(paper, u_accentColour, 0.75), 0.25);
+        }
         vec3 stalk = u_watercolour > 0.5 ? wash(paper, u_stemWash, 0.85 + u_grain * grainAt() * 0.5) : paper;
         col = mix(lifted, stalk, o2);
       } else if (u_pass > 0.5) {

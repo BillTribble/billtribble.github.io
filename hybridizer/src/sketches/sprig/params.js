@@ -249,6 +249,8 @@ const schema = [
       { key: 'grain', label: 'Grain', value: 0.37, min: 0, max: 1, step: 0.01, desc: 'The paper\'s grain: its texture, and where wash pigment settles into it.' },
       { key: 'grainScale', label: 'Grain scale', value: 4, min: 4, max: 120, step: 1, desc: 'Size of the paper grain, in CSS px.', when: { key: 'grain', not: [0] } },
       { key: 'paper', label: 'Paper', type: 'color', value: '#f3ead6', desc: 'Warm, creamy paper behind everything (and the page).' },
+      { key: 'biomeMode', label: 'Biome mode', value: 0, min: 0, max: 2, step: 1, desc: '0 = Original (European), 1 = Tropical, 2 = Alien.' },
+      { key: 'accentColour', label: 'Accent colour', type: 'color', value: '#ff2a85', desc: 'Secondary gradient/iridescent pigment for Tropical and Alien biomes.' },
     ],
   },
 ];

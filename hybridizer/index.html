@@ -117,12 +117,17 @@
       right: calc(max(16px, env(safe-area-inset-right)) + 88px);
     }
 
-    #info-btn[aria-expanded="true"], #btn-info[aria-expanded="true"] {
+    #settings-btn, #btn-settings {
+      right: calc(max(16px, env(safe-area-inset-right)) + 132px);
+    }
+
+    #info-btn[aria-expanded="true"], #btn-info[aria-expanded="true"],
+    #settings-btn[aria-expanded="true"], #btn-settings[aria-expanded="true"] {
       opacity: 0.92;
       background: rgba(0, 0, 0, 0.16);
     }
 
-    #info-panel {
+    #info-panel, #settings-panel {
       position: fixed;
       top: calc(max(14px, env(safe-area-inset-top)) + 44px);
       right: max(16px, env(safe-area-inset-right));
@@ -138,22 +143,61 @@
       backdrop-filter: blur(8px);
     }
 
-    #info-panel[hidden] {
+    #info-panel[hidden], #settings-panel[hidden] {
       display: none !important;
     }
 
-    #info-panel h2 {
+    #info-panel h2, #settings-panel h2 {
       font: italic 400 16px/1.25 var(--serif);
       margin: 0 0 6px 0;
     }
 
-    #info-panel p {
+    #info-panel p, #settings-panel p {
       margin: 0 0 10px 0;
       opacity: 0.82;
     }
 
-    #info-panel p:last-child {
+    #info-panel p:last-child, #settings-panel p:last-child {
       margin-bottom: 0;
+    }
+
+    .biome-toggle-group {
+      display: flex;
+      flex-direction: column;
+      gap: 6px;
+      margin-top: 8px;
+    }
+
+    .biome-option {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      width: 100%;
+      padding: 8px 12px;
+      border-radius: 8px;
+      border: 1px solid rgba(26, 22, 18, 0.14);
+      background: rgba(26, 22, 18, 0.03);
+      color: var(--ink);
+      font: normal 400 13.5px/1.25 var(--serif);
+      cursor: pointer;
+      text-align: left;
+      transition: background 0.18s ease, border-color 0.18s ease;
+    }
+
+    .biome-option:hover {
+      background: rgba(26, 22, 18, 0.08);
+    }
+
+    .biome-option[aria-checked="true"] {
+      background: rgba(26, 22, 18, 0.88);
+      color: #f3ead6;
+      border-color: rgba(26, 22, 18, 0.88);
+    }
+
+    .biome-option-sub {
+      font-style: italic;
+      font-size: 11.5px;
+      opacity: 0.72;
     }
 
     #info-panel a {
@@ -330,6 +374,13 @@
     <span id="cycle-timer"></span>
   </header>
 
+  <button id="settings-btn" class="disc" aria-label="Flora Settings" aria-expanded="false" aria-controls="settings-panel" title="Flora biome settings">
+    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+      <circle cx="12" cy="12" r="3.2" />
+      <path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 1 1-2.83 2.83l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 1 1-4 0v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 1 1-2.83-2.83l.06-.06a1.65 1.65 0 0 0 .33-1.82 1.65 1.65 0 0 0-1.51-1H3a2 2 0 1 1 0-4h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 1 1 2.83-2.83l.06.06a1.65 1.65 0 0 0 1.82.33H9a1.65 1.65 0 0 0 1-1.51V3a2 2 0 1 1 4 0v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 1 1 2.83 2.83l-.06.06a1.65 1.65 0 0 0-.33 1.82V9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 1 1 0 4h-.09a1.65 1.65 0 0 0-1.51 1z" />
+    </svg>
+  </button>
+
   <button id="btn-info" class="disc" aria-label="About Hybridizer" aria-expanded="false" aria-controls="info-panel" title="About &amp; credits">
     <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
       <circle cx="12" cy="12" r="9" />
@@ -354,6 +405,25 @@
       <line x1="19" y1="5" x2="19" y2="19" />
     </svg>
   </button>
+
+  <aside id="settings-panel" role="dialog" aria-label="Flora Biome Settings" hidden>
+    <h2>Flora Biome</h2>
+    <p>Choose a 44-species botanical pool for hybridization:</p>
+    <div class="biome-toggle-group" role="radiogroup" aria-label="Flora Biome">
+      <button type="button" class="biome-option" role="radio" data-biome="original" aria-checked="true">
+        <span>Original (European)</span>
+        <span class="biome-option-sub">44 trees &amp; shrubs</span>
+      </button>
+      <button type="button" class="biome-option" role="radio" data-biome="tropical" aria-checked="false">
+        <span>Tropical</span>
+        <span class="biome-option-sub">44 exotic flowers</span>
+      </button>
+      <button type="button" class="biome-option" role="radio" data-biome="alien" aria-checked="false">
+        <span>Alien</span>
+        <span class="biome-option-sub">44 xenobotanicals</span>
+      </button>
+    </div>
+  </aside>
 
   <aside id="info-panel" role="dialog" aria-label="About Hybridizer" hidden>
     <h2>Hybridizer</h2>
