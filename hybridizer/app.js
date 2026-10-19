@@ -658,7 +658,7 @@ function createSlot(index, createSketchFn, slotEl) {
 const GROW_PARENTS_SECS = 3.0;
 const GROW_RIGHT_SECS = 2.8;
 const GROW_HYBRID_SECS = 3.0;
-const PAUSE_HOLD_SECS = 5.0;
+const PAUSE_HOLD_SECS = 3.0;
 const SHIFT_LEFT_SECS = 1.15;
 
 export function boot() {
@@ -673,6 +673,8 @@ export function boot() {
   const statusPhaseEl = document.getElementById('cycle-phase');
   const statusGenEl = document.getElementById('cycle-gen');
   const statusTimerEl = document.getElementById('cycle-timer');
+  const infoBtn = document.getElementById('info-btn');
+  const infoPanel = document.getElementById('info-panel');
   const playBtn = document.getElementById('play-btn');
   const nextBtn = document.getElementById('next-btn');
 
@@ -789,7 +791,7 @@ export function boot() {
       const labels = {
         GROW_INITIAL_PARENTS: 'Growing Left & Right parents…',
         GROW_HYBRID: 'Combining parents → Growing Hybrid in middle…',
-        PAUSE_5S: 'Holding 5s before shifting Hybrid left…',
+        PAUSE_5S: 'Holding 3s before shifting Hybrid left…',
         SHIFT_TO_LEFT: 'Shifting Hybrid to left · Parents disappearing…',
         GROW_NEW_RIGHT: 'Emerging new random plant on right…',
       };
@@ -816,6 +818,25 @@ export function boot() {
   }
 
   // Controls
+  if (infoBtn && infoPanel) {
+    const setInfoOpen = (open) => {
+      infoPanel.hidden = !open;
+      infoBtn.setAttribute('aria-expanded', String(open));
+    };
+    infoBtn.addEventListener('click', (e) => {
+      e.stopPropagation();
+      setInfoOpen(infoPanel.hidden);
+    });
+    document.addEventListener('click', (e) => {
+      if (!infoPanel.hidden && !infoPanel.contains(e.target) && e.target !== infoBtn) {
+        setInfoOpen(false);
+      }
+    });
+    document.addEventListener('keydown', (e) => {
+      if (e.key === 'Escape' && !infoPanel.hidden) setInfoOpen(false);
+    });
+  }
+
   if (playBtn) {
     playBtn.addEventListener('click', () => {
       paused = !paused;

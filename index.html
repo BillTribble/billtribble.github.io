@@ -140,6 +140,15 @@
                     });
                 }
 
+                // Ensure Hybridizer appears at the top of the experiments list
+                if (!filteredRepos.some(repo => repo.name.toLowerCase() === 'hybridizer')) {
+                    filteredRepos.unshift({
+                        name: 'Hybridizer',
+                        slug: 'hybridizer/',
+                        description: 'Botanical 3D hybridization visualizer and procedural plant breeding study.'
+                    });
+                }
+
                 if (filteredRepos.length === 0) {
                     container.innerHTML = '<div class="loading">No public repositories found.</div>';
                     return;
@@ -149,13 +158,17 @@
                 filteredRepos.forEach(repo => {
                     const card = document.createElement('a');
                     
-                    card.href = `https://${GITHUB_USERNAME}.github.io/${repo.name}`;
+                    const targetPath = repo.slug || (repo.name.toLowerCase() === 'hybridizer' ? 'hybridizer/' : repo.name);
+                    card.href = `https://${GITHUB_USERNAME}.github.io/${targetPath}`;
                     
                     card.target = '_blank';
                     card.className = 'link-card';
 
                     // Use description if available, otherwise leave blank
                     let description = repo.description ? repo.description : '';
+                    if (repo.name.toLowerCase() === 'hybridizer') {
+                        description = 'Botanical 3D hybridization visualizer and procedural plant breeding study.';
+                    }
                     if (repo.name.toLowerCase() === 'lifesim') {
                         description = 'An interactive 3D ecosystem simulation.';
                     }
