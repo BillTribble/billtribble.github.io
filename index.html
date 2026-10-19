@@ -102,7 +102,26 @@
     </div>
 
     <div id="links-container" class="links-container">
-        <div class="loading">Loading repositories...</div>
+        <a href="https://BillTribble.github.io/hybridizer/" target="_blank" class="link-card">
+            <span class="repo-name">📁 Hybridizer</span>
+            <span class="repo-desc">Botanical 3D hybridization visualizer and procedural plant breeding study.</span>
+        </a>
+        <a href="https://BillTribble.github.io/Enso-Soundscapes" target="_blank" class="link-card">
+            <span class="repo-name">📁 Enso-Soundscapes</span>
+            <span class="repo-desc">Generative ambient soundscapes and probabilistic tape-loop studio.</span>
+        </a>
+        <a href="https://BillTribble.github.io/LifeSim" target="_blank" class="link-card">
+            <span class="repo-name">📁 LifeSim</span>
+            <span class="repo-desc">An interactive 3D ecosystem simulation.</span>
+        </a>
+        <a href="https://BillTribble.github.io/Sangha-Looper" target="_blank" class="link-card">
+            <span class="repo-name">📁 Sangha-Looper</span>
+            <span class="repo-desc">A multiplayer looper for musicians. Built for live performance.</span>
+        </a>
+        <a href="https://BillTribble.github.io/Prismata-UI" target="_blank" class="link-card">
+            <span class="repo-name">📁 Prismata-UI</span>
+            <span class="repo-desc">Visualising LLM structure</span>
+        </a>
     </div>
 
     <script>
@@ -123,12 +142,13 @@
 
                 // Filter out the profile pages repo itself if you don't want it listed
                 const filteredRepos = repos.filter(repo => {
-                    const isProfileRepo = repo.name.toLowerCase() === `${GITHUB_USERNAME}.github.io`.toLowerCase();
-                    const isPrismaAudio = repo.name.toLowerCase() === 'prisma-audio';
-                    const isPrismataUI = repo.name.toLowerCase() === 'prismata-ui';
-                    const isAppleNotesLiberator = repo.name.toLowerCase() === 'apple-notes-liberator';
-                    const isBilltribbleStatic = repo.name.toLowerCase() === 'billtribble-static';
-                    const isAwakeIn = repo.name.toLowerCase() === 'awake-in';
+                    const name = repo.name.toLowerCase();
+                    const isProfileRepo = name === `${GITHUB_USERNAME}.github.io`.toLowerCase() || name === GITHUB_USERNAME.toLowerCase();
+                    const isPrismaAudio = name === 'prisma-audio';
+                    const isPrismataUI = name === 'prismata-ui';
+                    const isAppleNotesLiberator = name === 'apple-notes-liberator';
+                    const isBilltribbleStatic = name === 'billtribble-static';
+                    const isAwakeIn = name === 'awake-in';
                     return !isProfileRepo && !isPrismaAudio && !isAppleNotesLiberator && !isBilltribbleStatic && !isAwakeIn && (!repo.fork || isPrismataUI);
                 });
 
@@ -140,14 +160,16 @@
                     });
                 }
 
-                // Ensure Hybridizer appears at the top of the experiments list
-                if (!filteredRepos.some(repo => repo.name.toLowerCase() === 'hybridizer')) {
-                    filteredRepos.unshift({
-                        name: 'Hybridizer',
-                        slug: 'hybridizer/',
-                        description: 'Botanical 3D hybridization visualizer and procedural plant breeding study.'
-                    });
+                // Ensure Hybridizer always appears at the top of the experiments list
+                const existingHybridizerIdx = filteredRepos.findIndex(repo => repo.name.toLowerCase() === 'hybridizer');
+                if (existingHybridizerIdx !== -1) {
+                    filteredRepos.splice(existingHybridizerIdx, 1);
                 }
+                filteredRepos.unshift({
+                    name: 'Hybridizer',
+                    slug: 'hybridizer/',
+                    description: 'Botanical 3D hybridization visualizer and procedural plant breeding study.'
+                });
 
                 if (filteredRepos.length === 0) {
                     container.innerHTML = '<div class="loading">No public repositories found.</div>';
@@ -189,7 +211,7 @@
 
             } catch (error) {
                 console.error(error);
-                container.innerHTML = '<div class="loading">Error loading repositories. Please try again later.</div>';
+                // Keep pre-rendered static project cards on API rate-limit or network error
             }
         }
 
