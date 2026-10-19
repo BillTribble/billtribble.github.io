@@ -697,8 +697,8 @@ function createSlot(index, createSketchFn, slotEl) {
 const GROW_PARENTS_SECS = 3.0;
 const GROW_RIGHT_SECS = 2.8;
 const GROW_HYBRID_SECS = 3.0;
-const HOLD_TIME = 3.0;
-const PAUSE_HOLD_SECS = HOLD_TIME;
+const HOLD_TIME = 1.0;
+const PAUSE_HOLD_SECS = 1.0;
 const SHIFT_LEFT_SECS = 1.15;
 
 export function boot() {
@@ -835,7 +835,7 @@ export function boot() {
       const labels = {
         GROW_INITIAL_PARENTS: 'Growing Left & Right parents…',
         GROW_HYBRID: 'Combining parents → Growing Hybrid in middle…',
-        PAUSE_5S: 'Holding 3s before shifting Hybrid left…',
+        PAUSE_5S: 'Holding 1s before shifting Hybrid left…',
         SHIFT_TO_LEFT: 'Shifting Hybrid to left · Parents disappearing…',
         GROW_NEW_RIGHT: 'Emerging new random plant on right…',
       };
