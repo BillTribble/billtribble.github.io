@@ -113,11 +113,11 @@
       right: calc(max(16px, env(safe-area-inset-right)) + 44px);
     }
 
-    #info-btn {
+    #info-btn, #btn-info {
       right: calc(max(16px, env(safe-area-inset-right)) + 88px);
     }
 
-    #info-btn[aria-expanded="true"] {
+    #info-btn[aria-expanded="true"], #btn-info[aria-expanded="true"] {
       opacity: 0.92;
       background: rgba(0, 0, 0, 0.16);
     }
@@ -330,7 +330,7 @@
     <span id="cycle-timer"></span>
   </header>
 
-  <button id="info-btn" class="disc" aria-label="About Hybridizer" aria-expanded="false" aria-controls="info-panel" title="About &amp; credits">
+  <button id="btn-info" class="disc" aria-label="About Hybridizer" aria-expanded="false" aria-controls="info-panel" title="About &amp; credits">
     <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
       <circle cx="12" cy="12" r="9" />
       <line x1="12" y1="10.8" x2="12" y2="16.2" />

@@ -658,7 +658,8 @@ function createSlot(index, createSketchFn, slotEl) {
 const GROW_PARENTS_SECS = 3.0;
 const GROW_RIGHT_SECS = 2.8;
 const GROW_HYBRID_SECS = 3.0;
-const PAUSE_HOLD_SECS = 3.0;
+const HOLD_TIME = 3.0;
+const PAUSE_HOLD_SECS = HOLD_TIME;
 const SHIFT_LEFT_SECS = 1.15;
 
 export function boot() {
@@ -673,9 +674,9 @@ export function boot() {
   const statusPhaseEl = document.getElementById('cycle-phase');
   const statusGenEl = document.getElementById('cycle-gen');
   const statusTimerEl = document.getElementById('cycle-timer');
-  const infoBtn = document.getElementById('info-btn');
+  const infoBtn = document.getElementById('btn-info') || document.getElementById('info-btn');
   const infoPanel = document.getElementById('info-panel');
-  const playBtn = document.getElementById('play-btn');
+  const playBtn = document.getElementById('play-btn') || document.getElementById('btn-pause');
   const nextBtn = document.getElementById('next-btn');
 
   let sceneTime = 0;
