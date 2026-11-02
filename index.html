@@ -3,7 +3,20 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>My GitHub Projects</title>
+    <title>Bill Tribble — GitHub Projects</title>
+    <meta name="description" content="Interactive WebGL visualizations, generative ambient soundscapes, and creative technology experiments by Bill Tribble.">
+    <meta property="og:type" content="website">
+    <meta property="og:title" content="Bill Tribble — GitHub Projects">
+    <meta property="og:description" content="Interactive WebGL visualizations, generative ambient soundscapes, and creative technology experiments by Bill Tribble.">
+    <meta property="og:url" content="https://billtribble.github.io/">
+    <meta property="og:image" content="https://billtribble.github.io/preview.png">
+    <meta property="og:image:type" content="image/png">
+    <meta property="og:image:width" content="1080">
+    <meta property="og:image:height" content="1080">
+    <meta name="twitter:card" content="summary_large_image">
+    <meta name="twitter:title" content="Bill Tribble — GitHub Projects">
+    <meta name="twitter:description" content="Interactive WebGL visualizations, generative ambient soundscapes, and creative technology experiments by Bill Tribble.">
+    <meta name="twitter:image" content="https://billtribble.github.io/preview.png">
     <style>
         :root {
             --bg-color: #121212;
@@ -102,6 +115,10 @@
     </div>
 
     <div id="links-container" class="links-container">
+        <a href="https://BillTribble.github.io/crystal-transformer/" target="_blank" class="link-card">
+            <span class="repo-name">📁 Crystal Transformer</span>
+            <span class="repo-desc">Interactive WebGL2 raymarched crystal cluster with procedural growth and Enso ambient soundscapes.</span>
+        </a>
         <a href="https://BillTribble.github.io/hybridizer/" target="_blank" class="link-card">
             <span class="repo-name">📁 Hybridizer</span>
             <span class="repo-desc">Botanical 3D hybridization visualizer and procedural plant breeding study.</span>
@@ -149,7 +166,8 @@
                     const isAppleNotesLiberator = name === 'apple-notes-liberator';
                     const isBilltribbleStatic = name === 'billtribble-static';
                     const isAwakeIn = name === 'awake-in';
-                    return !isProfileRepo && !isPrismaAudio && !isAppleNotesLiberator && !isBilltribbleStatic && !isAwakeIn && (!repo.fork || isPrismataUI);
+                    const isCrystalsRedirect = name === 'crystals';
+                    return !isProfileRepo && !isPrismaAudio && !isAppleNotesLiberator && !isBilltribbleStatic && !isAwakeIn && !isCrystalsRedirect && (!repo.fork || isPrismataUI);
                 });
 
                 // Resilient fallback: ensure Enso-Soundscapes appears even before GitHub API index catches up
