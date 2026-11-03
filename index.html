@@ -40,7 +40,7 @@
 
         .profile {
             width: 100%;
-            max-width: 500px;
+            max-width: 520px;
             text-align: left;
             margin-bottom: 30px;
             padding: 0 16px;
@@ -61,20 +61,52 @@
 
         .links-container {
             width: 100%;
-            max-width: 500px;
+            max-width: 520px;
             display: flex;
             flex-direction: column;
-            gap: 20px;
+            gap: 18px;
         }
 
         .link-card {
             color: var(--text-color);
             text-decoration: none;
             display: flex;
+            flex-direction: row;
+            align-items: center;
+            gap: 14px;
+            padding: 6px 16px;
+            border-radius: 12px;
+            box-sizing: border-box;
+            transition: background-color 0.2s ease;
+        }
+
+        .link-card:hover {
+            background-color: rgba(255, 255, 255, 0.035);
+        }
+
+        .repo-thumb {
+            width: 52px;
+            height: 52px;
+            min-width: 52px;
+            border-radius: 9px;
+            object-fit: cover;
+            display: block;
+            background-color: #1c1c1e;
+            border: 1px solid rgba(255, 255, 255, 0.14);
+            box-shadow: 0 2px 8px rgba(0, 0, 0, 0.35);
+            transition: transform 0.2s ease, border-color 0.2s ease;
+        }
+
+        .link-card:hover .repo-thumb {
+            transform: scale(1.04);
+            border-color: color-mix(in srgb, var(--color-primary) 55%, transparent);
+        }
+
+        .repo-info {
+            display: flex;
             flex-direction: column;
             gap: 4px;
-            padding: 4px 16px;
-            box-sizing: border-box;
+            min-width: 0;
         }
 
         .repo-name {
@@ -97,7 +129,7 @@
             font-size: 0.85rem;
             color: #aaa;
             font-weight: 400;
-            padding-left: 24px; /* Align with name (after folder icon) */
+            line-height: 1.38;
         }
 
         .loading {
@@ -116,69 +148,127 @@
 
     <div id="links-container" class="links-container">
         <a href="https://BillTribble.github.io/crystal-transformer/" target="_blank" class="link-card">
-            <span class="repo-name">📁 Crystal Transformer</span>
-            <span class="repo-desc">Interactive WebGL2 raymarched crystal cluster with procedural growth and Enso ambient soundscapes.</span>
+            <video class="repo-thumb" autoplay loop muted playsinline preload="auto" poster="thumbs/crystal-transformer.webp?v=3" width="52" height="52" aria-label="Crystal Transformer preview">
+                <source src="thumbs/crystal-transformer.webm?v=3" type="video/webm">
+                <source src="thumbs/crystal-transformer.mp4?v=3" type="video/mp4">
+                <img class="repo-thumb" src="thumbs/crystal-transformer.gif?v=3" alt="Crystal Transformer preview">
+            </video>
+            <div class="repo-info">
+                <span class="repo-name">Crystal Transformer</span>
+                <span class="repo-desc">Ray traced crystal experiment with procedural growth and generative ambient soundtrack.</span>
+            </div>
         </a>
         <a href="https://BillTribble.github.io/hybridizer/" target="_blank" class="link-card">
-            <span class="repo-name">📁 Hybridizer</span>
-            <span class="repo-desc">Botanical 3D hybridization visualizer and procedural plant breeding study.</span>
+            <video class="repo-thumb" autoplay loop muted playsinline preload="auto" poster="thumbs/hybridizer.webp?v=3" width="52" height="52" aria-label="Hybridizer preview">
+                <source src="thumbs/hybridizer.webm?v=3" type="video/webm">
+                <source src="thumbs/hybridizer.mp4?v=3" type="video/mp4">
+                <img class="repo-thumb" src="thumbs/hybridizer.gif?v=3" alt="Hybridizer preview">
+            </video>
+            <div class="repo-info">
+                <span class="repo-name">Hybridizer</span>
+                <span class="repo-desc">Botanical hybridisation and procedural plant breeding study</span>
+            </div>
         </a>
         <a href="https://BillTribble.github.io/Enso-Soundscapes" target="_blank" class="link-card">
-            <span class="repo-name">📁 Enso-Soundscapes</span>
-            <span class="repo-desc">Generative ambient soundscapes and probabilistic tape-loop studio.</span>
+            <video class="repo-thumb" autoplay loop muted playsinline preload="auto" poster="thumbs/enso-soundscapes.webp?v=3" width="52" height="52" aria-label="Enso-Soundscapes preview">
+                <source src="thumbs/enso-soundscapes.webm?v=3" type="video/webm">
+                <source src="thumbs/enso-soundscapes.mp4?v=3" type="video/mp4">
+                <img class="repo-thumb" src="thumbs/enso-soundscapes.gif?v=3" alt="Enso-Soundscapes preview">
+            </video>
+            <div class="repo-info">
+                <span class="repo-name">Enso-Soundscapes</span>
+                <span class="repo-desc">Generative ambient soundscapes and probabilistic tape-loop studio.</span>
+            </div>
         </a>
         <a href="https://BillTribble.github.io/LifeSim" target="_blank" class="link-card">
-            <span class="repo-name">📁 LifeSim</span>
-            <span class="repo-desc">An interactive 3D ecosystem simulation.</span>
+            <video class="repo-thumb" autoplay loop muted playsinline preload="auto" poster="thumbs/lifesim.webp?v=3" width="52" height="52" aria-label="LifeSim preview">
+                <source src="thumbs/lifesim.webm?v=3" type="video/webm">
+                <source src="thumbs/lifesim.mp4?v=3" type="video/mp4">
+                <img class="repo-thumb" src="thumbs/lifesim.gif?v=3" alt="LifeSim preview">
+            </video>
+            <div class="repo-info">
+                <span class="repo-name">LifeSim</span>
+                <span class="repo-desc">An interactive 3D ecosystem simulation.</span>
+            </div>
         </a>
         <a href="https://BillTribble.github.io/Sangha-Looper" target="_blank" class="link-card">
-            <span class="repo-name">📁 Sangha-Looper</span>
-            <span class="repo-desc">A multiplayer looper for musicians. Built for live performance.</span>
+            <video class="repo-thumb" autoplay loop muted playsinline preload="auto" poster="thumbs/sangha-looper.webp?v=3" width="52" height="52" aria-label="Sangha-Looper preview">
+                <source src="thumbs/sangha-looper.webm?v=3" type="video/webm">
+                <source src="thumbs/sangha-looper.mp4?v=3" type="video/mp4">
+                <img class="repo-thumb" src="thumbs/sangha-looper.gif?v=3" alt="Sangha-Looper preview">
+            </video>
+            <div class="repo-info">
+                <span class="repo-name">Sangha-Looper</span>
+                <span class="repo-desc">A multiplayer looper for musicians. Built for live performance.</span>
+            </div>
         </a>
         <a href="https://BillTribble.github.io/Prismata-UI" target="_blank" class="link-card">
-            <span class="repo-name">📁 Prismata-UI</span>
-            <span class="repo-desc">Visualising LLM structure</span>
+            <video class="repo-thumb" autoplay loop muted playsinline preload="auto" poster="thumbs/prismata-ui.webp?v=3" width="52" height="52" aria-label="Prismata-UI preview">
+                <source src="thumbs/prismata-ui.webm?v=3" type="video/webm">
+                <source src="thumbs/prismata-ui.mp4?v=3" type="video/mp4">
+                <img class="repo-thumb" src="thumbs/prismata-ui.gif?v=3" alt="Prismata-UI preview">
+            </video>
+            <div class="repo-info">
+                <span class="repo-name">Prismata-UI</span>
+                <span class="repo-desc">Visualising LLM structure</span>
+            </div>
         </a>
     </div>
 
     <script>
-        // 1. CHANGE THIS TO YOUR EXACT GITHUB USERNAME
-        const GITHUB_USERNAME = 'BillTribble'; 
+        const GITHUB_USERNAME = 'BillTribble';
+
+        const THUMB_SLUG_MAP = {
+            'crystal-transformer': 'crystal-transformer',
+            'crystal transformer': 'crystal-transformer',
+            'crystals': 'crystal-transformer',
+            'hybridizer': 'hybridizer',
+            'enso-soundscapes': 'enso-soundscapes',
+            'lifesim': 'lifesim',
+            'sangha-looper': 'sangha-looper',
+            'prismata-ui': 'prismata-ui',
+            'prismata': 'prismata-ui'
+        };
+
+        const DISPLAY_NAME_MAP = {
+            'crystal-transformer': 'Crystal Transformer'
+        };
 
         async function fetchRepos() {
             const container = document.getElementById('links-container');
             
             try {
-                // Fetches public repos, sorted by recently updated
                 const response = await fetch(`https://api.github.com/users/${GITHUB_USERNAME}/repos?sort=updated&per_page=100`);
                 
                 if (!response.ok) throw new Error('Failed to fetch repositories');
                 
                 const repos = await response.json();
-                container.innerHTML = ''; // Clear loading text
+                container.innerHTML = '';
 
-                // Filter out the profile pages repo itself if you don't want it listed
                 const filteredRepos = repos.filter(repo => {
                     const name = repo.name.toLowerCase();
                     const isProfileRepo = name === `${GITHUB_USERNAME}.github.io`.toLowerCase() || name === GITHUB_USERNAME.toLowerCase();
                     const isPrismaAudio = name === 'prisma-audio';
                     const isPrismataUI = name === 'prismata-ui';
+                    const isCrystalTransformer = name === 'crystal-transformer';
                     const isAppleNotesLiberator = name === 'apple-notes-liberator';
                     const isBilltribbleStatic = name === 'billtribble-static';
                     const isAwakeIn = name === 'awake-in';
                     const isCrystalsRedirect = name === 'crystals';
-                    return !isProfileRepo && !isPrismaAudio && !isAppleNotesLiberator && !isBilltribbleStatic && !isAwakeIn && !isCrystalsRedirect && (!repo.fork || isPrismataUI);
+                    return !isProfileRepo && !isPrismaAudio && !isAppleNotesLiberator && !isBilltribbleStatic && !isAwakeIn && !isCrystalsRedirect && (!repo.fork || isPrismataUI || isCrystalTransformer);
                 });
 
-                // Resilient fallback: ensure Enso-Soundscapes appears even before GitHub API index catches up
-                if (!filteredRepos.some(repo => repo.name.toLowerCase() === 'enso-soundscapes')) {
-                    filteredRepos.unshift({
-                        name: 'Enso-Soundscapes',
-                        description: 'Generative ambient soundscapes and probabilistic tape-loop studio.'
-                    });
+                // Ensure Enso-Soundscapes appears in top 3
+                const existingEnsoIdx = filteredRepos.findIndex(repo => repo.name.toLowerCase() === 'enso-soundscapes');
+                if (existingEnsoIdx !== -1) {
+                    filteredRepos.splice(existingEnsoIdx, 1);
                 }
+                filteredRepos.unshift({
+                    name: 'Enso-Soundscapes',
+                    description: 'Generative ambient soundscapes and probabilistic tape-loop studio.'
+                });
 
-                // Ensure Hybridizer always appears at the top of the experiments list
+                // Ensure Hybridizer appears near the top of the experiments list
                 const existingHybridizerIdx = filteredRepos.findIndex(repo => repo.name.toLowerCase() === 'hybridizer');
                 if (existingHybridizerIdx !== -1) {
                     filteredRepos.splice(existingHybridizerIdx, 1);
@@ -186,7 +276,18 @@
                 filteredRepos.unshift({
                     name: 'Hybridizer',
                     slug: 'hybridizer/',
-                    description: 'Botanical 3D hybridization visualizer and procedural plant breeding study.'
+                    description: 'Botanical hybridisation and procedural plant breeding study'
+                });
+
+                // Ensure Crystal Transformer always appears at the top of the projects list
+                const existingCrystalIdx = filteredRepos.findIndex(repo => repo.name.toLowerCase() === 'crystal-transformer');
+                if (existingCrystalIdx !== -1) {
+                    filteredRepos.splice(existingCrystalIdx, 1);
+                }
+                filteredRepos.unshift({
+                    name: 'Crystal Transformer',
+                    slug: 'crystal-transformer/',
+                    description: 'Ray traced crystal experiment with procedural growth and generative ambient soundtrack.'
                 });
 
                 if (filteredRepos.length === 0) {
@@ -194,37 +295,54 @@
                     return;
                 }
 
-                // Loop through repos and create elements
                 filteredRepos.forEach(repo => {
                     const card = document.createElement('a');
+                    const key = repo.name.toLowerCase();
                     
-                    const targetPath = repo.slug || (repo.name.toLowerCase() === 'hybridizer' ? 'hybridizer/' : repo.name);
+                    const targetPath = repo.slug || (key === 'hybridizer' ? 'hybridizer/' : (key === 'crystal-transformer' || key === 'crystal transformer' ? 'crystal-transformer/' : repo.name));
                     card.href = `https://${GITHUB_USERNAME}.github.io/${targetPath}`;
                     
                     card.target = '_blank';
                     card.className = 'link-card';
 
-                    // Use description if available, otherwise leave blank
                     let description = repo.description ? repo.description : '';
-                    if (repo.name.toLowerCase() === 'hybridizer') {
-                        description = 'Botanical 3D hybridization visualizer and procedural plant breeding study.';
+                    if (key === 'crystal-transformer' || key === 'crystal transformer') {
+                        description = 'Ray traced crystal experiment with procedural growth and generative ambient soundtrack.';
                     }
-                    if (repo.name.toLowerCase() === 'lifesim') {
+                    if (key === 'hybridizer') {
+                        description = 'Botanical hybridisation and procedural plant breeding study';
+                    }
+                    if (key === 'lifesim') {
                         description = 'An interactive 3D ecosystem simulation.';
                     }
-                    if (repo.name.toLowerCase() === 'prismata-ui' || repo.name.toLowerCase() === 'prismata') {
+                    if (key === 'prismata-ui' || key === 'prismata') {
                         description = 'Visualising LLM structure';
                     }
-                    if (repo.name.toLowerCase() === 'enso-soundscapes') {
+                    if (key === 'enso-soundscapes') {
                         description = 'Generative ambient soundscapes and probabilistic tape-loop studio.';
                     }
 
+                    const displayName = DISPLAY_NAME_MAP[key] || repo.name;
+                    const thumbSlug = THUMB_SLUG_MAP[key] || 'crystal-transformer';
+
                     card.innerHTML = `
-                        <span class="repo-name">📁 ${repo.name}</span>
-                        <span class="repo-desc">${description}</span>
+                        <video class="repo-thumb" autoplay loop muted playsinline preload="auto" poster="thumbs/${thumbSlug}.webp?v=3" width="52" height="52" aria-label="${displayName} preview">
+                            <source src="thumbs/${thumbSlug}.webm?v=3" type="video/webm">
+                            <source src="thumbs/${thumbSlug}.mp4?v=3" type="video/mp4">
+                            <img class="repo-thumb" src="thumbs/${thumbSlug}.gif?v=3" alt="${displayName} preview">
+                        </video>
+                        <div class="repo-info">
+                            <span class="repo-name">${displayName}</span>
+                            <span class="repo-desc">${description}</span>
+                        </div>
                     `;
                     
                     container.appendChild(card);
+                    const vid = card.querySelector('video');
+                    if (vid) {
+                        vid.muted = true;
+                        vid.play().catch(() => {});
+                    }
                 });
 
             } catch (error) {
@@ -233,7 +351,6 @@
             }
         }
 
-        // Run the function on page load
         fetchRepos();
     </script>
 
