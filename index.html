@@ -345,7 +345,7 @@
                         description = 'An interactive 3D ecosystem.';
                     }
                     if (key === 'groove-explorer') {
-                        description = 'Drum rhythm explorer — 100+ patterns with etymology, multi-instrument ensembles, and family carousels.';
+                        description = 'Drum rhythm explorer — 100+ patterns with etymology.';
                     }
                     if (key === 'prismata-ui' || key === 'prismata') {
                         description = 'Visualising LLM structure';
@@ -358,10 +358,10 @@
                     const thumbSlug = THUMB_SLUG_MAP[key] || 'crystal-transformer';
 
                     card.innerHTML = `
-                        <video class="repo-thumb" autoplay loop muted playsinline preload="auto" poster="thumbs/${thumbSlug}.webp?v=4" width="52" height="52" aria-label="${displayName} preview">
-                            <source src="thumbs/${thumbSlug}.webm?v=4" type="video/webm">
-                            <source src="thumbs/${thumbSlug}.mp4?v=4" type="video/mp4">
-                            <img class="repo-thumb" src="thumbs/${thumbSlug}.gif?v=4" alt="${displayName} preview">
+                        <video class="repo-thumb" autoplay loop muted playsinline preload="auto" poster="thumbs/${thumbSlug}.webp?v=5" width="52" height="52" aria-label="${displayName} preview">
+                            <source src="thumbs/${thumbSlug}.webm?v=5" type="video/webm">
+                            <source src="thumbs/${thumbSlug}.mp4?v=5" type="video/mp4">
+                            <img class="repo-thumb" src="thumbs/${thumbSlug}.gif?v=5" alt="${displayName} preview">
                         </video>
                         <div class="repo-info">
                             <span class="repo-name">${displayName}</span>
