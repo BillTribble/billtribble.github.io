@@ -225,13 +225,15 @@
             'hybridizer': 'hybridizer',
             'enso-soundscapes': 'enso-soundscapes',
             'lifesim': 'lifesim',
+            'groove-explorer': 'groove-explorer',
             'sangha-looper': 'sangha-looper',
             'prismata-ui': 'prismata-ui',
             'prismata': 'prismata-ui'
         };
 
         const DISPLAY_NAME_MAP = {
-            'crystal-transformer': 'Crystal Transformer'
+            'crystal-transformer': 'Crystal Transformer',
+            'groove-explorer': 'Groove Explorer'
         };
 
         async function fetchRepos() {
@@ -305,6 +307,7 @@
                     'crystal transformer',
                     'crystal-transformer',
                     'lifesim',
+                    'groove-explorer',
                     'hybridizer',
                     'enso-soundscapes',
                     'sangha-looper',
@@ -340,6 +343,9 @@
                     }
                     if (key === 'lifesim') {
                         description = 'An interactive 3D ecosystem.';
+                    }
+                    if (key === 'groove-explorer') {
+                        description = 'Drum rhythm explorer — 100+ patterns with etymology, multi-instrument ensembles, and family carousels.';
                     }
                     if (key === 'prismata-ui' || key === 'prismata') {
                         description = 'Visualising LLM structure';
