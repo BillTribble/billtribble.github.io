@@ -1,0 +1,159 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+  <meta http-equiv="Cache-Control" content="no-cache, no-store, must-revalidate">
+  <meta name="apple-mobile-web-app-capable" content="yes">
+  <meta name="mobile-web-app-capable" content="yes">
+  <title>Groove explorer</title>
+  <script>
+    // Error overlay: paint failures on screen instead of a blank page.
+    window.APP_BUILD = '2026-11-16-contrast1';
+    (function () {
+      // Repeated errors (e.g. one thrown every scheduler tick) collapse into one line with a count.
+      var lines = [], counts = {};
+      function show(msg) {
+        // Browsers report this when one resize observer's work resizes another element; it is harmless, not an app error.
+        if (/ResizeObserver loop/.test(msg)) return;
+        if (counts[msg]) counts[msg]++; else { counts[msg] = 1; lines.push(msg); }
+        var box = document.getElementById('error-overlay');
+        if (!box) {
+          box = document.createElement('div'); box.id = 'error-overlay'; box.className = 'error-overlay'; box.setAttribute('role', 'alert');
+          box.innerHTML = '<div class="error-head"><span class="error-title">Error</span>' +
+            '<button class="error-btn" id="error-copy" type="button">Copy</button>' +
+            '<button class="error-btn error-close" id="error-close" type="button" aria-label="Dismiss">Dismiss</button></div>' +
+            '<pre class="error-text" id="error-text"></pre>';
+          (document.body || document.documentElement).appendChild(box);
+          document.getElementById('error-close').onclick = function () { box.remove(); lines = []; counts = {}; };
+          document.getElementById('error-copy').onclick = function () { copyReport(this); };
+        }
+        document.getElementById('error-text').textContent = lines.map(function (l) { return counts[l] > 1 ? l + '  (x' + counts[l] + ')' : l; }).join('\n');
+      }
+      // Clipboard API needs a secure origin; over plain-http Tailscale fall back to execCommand.
+      function copyReport(btn) {
+        var text = 'Groove explorer build ' + window.APP_BUILD + '\n' + location.href + '\n' + navigator.userAgent + '\n\n' +
+          document.getElementById('error-text').textContent;
+        var done = function () { btn.textContent = 'Copied'; setTimeout(function () { btn.textContent = 'Copy'; }, 1500); };
+        var fallback = function () {
+          var ta = document.createElement('textarea'); ta.value = text; ta.setAttribute('readonly', '');
+          ta.className = 'error-copy-buffer'; document.body.appendChild(ta); ta.select();
+          try { document.execCommand('copy'); done(); } catch (e) { btn.textContent = 'Copy failed'; }
+          ta.remove();
+        };
+        if (navigator.clipboard && window.isSecureContext) navigator.clipboard.writeText(text).then(done, fallback); else fallback();
+      }
+      // Include the first stack frames when the browser provides them, so a copied report points at the code.
+      window.addEventListener('error', function (e) {
+        var where = (e.filename || '').split('/').pop().split('?')[0] + ':' + e.lineno;
+        var stack = e.error && e.error.stack ? '\n' + e.error.stack.split('\n').slice(1, 4).map(function (l) { return '  ' + l.trim(); }).join('\n') : '';
+        show((e.message || 'Error') + ' @ ' + where + stack);
+      });
+      window.addEventListener('unhandledrejection', function (e) { show('Unhandled: ' + (e.reason && e.reason.stack || e.reason)); });
+      window.addEventListener('load', function () { setTimeout(function () { if (!window.__APP_LOADED__) show('App script did not finish loading (build ' + window.APP_BUILD + ')'); }, 1500); });
+      // Theme: saved override, else Helix parent, else OS preference.
+      function theme() {
+        var o = null; try { o = localStorage.getItem('rx-theme'); } catch (e) {}
+        if (o === 'light' || o === 'dark') return o;
+        try { if (window.parent !== window && window.parent.document.documentElement.getAttribute('data-theme') === 'dark') return 'dark'; } catch (e) {}
+        return matchMedia('(prefers-color-scheme: dark)').matches ? 'dark' : 'light';
+      }
+      window.RX_applyTheme = function () { var t = theme(); if (t === 'dark') document.documentElement.setAttribute('data-theme', 'dark'); else document.documentElement.removeAttribute('data-theme'); return t; };
+      window.RX_applyTheme();
+      matchMedia('(prefers-color-scheme: dark)').addEventListener('change', window.RX_applyTheme);
+    })();
+  </script>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link href="https://fonts.googleapis.com/css2?family=Google+Sans+Flex:opsz,wght@6..144,400..700&family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+  <link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:opsz,wght,FILL,GRAD@20..48,400,0..1,0&display=block" rel="stylesheet">
+  <link rel="stylesheet" href="css/gm3-color-tokens.css?v=2026-11-16-contrast1">
+  <link rel="stylesheet" href="css/app.css?v=2026-11-16-contrast1">
+</head>
+<body>
+  <header class="app-bar">
+    <div class="app-bar-row">
+      <h1 class="app-title">Groove explorer</h1>
+      <button class="bar-toggle" id="view-toggle" aria-pressed="false"><span class="material-symbols-outlined">hub</span><span class="toggle-label">Map</span></button>
+      <div class="bar-seg" id="view-seg" role="group" aria-label="View">
+        <button data-view="map" aria-pressed="false" title="Show the rhythms as a map of similar patterns"><span class="material-symbols-outlined">hub</span>Map</button>
+        <button data-view="list" aria-pressed="false" title="Show the rhythms as a list"><span class="material-symbols-outlined">view_agenda</span>List</button>
+      </div>
+      <div class="search" id="search" role="search">
+        <button class="bar-toggle" id="search-toggle" aria-expanded="false" aria-controls="search-input" title="Search rhythms" aria-label="Search rhythms"><span class="material-symbols-outlined">search</span></button>
+        <div class="search-field">
+          <span class="material-symbols-outlined search-icon" aria-hidden="true">search</span>
+          <input class="search-input" id="search-input" type="search" placeholder="Search rhythms" aria-label="Search rhythms" autocomplete="off" autocapitalize="off" spellcheck="false" enterkeyhint="search">
+          <button id="search-close" title="Clear search" aria-label="Clear search"><span class="material-symbols-outlined">close</span></button>
+        </div>
+      </div>
+      <button class="bar-toggle" id="tempo-mode" aria-pressed="false"><span class="material-symbols-outlined">speed</span><span class="toggle-label"><span class="tl-short">Native</span><span class="tl-long">Native tempo</span></span></button>
+      <button class="tempo-readout" id="tempo-btn" aria-expanded="false" aria-controls="tempo-pop" title="Change tempo"><span id="bpm-value"></span><span class="tempo-unit" id="bpm-unit">bpm</span></button>
+      <button class="settings-btn" id="settings-toggle" aria-expanded="false" aria-controls="settings" title="Settings" aria-label="Settings"><span class="material-symbols-outlined">tune</span></button>
+    </div>
+    <div class="tempo-pop" id="tempo-pop" hidden>
+      <button class="icon-btn" id="bpm-down" title="Slower" aria-label="Slower"><span class="material-symbols-outlined">remove</span></button>
+      <input type="range" id="bpm-slider" class="slider tempo-slider" min="60" max="300" step="1" value="120" aria-label="Tempo">
+      <button class="icon-btn" id="bpm-up" title="Faster" aria-label="Faster"><span class="material-symbols-outlined">add</span></button>
+    </div>
+    <div class="settings" id="settings" hidden>
+      <label class="settings-group" title="How far hits are pulled onto the groove">
+        <span class="amount-label">Groove <span id="timing-value">100%</span></span>
+        <input type="range" id="timing-slider" class="slider" min="0" max="130" step="5" value="100" aria-label="Groove timing amount">
+      </label>
+      <label class="settings-group" title="How much the groove's accents shape velocity">
+        <span class="amount-label">Accent <span id="accent-value">50%</span></span>
+        <input type="range" id="accent-slider" class="slider" min="0" max="100" step="5" value="50" aria-label="Groove accent amount">
+      </label>
+      <label class="settings-group" title="Low-pass filter on the top line">
+        <span class="amount-label">Top filter <span id="cutoff-value">7.0 kHz</span></span>
+        <input type="range" id="cutoff-slider" class="slider" min="0" max="100" step="1" value="76" aria-label="Top line low-pass cutoff">
+      </label>
+      <div class="settings-group">
+        <span class="amount-label">Drum sounds</span>
+        <div class="m3-pill-tabs gm3-connected-dsp" id="kit" role="group" aria-label="Drum sounds"></div>
+      </div>
+      <div class="settings-group">
+        <span class="amount-label">View</span>
+        <div class="m3-pill-tabs gm3-connected-dsp" id="view-mode" role="group" aria-label="Group rhythms by"></div>
+      </div>
+      <div class="settings-group" title="Steady 8th or 16th parts such as shakers and ride bells. Off mutes and hides them.">
+        <span class="amount-label">Pulse parts</span>
+        <div class="m3-pill-tabs gm3-connected-dsp" id="pulse-parts" role="group" aria-label="Steady 8th and 16th parts"></div>
+      </div>
+      <div class="settings-group">
+        <span class="amount-label">Top line</span>
+        <div class="m3-pill-tabs gm3-connected-dsp" id="top-voice" role="group" aria-label="Top line sound"></div>
+      </div>
+      <div class="settings-actions">
+        <button class="btn-tonal" id="export-als" title="Zip with a Live project: one scene per rhythm, a Drum Rack of every drum sound, and the samples"><span class="material-symbols-outlined">download</span><span>Ableton project</span></button>
+        <button class="icon-btn" id="theme-toggle" title="Switch theme" aria-label="Switch theme"><span class="material-symbols-outlined" id="theme-icon">dark_mode</span></button>
+        <span class="settings-build" id="settings-build" title="App build — reload if this is not what you expect"></span>
+      </div>
+    </div>
+  </header>
+
+  <div class="m3-pill-tabs region-tabs" id="region-tabs" role="tablist"></div>
+  <main class="rows" id="rows"></main>
+  <div class="map" id="map" hidden></div>
+  <aside class="map-panel" id="map-panel" hidden aria-live="polite"></aside>
+
+  <script src="js/grooves-ableton.js?v=2026-11-16-contrast1"></script>
+  <script src="js/als-template.js?v=2026-11-16-contrast1"></script>
+  <script src="js/families.js?v=2026-11-16-contrast1"></script>
+  <script src="js/rhythms.js?v=2026-11-16-contrast1"></script>
+  <script src="js/grooves.js?v=2026-11-16-contrast1"></script>
+  <script src="js/shape.js?v=2026-11-16-contrast1"></script>
+  <script src="js/pattern-groups.js?v=2026-11-16-contrast1"></script>
+  <script src="js/pitch.js?v=2026-11-16-contrast1"></script>
+  <script src="js/kit.js?v=2026-11-16-contrast1"></script>
+  <script src="js/audio.js?v=2026-11-16-contrast1"></script>
+  <script src="js/drumrack-template.js?v=2026-11-16-contrast1"></script>
+  <script src="js/export-kit.js?v=2026-11-16-contrast1"></script>
+  <script src="js/exporters.js?v=2026-11-16-contrast1"></script>
+  <script src="js/world-land.js?v=2026-11-16-contrast1"></script>
+  <script src="js/origins.js?v=2026-11-16-contrast1"></script>
+  <script src="js/nodemap.js?v=2026-11-16-contrast1"></script>
+  <script src="js/dial.js?v=2026-11-16-contrast1"></script>
+  <script src="js/app.js?v=2026-11-16-contrast1"></script>
+</body>
+</html>
