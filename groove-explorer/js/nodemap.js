@@ -1,3 +1,4 @@
+// Copyright (c) 2026 Bill Tribble. All rights reserved. See LICENSE.
 // Node map view. Two layouts of the same nodes, toggled with the World button and animated between:
 // - pattern: placed by pattern similarity (RX.PATTERN_MAP from py/rhythm_ml.py);
 // - world: at each rhythm's approximate centre of origin (RX.ORIGIN, js/origins.js) over a land outline

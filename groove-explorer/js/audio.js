@@ -1,3 +1,4 @@
+// Copyright (c) 2026 Bill Tribble. All rights reserved. See LICENSE.
 // Web Audio drum voices + look-ahead scheduler. One row plays at a time.
 window.RX = window.RX || {};
 

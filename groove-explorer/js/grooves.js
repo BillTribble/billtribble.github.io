@@ -1,3 +1,4 @@
+// Copyright (c) 2026 Bill Tribble. All rights reserved. See LICENSE.
 // Groove library + application. A groove is { id, name, group, len (beats), notes: [[timeBeats, velocity]] }.
 // Applying a groove works the way Live's groove pool does: each hit is pulled onto the
 // nearest groove note (if one is close enough) and takes a share of its velocity.

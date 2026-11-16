@@ -1,3 +1,4 @@
+// Copyright (c) 2026 Bill Tribble. All rights reserved. See LICENSE.
 // Rhythm library. Patterns: X accent, x hit, o ghost, . rest.
 // steps 16 = four beats of 16ths; steps 12 = four beats of triplets (12/8).
 // steps 8 = two beats of 16ths (half bar); steps 20 = five beats of 16ths (5/4).

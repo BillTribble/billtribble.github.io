@@ -1,3 +1,4 @@
+// Copyright (c) 2026 Bill Tribble. All rights reserved. See LICENSE.
 // MIDI (per part) and Ableton project (.als + samples, zipped) export. Groove timing is baked into note positions.
 // Which MIDI note plays which sound comes from the pad table in export-kit.js, shared by both exports.
 window.RX = window.RX || {};

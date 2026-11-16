@@ -1,3 +1,4 @@
+// Copyright (c) 2026 Bill Tribble. All rights reserved. See LICENSE.
 // Ableton project export, sound side. Every hit in every rhythm is resolved to the sound the
 // app would play (kit sample or synth voice, at its accent level and pitch); each distinct sound
 // becomes one pad of a Drum Rack of one-shot Simplers, and the MIDI note of that pad is what the

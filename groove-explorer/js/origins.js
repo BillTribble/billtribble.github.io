@@ -1,3 +1,4 @@
+// Copyright (c) 2026 Bill Tribble. All rights reserved. See LICENSE.
 // Approximate centre of origin for every rhythm: [latitude, longitude, place]. Used by the node map's World layout
 // (js/nodemap.js). Each rhythm has its own town, district or township (not a shared city), so the map reads as a real
 // geography; the points are still approximate and are not a claim about a single birthplace. Where the tradition belongs to a

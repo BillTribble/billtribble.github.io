@@ -1,0 +1,16 @@
+Copyright (c) 2026 Bill Tribble. All rights reserved.
+
+This software, its source code and its curated data (rhythm library, families,
+pattern groups, origins, shapes and groove settings) are proprietary. No licence
+is granted to copy, modify, redistribute, publish, sublicense or create derivative
+works from any part of it without prior written permission from the copyright holder.
+
+Viewing and using the app at https://billtribble.github.io/groove-explorer/ for
+personal music-making is permitted. MIDI and Ableton projects you export with
+the app are yours to use in your own music.
+
+Third-party material is excluded and keeps its own licence:
+- Drum samples in samples/: see samples/CREDITS.md
+- Ableton Live templates and Core Library grooves (js/als-template.js,
+  js/drumrack-template.js, js/grooves-ableton.js): Ableton AG
+- World outline (js/world-land.js): Natural Earth, public domain

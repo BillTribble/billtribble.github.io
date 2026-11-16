@@ -1,3 +1,4 @@
+// Copyright (c) 2026 Bill Tribble. All rights reserved. See LICENSE.
 // Rhythm families for the By family view: [id, label, member rhythm ids], in display order.
 // Grouped by rhythmic lineage and feel (shared timeline, meter or scene), so related
 // rhythms can be swiped between. A rhythm missing here falls back to its own `family`

@@ -1,3 +1,4 @@
+// Copyright (c) 2026 Bill Tribble. All rights reserved. See LICENSE.
 // UI: stacked rhythm rows, one playing at a time. All controls update local state first.
 (function () {
   const $ = (id) => document.getElementById(id);

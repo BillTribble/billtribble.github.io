@@ -1,3 +1,4 @@
+// Copyright (c) 2026 Bill Tribble. All rights reserved. See LICENSE.
 // Sample kit: maps each rhythm sound name to recorded one-shots in samples/.
 // An entry is either one file, or [accent, hit, ghost] so strong strokes can use a
 // different sample (e.g. darbuka doum on accents, tek elsewhere).

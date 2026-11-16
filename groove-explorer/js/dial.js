@@ -1,3 +1,4 @@
+// Copyright (c) 2026 Bill Tribble. All rights reserved. See LICENSE.
 // Rotary dial standing in for an <input type="range">: the input stays in the page (hidden) and keeps its listeners;
 // the dial sets its value and fires 'input', so app code is unchanged. Drag up / right to turn it up (a full turn is
 // about 160 px), mouse wheel and arrow keys step it, Home / End jump to the ends, a double-tap resets to the default.

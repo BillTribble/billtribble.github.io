@@ -1,3 +1,4 @@
+// Copyright (c) 2026 Bill Tribble. All rights reserved. See LICENSE.
 // Pitch per part. Every part plays at its voice's own pitch, except:
 // - parts named low / mid / high (e.g. amadinda players, kenkeni / sangban / dununba),
 //   which sit a fifth below, at, or a fifth above that pitch, so the set is distinguishable;

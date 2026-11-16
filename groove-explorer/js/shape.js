@@ -1,3 +1,4 @@
+// Copyright (c) 2026 Bill Tribble. All rights reserved. See LICENSE.
 // Rhythm shape: where the onsets fall in the cycle, ignoring instrument, tempo and region.
 // RX.coreTop(r) picks the one top line that best shows a rhythm's structure; the simple
 // (single top voice) version of a multi-instrument row plays it.
