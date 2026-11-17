@@ -68,8 +68,11 @@
       if (saved && !saved.patternsV2) { state.rows[r.id].kick = r.kick; state.rows[r.id].top = simpleTop(r); }
       // Kizomba's kick and top lines were re-transcribed from a recording (js/rhythms.js); saved rows take it once.
       if (saved && !saved.kizombaV3 && r.id === 'kizomba') { state.rows[r.id].kick = r.kick; state.rows[r.id].top = simpleTop(r); }
-      // ...and adjusted once by ear in the app (kick, snare and tom all moved); saved rows take that version once.
-      if (saved && !saved.kizombaV4 && r.id === 'kizomba') { state.rows[r.id].kick = r.kick; state.rows[r.id].top = simpleTop(r); }
+      // ...and adjusted once by ear in the app (kick, snare and tom all moved). This one is narrow: it only
+      // rewrites a save that still holds the earlier transcribed kick, so an edited row is never clobbered.
+      if (saved && !saved.kizombaV4 && r.id === 'kizomba' && state.rows[r.id].kick === 'x.x.x...x.x.x...') {
+        state.rows[r.id].kick = r.kick; state.rows[r.id].top = simpleTop(r);
+      }
     });
   }
   function save() { try { localStorage.setItem(STORE, JSON.stringify(state)); } catch (e) {} }
