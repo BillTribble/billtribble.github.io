@@ -389,7 +389,7 @@ RX.RHYTHMS = [
   { id: 'kizomba', name: 'Kizomba', region: 'Central Africa & Lusophone', bpm: 92, range: '85–95', steps: 16, family: 'lusophone',
     kick: 'x.......x......x', top: '....x.......x...', sound: 'snare', groove: 'sw16:52', src: 'approx',
     etymology: 'Kimbundu (Angola) "kizomba" = party / celebration. From "kizomba" = a gathering. Zouk + semba. 1980s+ Luanda/Lisbon.',
-    note: 'Angola. Not a dembow: the skeleton is the smooth two-step semba groove — deep kick/bass root on 1 (fifth on 3, with the soft 16th pickup before the next bar), soft snare or conga slap answering on 2 and 4. Zouk-descended, slower and smoother still.' },
+    note: 'Angola / Portugal. Built on a smooth two-step semba groove: a deep kick or bass root lands on beat 1 (the fifth on beat 3, with a soft 16th-note pickup into the next bar) while a soft snare or conga slap answers on 2 and 4. Grew from Luanda dance parties in the 1980s out of zouk and semba, riding smooth, slow vocals in Kimbundu and Portuguese.' },
 
   { id: 'tarraxinha', name: 'Tarraxinha / Tarraxo', region: 'Central Africa & Lusophone', bpm: 90, range: '80–96', steps: 16, family: 'tresillo',
     kick: 'x..x..x.x..x..x.', top: '....x.......x...', sound: 'bass', groove: 'sw16:52', src: 'approx',
