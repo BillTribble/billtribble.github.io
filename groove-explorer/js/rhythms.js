@@ -387,9 +387,9 @@ RX.RHYTHMS = [
     note: 'Beti people, Cameroon. Fast 6/8 with the kick on every beat.' },
 
   { id: 'kizomba', name: 'Kizomba', region: 'Central Africa & Lusophone', bpm: 92, range: '85–95', steps: 16, family: 'lusophone',
-    kick: 'x.......x......x', top: '....x.......x...', sound: 'snare', groove: 'sw16:52', src: 'approx',
+    kick: 'x...x.....x.....', top: '............x...', sound: 'conga', groove: 'sw16:52', src: 'approx',
     etymology: 'Kimbundu (Angola) "kizomba" = party / celebration. From "kizomba" = a gathering. Zouk + semba. 1980s+ Luanda/Lisbon.',
-    note: 'Angola / Portugal. Built on a smooth two-step semba groove: a deep kick or bass root lands on beat 1 (the fifth on beat 3, with a soft 16th-note pickup into the next bar) while a soft snare or conga slap answers on 2 and 4. Grew from Luanda dance parties in the 1980s out of zouk and semba, riding smooth, slow vocals in Kimbundu and Portuguese.' },
+    note: 'Angola / Portugal. The kick follows the massemba dance step — long, long, quick-quick (beats 1, 2, 3-and) — with a conga slap on 4; a shaker keeps swung eighths over it. Grew from Luanda dance parties in the 1980s out of zouk and semba, riding smooth, slow vocals in Kimbundu and Portuguese.' },
 
   { id: 'tarraxinha', name: 'Tarraxinha / Tarraxo', region: 'Central Africa & Lusophone', bpm: 90, range: '80–96', steps: 16, family: 'tresillo',
     kick: 'x..x..x.x..x..x.', top: '....x.......x...', sound: 'bass', groove: 'sw16:52', src: 'approx',
