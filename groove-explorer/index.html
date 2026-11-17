@@ -10,7 +10,7 @@
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
   <meta name="google-site-verification" content="oMfkTwl-ENq9qmgu0nzaDRW7kAXIrpBDn7WEfd-x53g" />
-  <title>Groove explorer</title>
+  <title>Groove Explorer — 135 Rhythms from Around the World</title>
   <link rel="canonical" href="https://billtribble.github.io/groove-explorer/">
   <link rel="image_src" href="https://billtribble.github.io/groove-explorer/og-preview.png">
   <meta name="description" content="Explore 135 drum rhythms from around the world, compare how they relate, trace their origins, and export to MIDI or Ableton Live.">
@@ -47,7 +47,7 @@
   </script>
   <script>
     // Error overlay: paint failures on screen instead of a blank page.
-    window.APP_BUILD = '2026-11-16-copyright2';
+    window.APP_BUILD = '2026-11-17-seo1';
     (function () {
       // Repeated errors (e.g. one thrown every scheduler tick) collapse into one line with a count.
       var lines = [], counts = {};
@@ -104,34 +104,34 @@
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link href="https://fonts.googleapis.com/css2?family=Google+Sans+Flex:opsz,wght@6..144,400..700&family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
   <link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:opsz,wght,FILL,GRAD@20..48,400,0..1,0&display=block" rel="stylesheet">
-  <link rel="stylesheet" href="css/gm3-color-tokens.css?v=2026-11-16-copyright2">
-  <link rel="stylesheet" href="css/app.css?v=2026-11-16-copyright2">
+  <link rel="stylesheet" href="css/gm3-color-tokens.css?v=2026-11-17-seo1">
+  <link rel="stylesheet" href="css/app.css?v=2026-11-17-seo1">
 </head>
 <body>
   <header class="app-bar">
     <div class="app-bar-row">
-      <h1 class="app-title">Groove explorer</h1>
-      <button class="bar-toggle" id="view-toggle" aria-pressed="false"><span class="material-symbols-outlined">hub</span><span class="toggle-label">Map</span></button>
+      <span class="app-title">Groove explorer</span>
+      <button class="bar-toggle" id="view-toggle" aria-pressed="false"><span class="material-symbols-outlined" aria-hidden="true">hub</span><span class="toggle-label">Map</span></button>
       <div class="bar-seg" id="view-seg" role="group" aria-label="View">
-        <button data-view="map" aria-pressed="false" title="Show the rhythms as a map of similar patterns"><span class="material-symbols-outlined">hub</span>Map</button>
-        <button data-view="list" aria-pressed="false" title="Show the rhythms as a list"><span class="material-symbols-outlined">view_agenda</span>List</button>
+        <button data-view="map" aria-pressed="false" title="Show the rhythms as a map of similar patterns"><span class="material-symbols-outlined" aria-hidden="true">hub</span>Map</button>
+        <button data-view="list" aria-pressed="false" title="Show the rhythms as a list"><span class="material-symbols-outlined" aria-hidden="true">view_agenda</span>List</button>
       </div>
       <div class="search" id="search" role="search">
-        <button class="bar-toggle" id="search-toggle" aria-expanded="false" aria-controls="search-input" title="Search rhythms" aria-label="Search rhythms"><span class="material-symbols-outlined">search</span></button>
+        <button class="bar-toggle" id="search-toggle" aria-expanded="false" aria-controls="search-input" title="Search rhythms" aria-label="Search rhythms"><span class="material-symbols-outlined" aria-hidden="true">search</span></button>
         <div class="search-field">
           <span class="material-symbols-outlined search-icon" aria-hidden="true">search</span>
           <input class="search-input" id="search-input" type="search" placeholder="Search rhythms" aria-label="Search rhythms" autocomplete="off" autocapitalize="off" spellcheck="false" enterkeyhint="search">
-          <button id="search-close" title="Clear search" aria-label="Clear search"><span class="material-symbols-outlined">close</span></button>
+          <button id="search-close" title="Clear search" aria-label="Clear search"><span class="material-symbols-outlined" aria-hidden="true">close</span></button>
         </div>
       </div>
-      <button class="bar-toggle" id="tempo-mode" aria-pressed="false"><span class="material-symbols-outlined">speed</span><span class="toggle-label"><span class="tl-short">Native</span><span class="tl-long">Native tempo</span></span></button>
+      <button class="bar-toggle" id="tempo-mode" aria-pressed="false"><span class="material-symbols-outlined" aria-hidden="true">speed</span><span class="toggle-label"><span class="tl-short">Native</span><span class="tl-long">Native tempo</span></span></button>
       <button class="tempo-readout" id="tempo-btn" aria-expanded="false" aria-controls="tempo-pop" title="Change tempo"><span id="bpm-value"></span><span class="tempo-unit" id="bpm-unit">bpm</span></button>
-      <button class="settings-btn" id="settings-toggle" aria-expanded="false" aria-controls="settings" title="Settings" aria-label="Settings"><span class="material-symbols-outlined">tune</span></button>
+      <button class="settings-btn" id="settings-toggle" aria-expanded="false" aria-controls="settings" title="Settings" aria-label="Settings"><span class="material-symbols-outlined" aria-hidden="true">tune</span></button>
     </div>
     <div class="tempo-pop" id="tempo-pop" hidden>
-      <button class="icon-btn" id="bpm-down" title="Slower" aria-label="Slower"><span class="material-symbols-outlined">remove</span></button>
+      <button class="icon-btn" id="bpm-down" title="Slower" aria-label="Slower"><span class="material-symbols-outlined" aria-hidden="true">remove</span></button>
       <input type="range" id="bpm-slider" class="slider tempo-slider" min="60" max="300" step="1" value="120" aria-label="Tempo">
-      <button class="icon-btn" id="bpm-up" title="Faster" aria-label="Faster"><span class="material-symbols-outlined">add</span></button>
+      <button class="icon-btn" id="bpm-up" title="Faster" aria-label="Faster"><span class="material-symbols-outlined" aria-hidden="true">add</span></button>
     </div>
     <div class="settings" id="settings" hidden>
       <label class="settings-group" title="How far hits are pulled onto the groove">
@@ -163,8 +163,8 @@
         <div class="m3-pill-tabs gm3-connected-dsp" id="top-voice" role="group" aria-label="Top line sound"></div>
       </div>
       <div class="settings-actions">
-        <button class="btn-tonal" id="export-als" title="Zip with a Live project: one scene per rhythm, a Drum Rack of every drum sound, and the samples"><span class="material-symbols-outlined">download</span><span>Ableton project</span></button>
-        <button class="icon-btn" id="theme-toggle" title="Switch theme" aria-label="Switch theme"><span class="material-symbols-outlined" id="theme-icon">dark_mode</span></button>
+        <button class="btn-tonal" id="export-als" title="Zip with a Live project: one scene per rhythm, a Drum Rack of every drum sound, and the samples"><span class="material-symbols-outlined" aria-hidden="true">download</span><span>Ableton project</span></button>
+        <button class="icon-btn" id="theme-toggle" title="Switch theme" aria-label="Switch theme"><span class="material-symbols-outlined" id="theme-icon" aria-hidden="true">dark_mode</span></button>
         <span class="settings-build" id="settings-build" title="App build — reload if this is not what you expect"></span>
         <span class="settings-copyright">© 2026 Bill Tribble. All rights reserved.</span>
       </div>
@@ -176,23 +176,136 @@
   <div class="map" id="map" hidden></div>
   <aside class="map-panel" id="map-panel" hidden aria-live="polite"></aside>
 
-  <script src="js/grooves-ableton.js?v=2026-11-16-copyright2"></script>
-  <script src="js/als-template.js?v=2026-11-16-copyright2"></script>
-  <script src="js/families.js?v=2026-11-16-copyright2"></script>
-  <script src="js/rhythms.js?v=2026-11-16-copyright2"></script>
-  <script src="js/grooves.js?v=2026-11-16-copyright2"></script>
-  <script src="js/shape.js?v=2026-11-16-copyright2"></script>
-  <script src="js/pattern-groups.js?v=2026-11-16-copyright2"></script>
-  <script src="js/pitch.js?v=2026-11-16-copyright2"></script>
-  <script src="js/kit.js?v=2026-11-16-copyright2"></script>
-  <script src="js/audio.js?v=2026-11-16-copyright2"></script>
-  <script src="js/drumrack-template.js?v=2026-11-16-copyright2"></script>
-  <script src="js/export-kit.js?v=2026-11-16-copyright2"></script>
-  <script src="js/exporters.js?v=2026-11-16-copyright2"></script>
-  <script src="js/world-land.js?v=2026-11-16-copyright2"></script>
-  <script src="js/origins.js?v=2026-11-16-copyright2"></script>
-  <script src="js/nodemap.js?v=2026-11-16-copyright2"></script>
-  <script src="js/dial.js?v=2026-11-16-copyright2"></script>
-  <script src="js/app.js?v=2026-11-16-copyright2"></script>
+  <article class="app-about" id="about" aria-labelledby="about-heading">
+    <div class="about-inner">
+      <h1 class="about-title" id="about-heading">Groove explorer — 135 drum rhythms from around the world</h1>
+      <p class="about-lead">Audition 135 traditional, club, and classical percussion patterns on an interactive world map and pattern-similarity graph, edit every instrument lane in a live step sequencer, shape swing and accent feel, and export individual MIDI parts or a complete Ableton Live Drum Rack project.</p>
+      <div class="about-cards">
+        <section class="about-card">
+          <h2>World origins and pattern similarity</h2>
+          <p>Switch between the World map, which places every rhythm at an approximate town, district, or regional centre of origin across Africa, the Americas, the Middle East, Europe, Asia, and Oceania, and the Pattern map, which clusters rhythms by cyclic hit-pattern similarity across 16-step, 12/8 triplet, and odd-meter timelines.</p>
+        </section>
+        <section class="about-card">
+          <h2>Ensemble lanes and groove feel</h2>
+          <p>Tap any node or list card to hear recorded drum samples or synthesized voices with bar-quantized switching. Multi-instrument ensembles — including Mandé djembe and dunun trios, Ewe bell timelines, Gnawa guembri and qraqeb, Brazilian samba baterias, Arab iqa'at, Balkan horos, and Indian talas — let you mute, solo, or edit each part and dial in Ableton groove swing and velocity accents.</p>
+        </section>
+        <section class="about-card">
+          <h2>MIDI and Ableton Live export</h2>
+          <p>Download any lane as a standard MIDI clip or export all 135 rhythms at once as a zipped Ableton Live set containing one scene per rhythm, a Simpler Drum Rack of every kit sample and synth voice, and pre-routed clips ready to drop into a session.</p>
+        </section>
+      </div>
+      <h2 class="about-section-title">All 135 rhythms by pattern family</h2>
+      <div class="about-groups">
+      <div class="about-group">
+        <h3>Tresillo-like (12/8)</h3>
+        <p>Agbadza (Ewe) (Anloga (Anlo Ewe), Ghana, 120 bpm) · Standard Bell (12/8) (Lomé, Togo, 120 bpm) · Bomba Sicá (6/8) (Loíza, Puerto Rico, 100 bpm) · Akpoka (Ewe) (Ho, Volta Region, Ghana, 130 bpm) · Atsiagbeko (Ewe War Dance) (Keta, Ghana, 120 bpm) · Adzogbo (Ewe/Fon) (Abomey, Benin, 140 bpm) · Soleá (12-beat) (Utrera, Andalusia, 80 bpm) · Alegrías (12-beat major) (Cádiz, Andalusia, 100 bpm) · Tinikling (bamboo poles) (Tacloban, Leyte, 120 bpm) · Bikutsi (Yaoundé, Cameroon, 150 bpm) · Salegy (Mahajanga, Madagascar, 160 bpm) · Gnawa (Full Ensemble) (Marrakech, Morocco, 110 bpm) · Gnawa (Essaouira, Morocco, 110 bpm) · Ektal (12/8) (Lucknow, Uttar Pradesh, 60 bpm) · Maloya (Saint-Pierre, Réunion, 110 bpm) · Afro House Triplet Perc (Sandton, Johannesburg, 122 bpm) · Tizita (Major) (Piazza, Addis Ababa, 70 bpm) · Ambassel (Dessie (Wollo), Ethiopia, 120 bpm) · Karigamombe (Mbare, Harare, 110 bpm) · Batuque (Praia, Santiago, Cape Verde, 150 bpm) · Samai Darij (Light Samai) (Aleppo, Syria, 120 bpm) · Bulerías (12-beat fast) (Jerez de la Frontera, 220 bpm) · Kecak (Balinese monkey chant) (Bedulu, Bali, 130 bpm) · Anchihoye (Bahir Dar, Ethiopia, 90 bpm).</p>
+      </div>
+      <div class="about-group">
+        <h3>Lesno type</h3>
+        <p>Lesno (7/8 slow) (Bitola, North Macedonia, 90 bpm) · Misra Chapu (7/8) (Thanjavur, Tamil Nadu, 80 bpm) · Rupak Tala (7/8) (Agra, Uttar Pradesh, 80 bpm) · Kalamatianos (Kalamata, Greece, 100 bpm) · Laz / Mantilatos (7/8) (Rize, Black Sea, Turkey, 120 bpm) · Rachenitsa (7/16) (Pazardzhik, Bulgaria, 180 bpm) · Dawr Hindi / Devr-i Hindi (7/8) (Damascus, Syria, 100 bpm) · Samai Thaqil (Heavy Samai) (Istanbul, 80 bpm) · Karsilama (9/8) (Edirne (Thrace), Turkey, 110 bpm) · Daychovo Horo (9/16) (Haskovo, Bulgaria, 140 bpm) · Jurjina (Curcuna) (Baghdad, Iraq, 100 bpm) · Paidushko Horo (5/16) (Kyustendil, Bulgaria, 200 bpm) · Jhaptal (10/8) (Gwalior, Madhya Pradesh, 100 bpm) · Deepchandi (14 beats) (Jaipur, Rajasthan, 70 bpm) · Kopanitsa (11/16) (Pernik (Shopluk), Bulgaria, 160 bpm) · Gankino Horo (11/16 fast) (Pleven, Bulgaria, 200 bpm) · Khanda Chapu (5 beats) (Madurai, Tamil Nadu, 80 bpm).</p>
+      </div>
+      <div class="about-group">
+        <h3>Tresillo type</h3>
+        <p>Tresillo (3-3-2) (Havana, Cuba, 110 bpm) · Baião (Exu, Pernambuco, 100 bpm) · Forró (Pe-de-serra) (Caruaru, Pernambuco, 110 bpm) · Lion Dance (三星 three-star) (Foshan, Guangdong, 120 bpm) · Dancehall (Waterhouse, Kingston, 100 bpm) · Habanera (Old Havana, Cuba, 100 bpm) · Dembow (Kingston, Jamaica, 95 bpm) · Kizomba (Maianga, Luanda, 92 bpm) · Malfuf (Alexandria, Egypt, 120 bpm) · Fontomfrom (Akan Talking Drums) (Mampong (Ashanti), Ghana, 90 bpm) · Maracatu Nação (Recife, Pernambuco, 90 bpm) · Dominican Dembow (Los Mina, Santo Domingo, 120 bpm) · Pon Pon (Ibadan, Nigeria, 100 bpm) · 111 (Ape Drums &amp; JAMIIE) (Newtown, Johannesburg, 120 bpm) · Toro (Mandé) (Siguiri, Guinea, 120 bpm).</p>
+      </div>
+      <div class="about-group">
+        <h3>Son Clave 3-2 type</h3>
+        <p>Son Clave 3-2 (Santiago de Cuba, 100 bpm) · Second Line (street beat) (Tremé, New Orleans, 96 bpm) · Kpanlogo (Ga) (Jamestown, Accra, 100 bpm) · Highlife (Cape Coast, Ghana, 115 bpm) · Chiftetelli (8/4) (Izmir, Turkey, 60 bpm) · Afrobeats (Victoria Island, Lagos, 104 bpm) · Afro House (Umlazi, Durban, 122 bpm) · Rumba Clave 3-2 (Matanzas, Cuba, 110 bpm) · Gahu (Porto-Novo, Benin, 130 bpm) · Dununba (Strong Men) (Faranah (Sankaran), Guinea, 100 bpm) · Bossa Clave (Ipanema, Rio de Janeiro, 120 bpm) · 3-Step (Pinetown, Durban, 114 bpm).</p>
+      </div>
+      <div class="about-group">
+        <h3>Soli type</h3>
+        <p>Soli (Initiation) (Kankan, Guinea, 110 bpm) · Mendiani (Yanfolila (Wassolon), Mali, 140 bpm) · Makru (Fast Yankadi) (Dubréka, Guinea, 140 bpm) · Yankadi (Conakry, Guinea, 80 bpm) · Yankadi-Makru (paired) (Forécariah, Guinea, 110 bpm) · Kassa (Harvest) (Kouroussa (Hamana), Guinea, 130 bpm) · Amapiano (Mamelodi, Pretoria, 112 bpm) · Kuku (Mandiana, Upper Guinea, 120 bpm).</p>
+      </div>
+      <div class="about-group">
+        <h3>Coupé-Décalé type</h3>
+        <p>Coupé-Décalé (Treichville, Abidjan, 125 bpm) · Shangaan Electro (Giyani, Limpopo, 180 bpm) · Soca (San Fernando, Trinidad, 125 bpm) · Funaná (Assomada, Santiago, Cape Verde, 150 bpm) · Singeli (Manzese, Dar es Salaam, 220 bpm) · Kuduro (Sambizanga, Luanda, 138 bpm) · Barynya (Барыня) (Ryazan, Russia, 140 bpm).</p>
+      </div>
+      <div class="about-group">
+        <h3>Maqsum type</h3>
+        <p>Maqsum (Downtown Cairo, 100 bpm) · Nawari / Dabke (Zahlé, Lebanon, 110 bpm) · Wahda (4/4) (Mansoura, Egypt, 90 bpm) · Saidi (Assiut (Sa'id), Egypt, 100 bpm) · Masmoudi Kabir (Big Masmoudi) (Khan el-Khalili, Cairo, 60 bpm) · Baladi (Masmoudi Saghir) (Imbaba, Cairo, 100 bpm) · Ayyub (Aswan, Egypt, 120 bpm).</p>
+      </div>
+      <div class="about-group">
+        <h3>Ndombolo type</h3>
+        <p>Ndombolo (Cavacha) (Matonge, Kinshasa, 130 bpm) · Merengue (Dominican) (Santiago de los Caballeros, DR, 140 bpm) · Cumbia (Mompós, Colombia, 100 bpm) · Bacardi (Atteridgeville, Pretoria, 118 bpm) · Calypso (Port of Spain, Trinidad, 110 bpm) · Cinquillo (Guantánamo, Cuba, 110 bpm).</p>
+      </div>
+      <div class="about-group">
+        <h3>Akasiba type</h3>
+        <p>Akasiba / Baakisimba (Mengo, Kampala, 120 bpm) · Kete (Akan Royal) (Kumasi, Ghana, 100 bpm) · Mbaqanga (Sophiatown, Johannesburg, 115 bpm) · Samba (Estácio, Rio de Janeiro, 100 bpm) · Gqom (unison phrase) (Inanda, Durban, 126 bpm) · Partido Alto (Madureira, Rio de Janeiro, 110 bpm).</p>
+      </div>
+      <div class="about-group">
+        <h3>Powwow type</h3>
+        <p>Powwow (intertribal) (Pine Ridge, South Dakota, 110 bpm) · Tangos Flamenco (4/4) (Sacromonte, Granada, 120 bpm) · Haka (Ka Mate) (Rotorua, Aotearoa, 100 bpm) · Bhangra (dhol chaal) (Ludhiana, Punjab, 130 bpm) · Teental (16 beats) (Delhi, 90 bpm) · Adi Tala (8 beats) (Kanchipuram, Tamil Nadu, 100 bpm).</p>
+      </div>
+      <div class="about-group">
+        <h3>Afrobeat type</h3>
+        <p>Afrobeat (Tony Allen) (Ikeja (Fela's Shrine), Lagos, 110 bpm) · Azonto (Osu, Accra, 125 bpm) · Batida (Sacavém, Lisbon, 135 bpm) · Baile Funk (Tamborzão) (Cidade de Deus, Rio, 130 bpm) · Kwaito (Diepkloof, Soweto, 105 bpm).</p>
+      </div>
+      <div class="about-group">
+        <h3>Mongombi type</h3>
+        <p>Mongombi (Aka Hunt) (Mbaïki (Lobaye), CAR, 160 bpm) · Intore (Rwanda Heroic Dance) (Butare (Huye), Rwanda, 140 bpm) · Chakacha (Swahili Women) (Mombasa, Kenya, 120 bpm) · Coco (Zabumba) (Maceió, Alagoas, 100 bpm).</p>
+      </div>
+      <div class="about-group">
+        <h3>Ansai Yaogu type</h3>
+        <p>Ansai Yaogu (腰鼓 waist drum) (Ansai, Shaanxi, 100 bpm) · Samulnori (사물놀이) (Jongno, Seoul, 110 bpm) · Bunggul (Arnhem Land) (Gunbalanya, Arnhem Land, 100 bpm).</p>
+      </div>
+      <div class="about-group">
+        <h3>Afoxé type</h3>
+        <p>Afoxé (Ijexá Agogô) (Pelourinho, Salvador, 107 bpm) · Matsuri Daiko (don-ko-don) (Kanda, Tokyo, 120 bpm).</p>
+      </div>
+      <div class="about-group">
+        <h3>Zouk type</h3>
+        <p>Zouk / Beguine (Pointe-à-Pitre, Guadeloupe, 120 bpm) · Kuduro Shuffle (Cazenga, Luanda, 142 bpm).</p>
+      </div>
+      <div class="about-group">
+        <h3>Frevo type</h3>
+        <p>Frevo (Olinda, Pernambuco, 140 bpm) · Soukous / Ndombolo (cavacha) (Poto-Poto, Brazzaville, 140 bpm).</p>
+      </div>
+      <div class="about-group">
+        <h3>Bomba type</h3>
+        <p>Bomba (Sicá) (Santurce, San Juan, 100 bpm) · Huayno (Andes) (Ayacucho, Peru, 110 bpm).</p>
+      </div>
+      <div class="about-group">
+        <h3>Zanku type</h3>
+        <p>Zanku / Street-Hop (Mushin, Lagos, 115 bpm) · Tarraxinha / Tarraxo (Amadora, Lisbon, 90 bpm).</p>
+      </div>
+      <div class="about-group">
+        <h3>Keharwa type</h3>
+        <p>Keharwa (8 beats) (Prayagraj, Uttar Pradesh, 120 bpm) · Ketawang (Javanese gong cycle) (Kraton, Yogyakarta, 50 bpm).</p>
+      </div>
+      <div class="about-group">
+        <h3>Sedi Donka (25/16)</h3>
+        <p>Sedi Donka (25/16) (Stara Zagora, Bulgaria, 120 bpm).</p>
+      </div>
+      <div class="about-group">
+        <h3>Gqom</h3>
+        <p>Gqom (KwaMashu, Durban, 120 bpm).</p>
+      </div>
+      <div class="about-group">
+        <h3>Dadra (6 beats) (12/8)</h3>
+        <p>Dadra (6 beats) (Varanasi, Uttar Pradesh, 100 bpm).</p>
+      </div>
+      </div>
+      <p class="about-colophon">Built by <a href="https://billtribble.github.io/">Bill Tribble</a> · © 2026 Bill Tribble. All rights reserved.</p>
+    </div>
+  </article>
+
+  <script src="js/grooves-ableton.js?v=2026-11-17-seo1"></script>
+  <script src="js/als-template.js?v=2026-11-17-seo1"></script>
+  <script src="js/families.js?v=2026-11-17-seo1"></script>
+  <script src="js/rhythms.js?v=2026-11-17-seo1"></script>
+  <script src="js/grooves.js?v=2026-11-17-seo1"></script>
+  <script src="js/shape.js?v=2026-11-17-seo1"></script>
+  <script src="js/pattern-groups.js?v=2026-11-17-seo1"></script>
+  <script src="js/pitch.js?v=2026-11-17-seo1"></script>
+  <script src="js/kit.js?v=2026-11-17-seo1"></script>
+  <script src="js/audio.js?v=2026-11-17-seo1"></script>
+  <script src="js/drumrack-template.js?v=2026-11-17-seo1"></script>
+  <script src="js/export-kit.js?v=2026-11-17-seo1"></script>
+  <script src="js/exporters.js?v=2026-11-17-seo1"></script>
+  <script src="js/world-land.js?v=2026-11-17-seo1"></script>
+  <script src="js/origins.js?v=2026-11-17-seo1"></script>
+  <script src="js/nodemap.js?v=2026-11-17-seo1"></script>
+  <script src="js/dial.js?v=2026-11-17-seo1"></script>
+  <script src="js/app.js?v=2026-11-17-seo1"></script>
 </body>
 </html>
