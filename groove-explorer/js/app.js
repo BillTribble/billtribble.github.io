@@ -559,6 +559,8 @@
   function applyMode(switched) {
     const map = state.view === 'map', keep = switched ? focusId() : null;
     document.body.classList.toggle('mode-map', map);
+    // The crawler directory: hidden with the page (no flash of it on load) — visible only in the list view.
+    $('about').hidden = map;
     const b = $('view-toggle');
     b.setAttribute('aria-pressed', String(map));
     b.title = map ? 'Map on: tap to go back to the list' : 'Show the rhythms as a map of similar patterns';

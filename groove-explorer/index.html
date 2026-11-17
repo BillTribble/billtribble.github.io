@@ -47,7 +47,7 @@
   </script>
   <script>
     // Error overlay: paint failures on screen instead of a blank page.
-    window.APP_BUILD = '2026-11-17-seo2';
+    window.APP_BUILD = '2026-11-17-seo3';
     (function () {
       // Repeated errors (e.g. one thrown every scheduler tick) collapse into one line with a count.
       var lines = [], counts = {};
@@ -104,8 +104,8 @@
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link href="https://fonts.googleapis.com/css2?family=Google+Sans+Flex:opsz,wght@6..144,400..700&family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
   <link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:opsz,wght,FILL,GRAD@20..48,400,0..1,0&display=block" rel="stylesheet">
-  <link rel="stylesheet" href="css/gm3-color-tokens.css?v=2026-11-17-seo2">
-  <link rel="stylesheet" href="css/app.css?v=2026-11-17-seo2">
+  <link rel="stylesheet" href="css/gm3-color-tokens.css?v=2026-11-17-seo3">
+  <link rel="stylesheet" href="css/app.css?v=2026-11-17-seo3">
 </head>
 <body>
   <header class="app-bar">
@@ -176,7 +176,9 @@
   <div class="map" id="map" hidden></div>
   <aside class="map-panel" id="map-panel" hidden aria-live="polite"></aside>
 
-  <article class="app-about" id="about" aria-labelledby="about-heading">
+  <article class="app-about" id="about" aria-labelledby="about-heading" hidden>
+    <!-- hidden: the map is the opening view and the directory must not flash before JS paints mode-map;
+         applyMode() keeps it in step with the view from then on. -->
     <div class="about-inner">
       <h1 class="about-title" id="about-heading">Groove explorer — 135 drum rhythms from around the world</h1>
       <p class="about-lead">Audition 135 traditional, club, and classical percussion patterns on an interactive world map and pattern-similarity graph, edit every instrument lane in a live step sequencer, shape swing and accent feel, and export individual MIDI parts or a complete Ableton Live Drum Rack project.</p>
@@ -289,23 +291,23 @@
     </div>
   </article>
 
-  <script src="js/grooves-ableton.js?v=2026-11-17-seo2"></script>
-  <script src="js/als-template.js?v=2026-11-17-seo2"></script>
-  <script src="js/families.js?v=2026-11-17-seo2"></script>
-  <script src="js/rhythms.js?v=2026-11-17-seo2"></script>
-  <script src="js/grooves.js?v=2026-11-17-seo2"></script>
-  <script src="js/shape.js?v=2026-11-17-seo2"></script>
-  <script src="js/pattern-groups.js?v=2026-11-17-seo2"></script>
-  <script src="js/pitch.js?v=2026-11-17-seo2"></script>
-  <script src="js/kit.js?v=2026-11-17-seo2"></script>
-  <script src="js/audio.js?v=2026-11-17-seo2"></script>
-  <script src="js/drumrack-template.js?v=2026-11-17-seo2"></script>
-  <script src="js/export-kit.js?v=2026-11-17-seo2"></script>
-  <script src="js/exporters.js?v=2026-11-17-seo2"></script>
-  <script src="js/world-land.js?v=2026-11-17-seo2"></script>
-  <script src="js/origins.js?v=2026-11-17-seo2"></script>
-  <script src="js/nodemap.js?v=2026-11-17-seo2"></script>
-  <script src="js/dial.js?v=2026-11-17-seo2"></script>
-  <script src="js/app.js?v=2026-11-17-seo2"></script>
+  <script src="js/grooves-ableton.js?v=2026-11-17-seo3"></script>
+  <script src="js/als-template.js?v=2026-11-17-seo3"></script>
+  <script src="js/families.js?v=2026-11-17-seo3"></script>
+  <script src="js/rhythms.js?v=2026-11-17-seo3"></script>
+  <script src="js/grooves.js?v=2026-11-17-seo3"></script>
+  <script src="js/shape.js?v=2026-11-17-seo3"></script>
+  <script src="js/pattern-groups.js?v=2026-11-17-seo3"></script>
+  <script src="js/pitch.js?v=2026-11-17-seo3"></script>
+  <script src="js/kit.js?v=2026-11-17-seo3"></script>
+  <script src="js/audio.js?v=2026-11-17-seo3"></script>
+  <script src="js/drumrack-template.js?v=2026-11-17-seo3"></script>
+  <script src="js/export-kit.js?v=2026-11-17-seo3"></script>
+  <script src="js/exporters.js?v=2026-11-17-seo3"></script>
+  <script src="js/world-land.js?v=2026-11-17-seo3"></script>
+  <script src="js/origins.js?v=2026-11-17-seo3"></script>
+  <script src="js/nodemap.js?v=2026-11-17-seo3"></script>
+  <script src="js/dial.js?v=2026-11-17-seo3"></script>
+  <script src="js/app.js?v=2026-11-17-seo3"></script>
 </body>
 </html>
