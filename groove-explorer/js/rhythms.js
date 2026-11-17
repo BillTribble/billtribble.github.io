@@ -386,10 +386,14 @@ RX.RHYTHMS = [
     etymology: 'Beti (Cameroon) "bikutsi" = "beat the ground" / "stomp the earth". Women\'s dance. 1980s+ pop (Tala Andre Marie).',
     note: 'Beti people, Cameroon. Fast 6/8 with the kick on every beat.' },
 
-  { id: 'kizomba', name: 'Kizomba', region: 'Central Africa & Lusophone', bpm: 92, range: '85–95', steps: 16, family: 'lusophone',
-    kick: 'x...x.....x.....', top: '............x...', sound: 'conga', groove: 'sw16:52', src: 'approx',
+  { id: 'kizomba', name: 'Kizomba', region: 'Central Africa & Lusophone', bpm: 89, range: '85–95', steps: 16, family: 'lusophone',
+    kick: 'x.x.x...x.x.x...', top: '.x.X..x..x.X..x.', sound: 'snare', groove: 'sw16:52', src: 'audio',
     etymology: 'Kimbundu (Angola) "kizomba" = party / celebration. From "kizomba" = a gathering. Zouk + semba. 1980s+ Luanda/Lisbon.',
-    note: 'Angola / Portugal. The kick follows the massemba dance step — long, long, quick-quick (beats 1, 2, 3-and) — with a conga slap on 4; a shaker keeps swung eighths over it. Grew from Luanda dance parties in the 1980s out of zouk and semba, riding smooth, slow vocals in Kimbundu and Portuguese.' },
+    note: 'Angola / Portugal. Transcribed by onset detection from DJ Snakes\' kizomba remix of "Anastasia" (89.1 bpm, SoundCloud 2019): a kick on every beat with a softer second kick on the "and" of beats 1 and 3, a snare playing a tresillo across each two beats — the "e" and "a" of beat 1 and the "and" of beat 2, accented on each "a" — and a low tom "donk" on the last 16th of every two-beat cell. Measured on librosa\'s beat grid over a demucs stem split (drums / bass / other / vocals); the genre\'s shaker layer is left out. Grew from Luanda dance parties in the 1980s out of zouk and semba, riding smooth, slow vocals in Kimbundu and Portuguese.',
+    topLines: [
+      { name: 'Snare', pattern: '.x.X..x..x.X..x.', sound: 'snare' },
+      { name: 'Tom (bar-end donk)', pattern: '.......x.......x', sound: 'tom' }
+    ] },
 
   { id: 'tarraxinha', name: 'Tarraxinha / Tarraxo', region: 'Central Africa & Lusophone', bpm: 90, range: '80–96', steps: 16, family: 'tresillo',
     kick: 'x..x..x.x..x..x.', top: '....x.......x...', sound: 'bass', groove: 'sw16:52', src: 'approx',

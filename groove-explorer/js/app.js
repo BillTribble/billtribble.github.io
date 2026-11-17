@@ -26,7 +26,7 @@
   // viewMode: 'family' (default) or 'region'
   // view: 'list' (rows) or 'map' (node map, js/nodemap.js).
   // mapLayout: 'pattern' (by similarity) or 'world' (centres of origin) inside the map view.
-  const state = { view: 'map', mapLayout: 'world', bpm: 120, tempoMode: 'native', timing: 1, accent: 0.5, topVoice: 'typical', kit: 'samples', cutoff: 0.76, straight12: true, region: 'All', viewMode: 'family', familyDefault: true, samplesDefault: true, groovesV2: true, coreTop: true, patternsV2: true, pulseParts: 'off', worldDefault: true, rows: {} };
+  const state = { view: 'map', mapLayout: 'world', bpm: 120, tempoMode: 'native', timing: 1, accent: 0.5, topVoice: 'typical', kit: 'samples', cutoff: 0.76, straight12: true, region: 'All', viewMode: 'family', familyDefault: true, samplesDefault: true, groovesV2: true, coreTop: true, patternsV2: true, kizombaV3: true, pulseParts: 'off', worldDefault: true, rows: {} };
   const dom = {}; // rowId -> element refs
   const byId = Object.fromEntries(RX.RHYTHMS.map((r) => [r.id, r]));
 
@@ -66,6 +66,8 @@
       // Rhythm patterns were re-researched (kizomba: real two-step semba groove, not a dembow copy);
       // saved rows take the new data once, else a stale saved pattern keeps playing over it forever.
       if (saved && !saved.patternsV2) { state.rows[r.id].kick = r.kick; state.rows[r.id].top = simpleTop(r); }
+      // Kizomba's kick and top lines were re-transcribed from a recording (js/rhythms.js); saved rows take it once.
+      if (saved && !saved.kizombaV3 && r.id === 'kizomba') { state.rows[r.id].kick = r.kick; state.rows[r.id].top = simpleTop(r); }
     });
   }
   function save() { try { localStorage.setItem(STORE, JSON.stringify(state)); } catch (e) {} }

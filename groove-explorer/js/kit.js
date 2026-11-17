@@ -19,7 +19,7 @@ window.RX = window.RX || {};
     // in Synth and Samples mode). `swap` maps a sound name to its machine voice; add 'kick' and 'clap' here once
     // 909-style voices exist for them.
     machine: {
-      rows: ['111', 'afrohouse', 'afrohouse12', '3step', 'shangaan', 'batida', 'funk'],
+      rows: ['111', 'afrohouse', 'afrohouse12', '3step', 'shangaan', 'batida', 'funk', 'kizomba'],
       swap: { tom: 'tom909', snare: 'snare909' },
     },
     map: {
