@@ -4,7 +4,8 @@
   <url>
     <loc>https://billtribble.github.io/</loc>
     <image:image>
-      <image:loc>https://billtribble.github.io/preview.png</image:loc>
+      <image:loc>https://billtribble.github.io/og-preview.png</image:loc>
+      <image:title>Bill Tribble — GitHub Projects</image:title>
     </image:image>
   </url>
   <url>
@@ -17,40 +18,50 @@
   <url>
     <loc>https://billtribble.github.io/Sangha-Looper/</loc>
     <image:image>
-      <image:loc>https://billtribble.github.io/Sangha-Looper/preview.png</image:loc>
+      <image:loc>https://billtribble.github.io/Sangha-Looper/og-preview.png</image:loc>
+      <image:title>Sangha Looper — Multiplayer Looping Workstation</image:title>
     </image:image>
   </url>
   <url>
     <loc>https://billtribble.github.io/crystal-transformer/</loc>
     <image:image>
-      <image:loc>https://billtribble.github.io/crystal-transformer/preview.png</image:loc>
+      <image:loc>https://billtribble.github.io/crystal-transformer/og-preview.png</image:loc>
+      <image:title>Crystal Transformer</image:title>
     </image:image>
   </url>
   <url>
     <loc>https://billtribble.github.io/LifeSim/</loc>
     <image:image>
-      <image:loc>https://billtribble.github.io/LifeSim/preview.png</image:loc>
+      <image:loc>https://billtribble.github.io/LifeSim/og-preview.png</image:loc>
+      <image:title>LifeSim — Interactive 3D Ecosystem Simulation</image:title>
     </image:image>
   </url>
   <url>
     <loc>https://billtribble.github.io/hybridizer/</loc>
     <image:image>
-      <image:loc>https://billtribble.github.io/hybridizer/preview.png</image:loc>
+      <image:loc>https://billtribble.github.io/hybridizer/og-preview.png</image:loc>
+      <image:title>Hybridizer — Botanical Hybridization Study</image:title>
     </image:image>
   </url>
   <url>
     <loc>https://billtribble.github.io/Enso-Soundscapes/</loc>
     <image:image>
-      <image:loc>https://billtribble.github.io/Enso-Soundscapes/preview.png</image:loc>
+      <image:loc>https://billtribble.github.io/Enso-Soundscapes/og-preview.png</image:loc>
+      <image:title>Enso Soundscapes</image:title>
     </image:image>
   </url>
   <url>
     <loc>https://billtribble.github.io/Prismata-UI/</loc>
     <image:image>
-      <image:loc>https://billtribble.github.io/Prismata-UI/preview.png</image:loc>
+      <image:loc>https://billtribble.github.io/Prismata-UI/og-preview.png</image:loc>
+      <image:title>Prismata remix | AI Art Gallery</image:title>
     </image:image>
   </url>
   <url>
     <loc>https://billtribble.github.io/film-lab/</loc>
+    <image:image>
+      <image:loc>https://billtribble.github.io/film-lab/og-preview.png</image:loc>
+      <image:title>Film Lab — Slide-Film Look, Scanned Grain &amp; Light Leaks</image:title>
+    </image:image>
   </url>
 </urlset>
