@@ -26,7 +26,7 @@
   // viewMode: 'family' (default) or 'region'
   // view: 'list' (rows) or 'map' (node map, js/nodemap.js).
   // mapLayout: 'pattern' (by similarity) or 'world' (centres of origin) inside the map view.
-  const state = { view: 'map', mapLayout: 'world', bpm: 120, tempoMode: 'native', timing: 1, accent: 0.5, topVoice: 'typical', kit: 'samples', cutoff: 0.76, straight12: true, region: 'All', viewMode: 'family', familyDefault: true, samplesDefault: true, groovesV2: true, coreTop: true, pulseParts: 'off', worldDefault: true, rows: {} };
+  const state = { view: 'map', mapLayout: 'world', bpm: 120, tempoMode: 'native', timing: 1, accent: 0.5, topVoice: 'typical', kit: 'samples', cutoff: 0.76, straight12: true, region: 'All', viewMode: 'family', familyDefault: true, samplesDefault: true, groovesV2: true, coreTop: true, patternsV2: true, pulseParts: 'off', worldDefault: true, rows: {} };
   const dom = {}; // rowId -> element refs
   const byId = Object.fromEntries(RX.RHYTHMS.map((r) => [r.id, r]));
 
@@ -63,6 +63,9 @@
       if (saved && !saved.coreTop && multi(r)) state.rows[r.id].top = simpleTop(r);
       // Grooves were re-researched for every rhythm; saved rows pick up the new default once.
       if (saved && !saved.groovesV2) state.rows[r.id].groove = r.groove;
+      // Rhythm patterns were re-researched (kizomba: real two-step semba groove, not a dembow copy);
+      // saved rows take the new data once, else a stale saved pattern keeps playing over it forever.
+      if (saved && !saved.patternsV2) { state.rows[r.id].kick = r.kick; state.rows[r.id].top = simpleTop(r); }
     });
   }
   function save() { try { localStorage.setItem(STORE, JSON.stringify(state)); } catch (e) {} }
@@ -416,6 +419,7 @@
   // ── Transport ──
   let nowRow = null;
   let pendingSwitchTarget = null; // rowId that is queued to play next
+  let lastPlayed = null; // rowId last played or shown; the space bar starts this one
   function clearPlayhead() {
     if (nowRow && dom[nowRow]) {
       ['kickSteps', 'topSteps'].forEach((k) => dom[nowRow][k]?.forEach((b) => b.classList.remove('step-now')));
@@ -583,6 +587,7 @@
     RX.nodeMap.paint();
   }
   function togglePlay(id) {
+    if (id) lastPlayed = id;
     clearPlayhead();
     const cur = RX.audio.playing();
     if (cur === id) {
@@ -882,6 +887,20 @@
       paintTheme(window.RX_applyTheme());
     });
     document.addEventListener('keydown', (e) => { if (e.key === 'Escape' && RX.audio.playing()) { RX.audio.stop(); clearPlayhead(); paintPlaying(); } });
+    // Space starts/stops the drums from anywhere: the playing rhythm, else the map panel's
+    // selection, else the last one played. A focused control keeps its own space key —
+    // a field types, a button clicks, a map node plays itself — so no double toggle.
+    document.addEventListener('keydown', (e) => {
+      if (e.code !== 'Space' && e.key !== 'Spacebar') return;
+      const t = e.target, tag = t && t.tagName;
+      if (tag === 'INPUT' || tag === 'TEXTAREA' || tag === 'SELECT' || tag === 'BUTTON' || (t && t.isContentEditable)) return;
+      if (t && t.closest && t.closest('.map-node')) return;
+      e.preventDefault();
+      const cur = RX.audio.playing();
+      if (cur) { togglePlay(cur); return; }
+      const target = (RX.nodeMap.selected && RX.nodeMap.selected()) || lastPlayed;
+      if (target) togglePlay(target);
+    });
     window.__APP_LOADED__ = true;
   }
 
