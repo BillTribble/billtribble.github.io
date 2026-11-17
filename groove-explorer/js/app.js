@@ -306,6 +306,13 @@
     badges.appendChild(el('span', 'badge ' + REGION_CLASS[regionIndex % REGION_CLASS.length], r.region));
     if (r.steps === 12) badges.appendChild(el('span', 'badge', '12/8'));
     meta.appendChild(badges);
+
+    // Info view: always shown, under the title.
+    const noteText = (r.etymology ? '<strong>Etymology:</strong> ' + r.etymology + '<br><br>' : '') + r.note;
+    const note = el('p', 'row-note', ''); note.innerHTML = noteText;
+    meta.appendChild(note);
+
+    const reset = iconBtn('restart_alt', 'Reset this row');
     head.appendChild(meta);
 
     // Tapping a row's tempo switches the whole app to that exact tempo.
@@ -324,16 +331,9 @@
     sel.addEventListener('change', () => { state.rows[r.id].groove = sel.value; save(); });
     head.appendChild(sel);
 
-    const info = iconBtn('info', 'About this rhythm');
-    const reset = iconBtn('restart_alt', 'Reset this row');
-    head.appendChild(info); head.appendChild(reset);
-    root.appendChild(head);
-
-    const noteText = (r.etymology ? '<strong>Etymology:</strong> ' + r.etymology + '<br><br>' : '') + r.note;
-    const note = el('p', 'row-note', ''); note.hidden = true; note.innerHTML = noteText;
-    info.addEventListener('click', () => { note.hidden = !note.hidden; info.classList.toggle('active', !note.hidden); });
+    head.appendChild(reset);
     reset.addEventListener('click', () => { state.rows[r.id] = defaults(r); sel.value = r.groove; paintRow(r); save(); });
-    root.appendChild(note);
+    root.appendChild(head);
 
     // Per-row settings panel (initially hidden)
     const settingsPanel = d.settingsPanel = el('div', 'row-settings', '');
@@ -767,6 +767,7 @@
     RX.nodeMap.init({
       ids: () => RX.RHYTHMS.map((r) => r.id), name: (id) => byId[id].name, region: (id) => byId[id].region,
       mapLabel: (id) => byId[id].mapLabel || byId[id].name.split(' (')[0], bpm: (id) => bpmOf(byId[id]),
+      note: (id) => { const r = byId[id]; return (r.etymology ? '<strong>Etymology:</strong> ' + r.etymology + '<br><br>' : '') + r.note; },
       lanes: pictureLanes, onTap: togglePlay, playing: () => RX.audio.playing(),
       // A merged picture lane passes all its parts, so one tap changes them together.
       toggleStep: (id, lanes, i) => [].concat(lanes).forEach((l) => toggleStep(byId[id], l, i, false)),

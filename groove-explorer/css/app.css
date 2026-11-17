@@ -395,6 +395,8 @@ h1, h2 { font-family: var(--md-ref-typeface-brand); margin: 0; font-weight: 500;
 .map-panel-title { font-size: 18px; font-weight: 600; }
 .map-panel-sub { font-size: 13px; color: var(--md-sys-color-on-surface-variant); }
 .map-panel-lanes { display: flex; flex-direction: column; gap: 10px; }
+/* Info below the instrument rows: always visible, the panel scrolls to it. */
+.map-panel-note { margin: 12px 0 0; max-width: 75ch; font-size: 14px; color: var(--md-sys-color-on-surface-variant); }
 .map-lane { display: flex; flex-direction: column; gap: 4px; }
 .map-lane-label {
   display: inline-flex; align-items: center; gap: 6px; align-self: flex-start; min-height: 26px; padding: 0 10px 0 6px; border-radius: 9999px;
@@ -469,15 +471,14 @@ button.map-step { cursor: pointer; }
 @media (max-width: 840px) { .settings-group:has(.dial) { flex: 0 1 auto; } }
 
 /* ── Below-the-fold rhythm guide & pattern-family directory ── */
+/* Hidden in map view: it is for the crawler and the list view, and it must not
+   make the map page scroll. Googlebot renders JS and lands on the default (list) view. */
+.mode-map .app-about { display: none; }
 .app-about {
   background: var(--md-sys-color-surface-container-low);
   color: var(--md-sys-color-on-surface);
   padding: 40px 24px 56px;
   scroll-margin-top: var(--bar-h, 76px);
-}
-.map-has-panel .app-about { padding-bottom: calc(56px + var(--panel-h, 33vh)); }
-@media (min-width: 841px) {
-  .map-has-panel .app-about { padding-bottom: 56px; margin-right: var(--panel-w, 25vw); }
 }
 .about-inner { max-width: 1120px; margin: 0 auto; display: flex; flex-direction: column; gap: 24px; }
 .about-title { font-size: 24px; line-height: 1.3; }

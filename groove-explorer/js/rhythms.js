@@ -386,10 +386,10 @@ RX.RHYTHMS = [
     etymology: 'Beti (Cameroon) "bikutsi" = "beat the ground" / "stomp the earth". Women\'s dance. 1980s+ pop (Tala Andre Marie).',
     note: 'Beti people, Cameroon. Fast 6/8 with the kick on every beat.' },
 
-  { id: 'kizomba', name: 'Kizomba', region: 'Central Africa & Lusophone', bpm: 92, range: '85–95', steps: 16, family: 'dembow',
-    kick: F, top: DEMBOW, sound: 'snare', groove: 'sw16:52', src: 'approx',
+  { id: 'kizomba', name: 'Kizomba', region: 'Central Africa & Lusophone', bpm: 92, range: '85–95', steps: 16, family: 'lusophone',
+    kick: 'x.......x......x', top: '....x.......x...', sound: 'snare', groove: 'sw16:52', src: 'approx',
     etymology: 'Kimbundu (Angola) "kizomba" = party / celebration. From "kizomba" = a gathering. Zouk + semba. 1980s+ Luanda/Lisbon.',
-    note: 'Angola. Same skeleton as zouk and dembow, slower and smoother.' },
+    note: 'Angola. Not a dembow: the skeleton is the smooth two-step semba groove — deep kick/bass root on 1 (fifth on 3, with the soft 16th pickup before the next bar), soft snare or conga slap answering on 2 and 4. Zouk-descended, slower and smoother still.' },
 
   { id: 'tarraxinha', name: 'Tarraxinha / Tarraxo', region: 'Central Africa & Lusophone', bpm: 90, range: '80–96', steps: 16, family: 'tresillo',
     kick: 'x..x..x.x..x..x.', top: '....x.......x...', sound: 'bass', groove: 'sw16:52', src: 'approx',

@@ -372,6 +372,12 @@ RX.nodeMap = (function () {
       return { cells, grid: lane.grid, now: -1 };
     });
     panel.appendChild(body);
+    // Info below the instrument rows, always visible: scroll the panel to read it.
+    if (hooks.note) {
+      const note = el('p', 'map-panel-note', '');
+      note.innerHTML = hooks.note(id);
+      panel.appendChild(note);
+    }
   }
 
   /** Glide the view (zoom and pan) to a target over `ms`. `target` may be a function, re-read every frame, so the

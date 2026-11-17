@@ -7,13 +7,13 @@ window.RX = window.RX || {};
 
 RX.FAMILIES = [
   ['tresillo', 'Tresillo / 3-3-2', ['111', 'tresillo', 'habanera', 'dancehall', 'tarraxinha', 'bomba', 'bomba-sica']],
-  ['dembow', 'Dembow', ['dembow', 'dembow-rd', 'ponpon', 'kizomba', 'malfuf']],
+  ['dembow', 'Dembow', ['dembow', 'dembow-rd', 'ponpon', 'malfuf']],
   ['cinquillo', 'Cinquillo / Antillean', ['cinquillo', 'soca', 'calypso', 'zouk']],
   ['son-clave', 'Clave / Son / Kpanlogo', ['son', 'rumba', 'bossa', 'highlife', 'gahu', 'azonto', 'kpanlogo']],
   ['latin', 'Merengue / Bachata / Cumbia', ['merengue', 'cumbia']],
   ['samba', 'Samba / Brazilian', ['samba', 'partido-alto', 'funk', 'baiao', 'forro', 'maracatu', 'afoxe']],
   ['afrobeat', 'Afrobeat / Afrobeats / street-hop', ['afrobeat', 'afrobeats', 'zanku']],
-  ['lusophone', 'Kuduro / Soukous / Lusophone', ['kuduro', 'kuduro-sh', 'batida', 'funana', 'coupe', 'ndombolo', 'singeli']],
+  ['lusophone', 'Kuduro / Soukous / Lusophone', ['kuduro', 'kuduro-sh', 'batida', 'funana', 'coupe', 'ndombolo', 'singeli', 'kizomba']],
   ['sa-club', 'South African club', ['afrohouse', 'afrohouse12', 'kwaito', 'gqom', 'amapiano', '3step', 'bacardi', 'shangaan']],
   ['sa-township', 'South African township & Zulu', ['mbaqanga']],
   ['djembe', 'Djembe / Mandé', ['kuku', 'djembe-kassa', 'djembe-soli', 'djembe-dununba', 'djembe-mendiani', 'djembe-yankadi', 'djembe-makru', 'yankadi-makru', 'toro']],
