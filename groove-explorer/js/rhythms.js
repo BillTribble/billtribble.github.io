@@ -392,7 +392,7 @@ RX.RHYTHMS = [
     note: 'Angola / Portugal. Kick on every beat with a short second kick on the "and" of beat 1; a snare plays a tresillo (3-3-2) across each two beats, accented on its middle stroke, and a low tom "donk" answers on the "and" of beat 3. Measured by onset detection from a recording; the genre\'s shaker layer is left out. Grew from Luanda dance parties in the 1980s out of zouk and semba, riding smooth, slow vocals in Kimbundu and Portuguese.',
     topLines: [
       { name: 'Snare', pattern: 'x..X..x.x..X..x.', sound: 'snare' },
-      { name: 'Tom (donk)', pattern: '..........x.....', sound: 'tom' }
+      { name: 'Tom', pattern: '..........x.....', sound: 'tom' }
     ] },
 
   { id: 'tarraxinha', name: 'Tarraxinha / Tarraxo', region: 'Central Africa & Lusophone', bpm: 90, range: '80–96', steps: 16, family: 'tresillo',
