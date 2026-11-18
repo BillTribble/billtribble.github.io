@@ -20,7 +20,6 @@ import time
 import urllib.error
 import urllib.parse
 import urllib.request
-from zoneinfo import ZoneInfo
 
 from cryptography.hazmat.primitives.ciphers.aead import AESGCM
 
@@ -90,39 +89,47 @@ class PacedGoatCounterClient:
 
 
 def compute_range_window(now_utc: dt.datetime, range_key: str, days_back: int, label: str) -> dict:
-    today_pt = now_utc.astimezone(ZoneInfo("America/Los_Angeles")).strftime("%Y-%m-%d")
-    y, m, d = (int(p) for p in today_pt.split("-"))
-    start_utc = dt.datetime(y, m, d, 0, 0, 0, tzinfo=dt.timezone.utc) - dt.timedelta(days=days_back)
-    end_utc = dt.datetime(
+    utc_midnight = dt.datetime(
         now_utc.year, now_utc.month, now_utc.day, 0, 0, 0, tzinfo=dt.timezone.utc
-    ) + dt.timedelta(days=1)
+    )
+    # Pad hourly endpoints by +-1 UTC day so every browser timezone (UTC-12..UTC+14)
+    # can slice exact local day & hourly boundaries client-side from canonical UTC buckets.
+    hourly_start = utc_midnight - dt.timedelta(days=days_back + 1)
+    hourly_end = utc_midnight + dt.timedelta(days=2)
+    agg_start = utc_midnight - dt.timedelta(days=days_back)
+    agg_end = utc_midnight + dt.timedelta(days=1)
     return {
         "rangeKey": range_key,
-        "startIso": start_utc.strftime("%Y-%m-%dT%H:%M:%SZ"),
-        "endIso": end_utc.strftime("%Y-%m-%dT%H:%M:%SZ"),
-        "minDay": start_utc.strftime("%Y-%m-%d"),
-        "todayPT": today_pt,
+        "startIso": agg_start.strftime("%Y-%m-%dT%H:%M:%SZ"),
+        "endIso": agg_end.strftime("%Y-%m-%dT%H:%M:%SZ"),
+        "hourlyStartIso": hourly_start.strftime("%Y-%m-%dT%H:%M:%SZ"),
+        "hourlyEndIso": hourly_end.strftime("%Y-%m-%dT%H:%M:%SZ"),
+        "minDay": agg_start.strftime("%Y-%m-%d"),
+        "todayUtc": utc_midnight.strftime("%Y-%m-%d"),
+        "bucketTz": "UTC",
         "label": label,
     }
 
 
 def fetch_site_bundle(client: PacedGoatCounterClient, site: dict, win: dict) -> dict:
-    qs = urllib.parse.urlencode({"start": win["startIso"], "end": win["endIso"]})
+    qs_hourly = urllib.parse.urlencode({"start": win["hourlyStartIso"], "end": win["hourlyEndIso"]})
+    qs_agg = urllib.parse.urlencode({"start": win["startIso"], "end": win["endIso"]})
     base = f"https://{site['code']}.goatcounter.com/api/v0/"
 
-    total_resp = client.get_json(f"{base}stats/total?{qs}")
-    filtered_days = [
-        day_entry
-        for day_entry in (total_resp.get("stats") or [])
-        if win["minDay"] <= day_entry.get("day", "") <= win["todayPT"]
-    ]
-    computed_total = sum(int(day_entry.get("daily") or 0) for day_entry in filtered_days)
+    total_resp = client.get_json(f"{base}stats/total?{qs_hourly}")
+    raw_days = total_resp.get("stats") or []
+    computed_total = sum(
+        int(day_entry.get("daily") or 0)
+        for day_entry in raw_days
+        if win["minDay"] <= day_entry.get("day", "") <= win["todayUtc"]
+    )
+    padded_total = sum(int(day_entry.get("daily") or 0) for day_entry in raw_days)
 
-    if int(total_resp.get("total") or 0) == 0 and computed_total == 0:
+    if int(total_resp.get("total") or 0) == 0 and padded_total == 0:
         return {
             "site": site,
             "total": 0,
-            "days": filtered_days,
+            "days": raw_days,
             "hits": [],
             "toprefs": [],
             "browsers": [],
@@ -131,17 +138,17 @@ def fetch_site_bundle(client: PacedGoatCounterClient, site: dict, win: dict) -> 
             "sizes": [],
         }
 
-    hits_resp = client.get_json(f"{base}stats/hits?{qs}&limit=50")
-    toprefs_resp = client.get_json(f"{base}stats/toprefs?{qs}&limit=20")
-    browsers_resp = client.get_json(f"{base}stats/browsers?{qs}&limit=20")
-    systems_resp = client.get_json(f"{base}stats/systems?{qs}&limit=20")
-    locations_resp = client.get_json(f"{base}stats/locations?{qs}&limit=20")
-    sizes_resp = client.get_json(f"{base}stats/sizes?{qs}&limit=20")
+    hits_resp = client.get_json(f"{base}stats/hits?{qs_hourly}&limit=50")
+    toprefs_resp = client.get_json(f"{base}stats/toprefs?{qs_agg}&limit=20")
+    browsers_resp = client.get_json(f"{base}stats/browsers?{qs_agg}&limit=20")
+    systems_resp = client.get_json(f"{base}stats/systems?{qs_agg}&limit=20")
+    locations_resp = client.get_json(f"{base}stats/locations?{qs_agg}&limit=20")
+    sizes_resp = client.get_json(f"{base}stats/sizes?{qs_agg}&limit=20")
 
     return {
         "site": site,
         "total": computed_total,
-        "days": filtered_days,
+        "days": raw_days,
         "hits": hits_resp.get("hits") or [],
         "toprefs": toprefs_resp.get("stats") or [],
         "browsers": browsers_resp.get("stats") or [],
@@ -210,7 +217,7 @@ def main() -> int:
 
     now_utc = dt.datetime.now(dt.timezone.utc)
     generated_at = now_utc.strftime("%Y-%m-%dT%H:%M:%SZ")
-    today_pt = now_utc.astimezone(ZoneInfo("America/Los_Angeles")).strftime("%Y-%m-%d")
+    today_utc = now_utc.strftime("%Y-%m-%d")
 
     client = PacedGoatCounterClient(token)
     ranges_payload: dict[str, dict] = {}
@@ -226,9 +233,10 @@ def main() -> int:
         }
 
     snapshot_obj = {
-        "v": 1,
+        "v": 2,
+        "bucketTz": "UTC",
         "generatedAt": generated_at,
-        "todayPT": today_pt,
+        "todayUtc": today_utc,
         "sites": SITES,
         "ranges": ranges_payload,
     }

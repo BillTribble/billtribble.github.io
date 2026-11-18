@@ -383,6 +383,10 @@ h1 {
   color: var(--md-sys-color-on-surface-variant);
 }
 
+.mobile-sync-inline {
+  display: none;
+}
+
 /* --------------------------------------------------------------------------
    Sign-In Screen (Centered 440px <= 75ch Reading Width, Autofill Semantic Form)
    -------------------------------------------------------------------------- */
@@ -1476,6 +1480,9 @@ select:focus,
   .top-bar-title-zone,
   #sync-status {
     display: none;
+  }
+  .mobile-sync-inline {
+    display: inline;
   }
   .main-viewport {
     padding: 12px 12px 36px 12px;

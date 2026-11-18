@@ -54,7 +54,7 @@
   };
 
   var SESSION_STORAGE_KEY = "bt_stats_session_v1";
-  var CACHE_STORAGE_KEY = "bt_stats_cache_v1";
+  var CACHE_STORAGE_KEY = "bt_stats_cache_v2";
   var CACHE_TTL_MS = 60 * 1000;
   var SNAPSHOT_PATH = "./vault-snapshot.json";
   var TOKEN_WRAP_DOMAIN = "bt-stats-snapshot-wrap-v1:";
@@ -364,37 +364,120 @@
   }
 
   // --------------------------------------------------------------------------
-  // Date Range & Timezone Formatting (Pacific Time PT)
+  // Browser-Local Timezone Formatting & UTC -> Local Bucket Conversion
   // --------------------------------------------------------------------------
-  function getTodayInPT() {
+  function pad2(n) {
+    return n < 10 ? "0" + n : String(n);
+  }
+
+  function formatLocalYmd(dateObj) {
+    return (
+      dateObj.getFullYear() + "-" +
+      pad2(dateObj.getMonth() + 1) + "-" +
+      pad2(dateObj.getDate())
+    );
+  }
+
+  function getLocalTimeZoneId() {
     try {
-      return new Intl.DateTimeFormat("en-CA", {
-        timeZone: "America/Los_Angeles",
-        year: "numeric",
-        month: "2-digit",
-        day: "2-digit"
-      }).format(new Date());
+      return Intl.DateTimeFormat().resolvedOptions().timeZone || "UTC";
     } catch (_) {
-      return new Date().toISOString().slice(0, 10);
+      return "UTC";
     }
   }
 
-  function formatPTTime(dateObj) {
+  function getLocalShortZone(dateObj) {
+    var target = dateObj instanceof Date && !isNaN(dateObj.getTime()) ? dateObj : new Date();
     try {
-      return new Intl.DateTimeFormat("en-US", {
-        timeZone: "America/Los_Angeles",
-        hour: "numeric",
-        minute: "2-digit"
-      }).format(dateObj) + " PT";
-    } catch (_) {
-      return dateObj.toTimeString().slice(0, 5);
+      var parts = new Intl.DateTimeFormat(undefined, { timeZoneName: "short" }).formatToParts(target);
+      for (var i = 0; i < parts.length; i++) {
+        if (parts[i].type === "timeZoneName" && parts[i].value) {
+          return parts[i].value;
+        }
+      }
+    } catch (_) {}
+    return getLocalTimeZoneId();
+  }
+
+  function formatLocalZoneSubtitle(dateObj) {
+    var iana = getLocalTimeZoneId();
+    var shortZone = getLocalShortZone(dateObj);
+    if (shortZone && shortZone !== iana) {
+      return iana + " (" + shortZone + ")";
     }
+    return iana;
+  }
+
+  function formatLocalUpdatedTime(dateObj) {
+    var target = dateObj instanceof Date && !isNaN(dateObj.getTime()) ? dateObj : new Date();
+    try {
+      return new Intl.DateTimeFormat(undefined, {
+        hour: "numeric",
+        minute: "2-digit",
+        timeZoneName: "short"
+      }).format(target);
+    } catch (_) {
+      return target.toTimeString().slice(0, 5) + " " + getLocalShortZone(target);
+    }
+  }
+
+  function utcBucketToLocal(utcDayStr, utcHour) {
+    var parts = String(utcDayStr || "").split("-");
+    var y = parseInt(parts[0], 10);
+    var m = parseInt(parts[1], 10);
+    var d = parseInt(parts[2], 10);
+    var dt = new Date(Date.UTC(y, (m || 1) - 1, d || 1, utcHour || 0, 0, 0));
+    return {
+      localDay: formatLocalYmd(dt),
+      localHour: dt.getHours()
+    };
+  }
+
+  function rebucketUtcDaysToLocal(rawSlices, win) {
+    var localMap = {};
+    (rawSlices || []).forEach(function (s) {
+      if (!s || !s.day) return;
+      var hr = s.hourly;
+      if (Array.isArray(hr) && hr.length > 0) {
+        var hrSum = 0;
+        for (var h = 0; h < hr.length; h++) {
+          var val = hr[h] || 0;
+          hrSum += val;
+          var mapped = utcBucketToLocal(s.day, h);
+          if (mapped.localDay < win.minDay || mapped.localDay > win.todayLocal) continue;
+          if (!localMap[mapped.localDay]) {
+            localMap[mapped.localDay] = { day: mapped.localDay, daily: 0, hourly: new Array(24).fill(0) };
+          }
+          if (val > 0) {
+            localMap[mapped.localDay].daily += val;
+            localMap[mapped.localDay].hourly[mapped.localHour] += val;
+          }
+        }
+        if (hrSum === 0 && (s.daily || 0) > 0) {
+          var mid = utcBucketToLocal(s.day, 12);
+          if (mid.localDay >= win.minDay && mid.localDay <= win.todayLocal) {
+            if (!localMap[mid.localDay]) {
+              localMap[mid.localDay] = { day: mid.localDay, daily: 0, hourly: new Array(24).fill(0) };
+            }
+            localMap[mid.localDay].daily += s.daily;
+            localMap[mid.localDay].hourly[mid.localHour] += s.daily;
+          }
+        }
+      } else if ((s.daily || 0) >= 0) {
+        var fallback = utcBucketToLocal(s.day, 12);
+        if (fallback.localDay >= win.minDay && fallback.localDay <= win.todayLocal) {
+          if (!localMap[fallback.localDay]) {
+            localMap[fallback.localDay] = { day: fallback.localDay, daily: 0, hourly: new Array(24).fill(0) };
+          }
+          localMap[fallback.localDay].daily += s.daily || 0;
+        }
+      }
+    });
+    return Object.keys(localMap).sort().map(function (k) { return localMap[k]; });
   }
 
   function computeRangeWindow(rangeKey) {
     var now = new Date();
-    // Exclusive upper bound: tomorrow 00:00:00Z guarantees all hours of today are included across all timezones
-    var endUtc = new Date(Date.UTC(now.getUTCFullYear(), now.getUTCMonth(), now.getUTCDate() + 1, 0, 0, 0));
     var daysBack = 6;
     var label = "Last 7 days";
     if (rangeKey === "today") {
@@ -407,17 +490,23 @@
       daysBack = 89;
       label = "Last 90 days";
     }
-    var todayPT = getTodayInPT();
-    var parts = todayPT.split("-").map(Number);
-    var startDate = new Date(Date.UTC(parts[0], parts[1] - 1, parts[2] - daysBack, 0, 0, 0));
-    // For Today, start 8h after UTC midnight? No: passing UTC midnight of startDate covers PT day cleanly,
-    // and we filter daily buckets >= minDayString so PT day boundaries are exact!
-    var minDay = startDate.toISOString().slice(0, 10);
+
+    var localStart = new Date(now.getFullYear(), now.getMonth(), now.getDate() - daysBack, 0, 0, 0);
+    var localEnd = new Date(now.getFullYear(), now.getMonth(), now.getDate() + 1, 0, 0, 0);
+
+    // Align query timestamps to whole UTC hours so GoatCounter's API accepts half-hour offset zones too
+    var startUtcAligned = new Date(localStart.getTime());
+    startUtcAligned.setUTCMinutes(0, 0, 0);
+    var endUtcAligned = new Date(localEnd.getTime());
+    if (endUtcAligned.getUTCMinutes() > 0 || endUtcAligned.getUTCSeconds() > 0) {
+      endUtcAligned.setUTCHours(endUtcAligned.getUTCHours() + 1, 0, 0, 0);
+    }
+
     return {
-      startIso: startDate.toISOString().replace(".000Z", "Z"),
-      endIso: endUtc.toISOString().replace(".000Z", "Z"),
-      minDay: minDay,
-      todayPT: todayPT,
+      startIso: startUtcAligned.toISOString().replace(".000Z", "Z"),
+      endIso: endUtcAligned.toISOString().replace(".000Z", "Z"),
+      minDay: formatLocalYmd(localStart),
+      todayLocal: formatLocalYmd(now),
       label: label
     };
   }
@@ -440,9 +529,13 @@
     } catch (_) {}
   }
 
+  function buildBundleCacheKey(siteObj, win) {
+    return siteObj.code + ":" + state.range + ":" + getLocalTimeZoneId() + ":" + win.minDay;
+  }
+
   function readCachedSiteBundle(siteObj, win, forceRefresh) {
     if (forceRefresh) return null;
-    var cacheKey = siteObj.code + ":" + state.range + ":" + win.minDay;
+    var cacheKey = buildBundleCacheKey(siteObj, win);
     var mem = memoryCache[cacheKey];
     if (mem && Date.now() - mem.ts < CACHE_TTL_MS) return mem.data;
     var persisted = readSessionCache()[cacheKey];
@@ -469,10 +562,9 @@
 
       var base = "https://" + siteObj.code + ".goatcounter.com/api/v0/";
       var totalResp = await scheduleApiFetch(base + "stats/total?" + qs, token);
-      var filteredDays = (totalResp.stats || []).filter(function (d) {
-        return d.day >= win.minDay && d.day <= win.todayPT;
-      });
-      var computedTotal = filteredDays.reduce(function (acc, d) {
+      var rawUtcDays = totalResp.stats || [];
+      var localDaysPreview = rebucketUtcDaysToLocal(rawUtcDays, win);
+      var computedTotal = localDaysPreview.reduce(function (acc, d) {
         return acc + (d.daily || 0);
       }, 0);
 
@@ -480,7 +572,7 @@
         var emptyBundle = {
           site: siteObj,
           total: 0,
-          days: filteredDays,
+          days: rawUtcDays,
           hits: [],
           toprefs: [],
           browsers: [],
@@ -488,7 +580,7 @@
           locations: [],
           sizes: []
         };
-        saveBundleCache(siteObj.code + ":" + state.range + ":" + win.minDay, emptyBundle);
+        saveBundleCache(buildBundleCacheKey(siteObj, win), emptyBundle);
         slots.push({ siteObj: siteObj, complete: true, bundle: emptyBundle });
       } else {
         var hitsResp = await scheduleApiFetch(base + "stats/hits?" + qs + "&limit=50", token);
@@ -500,7 +592,7 @@
           bundle: {
             site: siteObj,
             total: computedTotal,
-            days: filteredDays,
+            days: rawUtcDays,
             hits: hitsResp.hits || [],
             toprefs: [],
             browsers: [],
@@ -540,19 +632,18 @@
         sizes: sizesResp.stats || []
       };
       slot.complete = true;
-      saveBundleCache(slot.siteObj.code + ":" + state.range + ":" + win.minDay, slot.bundle);
+      saveBundleCache(buildBundleCacheKey(slot.siteObj, win), slot.bundle);
     }
 
     return mergeBundles(slots.map(function (s) { return s.bundle; }), win);
   }
 
-  async function loadMergedFromSnapshot(targetSites, fallbackWin, forceRefresh) {
+  async function loadMergedFromSnapshot(targetSites, localWin, forceRefresh) {
     var snap = await fetchDecryptedSnapshot(forceRefresh);
     var rangeEntry = snap.ranges && snap.ranges[state.range];
     if (!rangeEntry || !rangeEntry.bundles) {
       throw new Error("Missing range in snapshot.");
     }
-    var snapWin = rangeEntry.win || fallbackWin;
     var bundles = [];
     for (var i = 0; i < targetSites.length; i++) {
       var siteObj = targetSites[i];
@@ -583,7 +674,7 @@
         });
       }
     }
-    var merged = mergeBundles(bundles, snapWin);
+    var merged = mergeBundles(bundles, localWin);
     if (snap.generatedAt) {
       var parsedTs = new Date(snap.generatedAt);
       if (!isNaN(parsedTs.getTime())) merged.fetchedAt = parsedTs;
@@ -660,10 +751,9 @@
         // Exclude /stats self-hits if any ever existed
         if (norm === "/stats" || norm.indexOf("/stats/") === 0) return;
 
-        var daySlices = (h.stats || []).filter(function (s) {
-          return s.day >= win.minDay && s.day <= win.todayPT;
-        });
-        var countInWin = daySlices.length > 0
+        var hasSliceStats = Array.isArray(h.stats) && h.stats.length > 0;
+        var daySlices = rebucketUtcDaysToLocal(h.stats || [], win);
+        var countInWin = hasSliceStats
           ? daySlices.reduce(function (sum, s) { return sum + (s.daily || 0); }, 0)
           : (h.count || 0);
         if (countInWin <= 0) return;
@@ -682,10 +772,12 @@
         });
       });
 
-      var effectiveSiteTotal = Math.max(b.total || 0, siteFilteredViews);
+      var localSiteDays = rebucketUtcDaysToLocal(b.days || [], win);
+      var siteDaysViews = localSiteDays.reduce(function (sum, d) { return sum + (d.daily || 0); }, 0);
+      var effectiveSiteTotal = Math.max(siteDaysViews, siteFilteredViews);
       siteTotals.push({ site: b.site, count: effectiveSiteTotal });
 
-      (b.days || []).forEach(function (d) {
+      localSiteDays.forEach(function (d) {
         if (!dayMap[d.day]) {
           dayMap[d.day] = { day: d.day, daily: 0, hourly: new Array(24).fill(0) };
         }
@@ -853,19 +945,20 @@
     }).format(d);
   }
 
-  function formatHourPT(hr) {
-    if (hr === 0) return "12 AM PT";
-    if (hr < 12) return hr + " AM PT";
-    if (hr === 12) return "12 PM PT";
-    return (hr - 12) + " PM PT";
+  function formatLocalHour(hr, refDate) {
+    var base = refDate instanceof Date && !isNaN(refDate.getTime()) ? refDate : new Date();
+    var hourDate = new Date(base.getFullYear(), base.getMonth(), base.getDate(), hr, 0, 0);
+    var tzShort = getLocalShortZone(hourDate);
+    var h12 = hr === 0 ? "12 AM" : hr < 12 ? hr + " AM" : hr === 12 ? "12 PM" : (hr - 12) + " PM";
+    return h12 + " " + tzShort;
   }
 
   function buildChartSeries(data) {
     var useHourly = state.range === "today" || state.granularity === "hourly";
     if (useHourly) {
-      // Aggregate hourly distribution across active days (or Today's 24 hours)
+      // Aggregate browser-local hourly distribution across active days (or Today's 24 local hours)
       var targetDays = state.range === "today"
-        ? data.days.filter(function (d) { return d.day === data.win.todayPT; })
+        ? data.days.filter(function (d) { return d.day === data.win.todayLocal; })
         : data.days;
       var buckets = new Array(24).fill(0);
       targetDays.forEach(function (d) {
@@ -875,14 +968,14 @@
       });
       return buckets.map(function (v, h) {
         return {
-          label: formatHourPT(h),
+          label: formatLocalHour(h, data.fetchedAt),
           shortLabel: h % 6 === 0 ? (h === 0 ? "12a" : h < 12 ? h + "a" : h === 12 ? "12p" : (h - 12) + "p") : "",
           value: v
         };
       });
     }
 
-    var days = data.days.length ? data.days : [{ day: data.win.todayPT, daily: 0 }];
+    var days = data.days.length ? data.days : [{ day: data.win.todayLocal, daily: 0 }];
     var step = Math.max(1, Math.ceil(days.length / 6));
     return days.map(function (d, idx) {
       var nice = formatDayShort(d.day);
@@ -1175,7 +1268,7 @@
     if (state.range === "today" || state.granularity === "hourly") {
       var hourly = new Array(24).fill(0);
       slices.forEach(function (s) {
-        if (state.range === "today" && s.day !== data.win.todayPT) return;
+        if (state.range === "today" && s.day !== data.win.todayLocal) return;
         var hr = s.hourly || [];
         for (var i = 0; i < 24; i++) hourly[i] += hr[i] || 0;
       });
@@ -1557,19 +1650,34 @@
     var breakdownsPending = Boolean(opts && opts.breakdownsPending);
     state.lastData = data;
 
-    // Subtitle
+    // Subtitle & Trend timezone label (browser-local timezone)
     var scopeLabel = state.site === "all"
       ? "All 3 properties"
       : (session.sites.find(function (s) { return s.code === state.site; }) || { domain: state.site }).domain;
+    var updatedText = "Updated " + formatLocalUpdatedTime(data.fetchedAt);
     var subEl = document.getElementById("active-scope-subtitle");
     if (subEl) {
-      subEl.textContent = scopeLabel + " · " + data.win.label + " · Pacific time";
+      clearChildren(subEl);
+      subEl.appendChild(document.createTextNode(
+        scopeLabel + " · " + data.win.label + " · " + formatLocalZoneSubtitle(data.fetchedAt)
+      ));
+      var mobSync = document.createElement("span");
+      mobSync.className = "mobile-sync-inline";
+      mobSync.textContent = " · " + updatedText;
+      subEl.appendChild(mobSync);
+    }
+
+    var trendTzEl = document.getElementById("trend-tz-label");
+    if (trendTzEl) {
+      trendTzEl.textContent = getLocalShortZone(data.fetchedAt);
+      trendTzEl.title = getLocalTimeZoneId();
     }
 
     // Sync timestamp
     var syncLabel = document.getElementById("sync-status-label");
     if (syncLabel) {
-      syncLabel.textContent = "Updated " + formatPTTime(data.fetchedAt);
+      syncLabel.textContent = updatedText;
+      syncLabel.title = getLocalTimeZoneId();
     }
 
     // Hero KPI 1: Total Pageviews + Sparkline + Site Breakdown
@@ -1584,7 +1692,7 @@
     var kpiViews = document.getElementById("kpi-pageviews");
     if (kpiViews) kpiViews.textContent = data.totalViews.toLocaleString();
 
-    var todayEntry = data.days.find(function (d) { return d.day === data.win.todayPT; });
+    var todayEntry = data.days.find(function (d) { return d.day === data.win.todayLocal; });
     var todayCount = todayEntry ? todayEntry.daily : 0;
     var heroBadge = document.getElementById("kpi-hero-badge");
     if (heroBadge) {
@@ -1622,7 +1730,7 @@
           });
         });
         heroMeta.textContent = peakVal > 0
-          ? "Peak hour: " + formatHourPT(peakHour) + " (" + peakVal + " views)"
+          ? "Peak hour: " + formatLocalHour(peakHour, data.fetchedAt) + " (" + peakVal + " views)"
           : "No traffic spikes in selected window";
       }
     }
@@ -1786,8 +1894,13 @@
     var drawerSpark = document.getElementById("drawer-sparkline-svg");
     renderMiniSparkline(drawerSpark, hourly);
 
+    var drawerHoursHeading = document.getElementById("drawer-hours-heading");
+    if (drawerHoursHeading) {
+      drawerHoursHeading.textContent = "Active hours (" + getLocalShortZone(data.fetchedAt) + ")";
+    }
+
     var topHours = hourly
-      .map(function (c, hr) { return { label: formatHourPT(hr), count: c, icon: "schedule" }; })
+      .map(function (c, hr) { return { label: formatLocalHour(hr, data.fetchedAt), count: c, icon: "schedule" }; })
       .filter(function (x) { return x.count > 0; })
       .sort(function (a, b) { return b.count - a.count; });
 
@@ -2194,7 +2307,25 @@
   }
 
   // Boot initialization
+  function hydrateStaticTimezoneLabels() {
+    var now = new Date();
+    var subEl = document.getElementById("active-scope-subtitle");
+    if (subEl) {
+      subEl.textContent = "All 3 properties · Last 7 days · " + formatLocalZoneSubtitle(now);
+    }
+    var trendTzEl = document.getElementById("trend-tz-label");
+    if (trendTzEl) {
+      trendTzEl.textContent = getLocalShortZone(now);
+      trendTzEl.title = getLocalTimeZoneId();
+    }
+    var drawerHoursHeading = document.getElementById("drawer-hours-heading");
+    if (drawerHoursHeading) {
+      drawerHoursHeading.textContent = "Active hours (" + getLocalShortZone(now) + ")";
+    }
+  }
+
   function init() {
+    hydrateStaticTimezoneLabels();
     wireControls();
     try {
       var saved = localStorage.getItem(SESSION_STORAGE_KEY);

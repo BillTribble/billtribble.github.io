@@ -154,7 +154,7 @@
         <div class="dashboard-title-row">
           <div>
             <h1 id="dashboard-heading">Site traffic</h1>
-            <p class="page-subtitle" id="active-scope-subtitle">All 3 properties · Last 7 days · Pacific time</p>
+            <p class="page-subtitle" id="active-scope-subtitle">All 3 properties · Last 7 days · Local time</p>
           </div>
           <select id="mobile-range-select" class="m3-select mobile-range-select" aria-label="Date range">
             <option value="today">Today</option>
@@ -239,7 +239,7 @@
             <div class="card-header">
               <div class="card-title-group">
                 <h2 class="card-title">Traffic trend</h2>
-                <span class="header-count">Pacific time</span>
+                <span class="header-count" id="trend-tz-label">Local time</span>
               </div>
               <nav class="m3-pill-tabs m3-connected-tabs" role="tablist" aria-label="Chart granularity">
                 <button type="button" class="m3-pill-tab active" role="tab" aria-selected="true" data-granularity="hourly">Hourly</button>
@@ -356,7 +356,7 @@
         </a>
       </div>
       <div class="modal-section">
-        <h3 class="card-title">Active hours (Pacific time)</h3>
+        <h3 class="card-title" id="drawer-hours-heading">Active hours</h3>
         <div class="breakdown-list" id="drawer-hours-list"></div>
       </div>
     </div>
