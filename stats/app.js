@@ -204,10 +204,13 @@
   }
 
   // --------------------------------------------------------------------------
-  // Rate-Limited GoatCounter API Client (<= 3 req/s + automatic 429 retry)
+  // Rate-Limited GoatCounter API Client
+  // Each cross-origin GET with Authorization triggers an OPTIONS preflight + GET (2 HTTP reqs)
+  // on cold browsers against GoatCounter's 4 req/s sliding window, so we pace calls >= 560ms apart
+  // and retry both HTTP 429 and transient preflight network errors cleanly.
   // --------------------------------------------------------------------------
   var requestQueue = Promise.resolve();
-  var requestTimestamps = [];
+  var lastRequestAt = 0;
 
   function sleep(ms) {
     return new Promise(function (resolve) {
@@ -217,30 +220,37 @@
 
   function scheduleApiFetch(url, token) {
     var run = async function () {
-      var now = Date.now();
-      requestTimestamps = requestTimestamps.filter(function (t) {
-        return now - t < 1050;
-      });
-      if (requestTimestamps.length >= 3) {
-        var waitMs = 1080 - (now - requestTimestamps[0]);
-        if (waitMs > 0) await sleep(waitMs);
+      var minSpacingMs = 620;
+      var elapsed = Date.now() - lastRequestAt;
+      if (elapsed < minSpacingMs) {
+        await sleep(minSpacingMs - elapsed);
       }
-      requestTimestamps.push(Date.now());
 
       for (var attempt = 0; attempt < 4; attempt++) {
-        var resp = await fetch(url, {
-          method: "GET",
-          mode: "cors",
-          credentials: "omit",
-          headers: {
-            Authorization: "Bearer " + token
+        lastRequestAt = Date.now();
+        var resp;
+        try {
+          resp = await fetch(url, {
+            method: "GET",
+            mode: "cors",
+            credentials: "omit",
+            headers: {
+              Authorization: "Bearer " + token
+            }
+          });
+        } catch (netErr) {
+          // Transient OPTIONS preflight rate-limit surfaces as TypeError before HTTP status
+          if (attempt < 3) {
+            await sleep(1250 * (attempt + 1));
+            continue;
           }
-        });
+          throw netErr;
+        }
+
         if (resp.status === 429) {
           var resetSec = parseFloat(resp.headers.get("X-Rate-Limit-Reset") || "1");
-          var delay = Math.max(900, Math.ceil((isNaN(resetSec) ? 1 : resetSec) * 1000) + 250);
+          var delay = Math.max(1150, Math.ceil((isNaN(resetSec) ? 1 : resetSec) * 1000) + 300);
           await sleep(delay);
-          requestTimestamps.push(Date.now());
           continue;
         }
         if (resp.status === 401 || resp.status === 403) {
@@ -339,7 +349,7 @@
     } catch (_) {}
   }
 
-  async function fetchSiteBundle(siteObj, win, token, forceRefresh) {
+  async function fetchSiteBundle(siteObj, win, token, forceRefresh, onPartial) {
     var cacheKey = siteObj.code + ":" + state.range + ":" + win.minDay;
     if (!forceRefresh) {
       var mem = memoryCache[cacheKey];
@@ -380,6 +390,19 @@
     }
 
     var hitsResp = await scheduleApiFetch(base + "stats/hits?" + qs + "&limit=50", token);
+    if (typeof onPartial === "function") {
+      onPartial({
+        site: siteObj,
+        total: computedTotal,
+        days: filteredDays,
+        hits: hitsResp.hits || [],
+        toprefs: [],
+        browsers: [],
+        systems: [],
+        locations: [],
+        sizes: []
+      });
+    }
     var toprefsResp = await scheduleApiFetch(base + "stats/toprefs?" + qs + "&limit=20", token);
     var browsersResp = await scheduleApiFetch(base + "stats/browsers?" + qs + "&limit=20", token);
     var systemsResp = await scheduleApiFetch(base + "stats/systems?" + qs + "&limit=20", token);
@@ -1340,13 +1363,14 @@
 
       var bundles = [];
       for (var i = 0; i < targetSites.length; i++) {
-        var b = await fetchSiteBundle(targetSites[i], win, session.token, Boolean(forceRefresh));
+        var b = await fetchSiteBundle(targetSites[i], win, session.token, Boolean(forceRefresh), function (partialSiteBundle) {
+          if (seq !== state.loadSeq) return;
+          renderDashboard(mergeBundles(bundles.concat([partialSiteBundle]), win));
+        });
         if (seq !== state.loadSeq) return;
         bundles.push(b);
+        renderDashboard(mergeBundles(bundles, win));
       }
-
-      var merged = mergeBundles(bundles, win);
-      renderDashboard(merged);
     } catch (err) {
       if (seq !== state.loadSeq) return;
       if (err && err.isAuthError) {
