@@ -56,6 +56,8 @@
   var SESSION_STORAGE_KEY = "bt_stats_session_v1";
   var CACHE_STORAGE_KEY = "bt_stats_cache_v1";
   var CACHE_TTL_MS = 60 * 1000;
+  var SNAPSHOT_PATH = "./vault-snapshot.json";
+  var TOKEN_WRAP_DOMAIN = "bt-stats-snapshot-wrap-v1:";
 
   var PROJECT_DIRECTORY = {
     "/groove-explorer": { name: "Groove Explorer", url: "https://billtribble.github.io/groove-explorer/" },
@@ -84,14 +86,15 @@
     range: "7d",
     granularity: "hourly",
     granularityManual: false,
-    envTab: "browsers",
     pageFilter: "",
     loading: false,
+    liveBlocked: false,
     loadSeq: 0,
     lastData: null,
     selectedPage: null
   };
   var memoryCache = {};
+  var decryptedSnapshotCache = null;
 
   // --------------------------------------------------------------------------
   // Theme Controller (Must initialize in 'auto' mode per BillSkill Pillar 2.5)
@@ -157,6 +160,14 @@
     return out;
   }
 
+  function bytesToBase64(bytes) {
+    var bin = "";
+    for (var i = 0; i < bytes.length; i++) {
+      bin += String.fromCharCode(bytes[i]);
+    }
+    return btoa(bin);
+  }
+
   async function unlockVault(emailInput, passwordInput) {
     if (!window.crypto || !window.crypto.subtle) {
       throw new Error("WebCrypto API requires a secure HTTPS or localhost context.");
@@ -183,7 +194,7 @@
       },
       keyMaterial,
       { name: "AES-GCM", length: 256 },
-      false,
+      true,
       ["decrypt"]
     );
 
@@ -200,14 +211,92 @@
     if (emailInput.trim().toLowerCase() !== String(parsed.email || "").toLowerCase()) {
       throw new Error("Email mismatch.");
     }
+
+    var rawKeyBuf = await window.crypto.subtle.exportKey("raw", aesKey);
+    parsed.snapshotKey = bytesToBase64(new Uint8Array(rawKeyBuf));
+    return parsed;
+  }
+
+  async function resolveSnapshotAesKey(envelope) {
+    if (!window.crypto || !window.crypto.subtle) {
+      throw new Error("WebCrypto unavailable.");
+    }
+    if (session && session.snapshotKey) {
+      return window.crypto.subtle.importKey(
+        "raw",
+        base64ToBytes(session.snapshotKey),
+        { name: "AES-GCM" },
+        false,
+        ["decrypt"]
+      );
+    }
+    if (session && session.token && envelope && envelope.tokenWrap && envelope.tokenWrap.iv && envelope.tokenWrap.ct) {
+      var wrapBytes = new TextEncoder().encode(TOKEN_WRAP_DOMAIN + session.token);
+      var wrapDigest = await window.crypto.subtle.digest("SHA-256", wrapBytes);
+      var wrapKey = await window.crypto.subtle.importKey(
+        "raw",
+        wrapDigest,
+        { name: "AES-GCM" },
+        false,
+        ["decrypt"]
+      );
+      var rawSnapKeyBuf = await window.crypto.subtle.decrypt(
+        { name: "AES-GCM", iv: base64ToBytes(envelope.tokenWrap.iv) },
+        wrapKey,
+        base64ToBytes(envelope.tokenWrap.ct)
+      );
+      session.snapshotKey = bytesToBase64(new Uint8Array(rawSnapKeyBuf));
+      session.v = 2;
+      try {
+        localStorage.setItem(SESSION_STORAGE_KEY, JSON.stringify(session));
+      } catch (_) {}
+      return window.crypto.subtle.importKey(
+        "raw",
+        rawSnapKeyBuf,
+        { name: "AES-GCM" },
+        false,
+        ["decrypt"]
+      );
+    }
+    throw new Error("Missing snapshot decryption key.");
+  }
+
+  async function fetchDecryptedSnapshot(forceRefresh) {
+    if (!forceRefresh && decryptedSnapshotCache) {
+      return decryptedSnapshotCache;
+    }
+    var resp = await fetch(SNAPSHOT_PATH, {
+      method: "GET",
+      credentials: "same-origin",
+      cache: forceRefresh ? "no-store" : "default"
+    });
+    if (!resp.ok) {
+      throw new Error("Failed to fetch");
+    }
+    var envelope = await resp.json();
+    if (!envelope || !envelope.iv || !envelope.ct) {
+      throw new Error("Invalid snapshot envelope.");
+    }
+    var aesKey = await resolveSnapshotAesKey(envelope);
+    var plainBuf = await window.crypto.subtle.decrypt(
+      { name: "AES-GCM", iv: base64ToBytes(envelope.iv) },
+      aesKey,
+      base64ToBytes(envelope.ct)
+    );
+    var parsed = JSON.parse(new TextDecoder().decode(plainBuf));
+    if (!parsed || !parsed.ranges) {
+      throw new Error("Invalid snapshot payload.");
+    }
+    decryptedSnapshotCache = parsed;
     return parsed;
   }
 
   // --------------------------------------------------------------------------
   // Rate-Limited GoatCounter API Client
   // Each cross-origin GET with Authorization triggers an OPTIONS preflight + GET (2 HTTP reqs)
-  // on cold browsers against GoatCounter's 4 req/s sliding window, so we pace calls >= 560ms apart
-  // and retry both HTTP 429 and transient preflight network errors cleanly.
+  // on cold browsers against GoatCounter's 4 req/s sliding window, so we pace calls >= 620ms apart,
+  // retry HTTP 429 cleanly, and fail fast (~220ms) on ad-blocker network blocks so Personal Chrome
+  // falls back immediately to same-origin ./vault-snapshot.json.
   // --------------------------------------------------------------------------
   var requestQueue = Promise.resolve();
   var lastRequestAt = 0;
@@ -239,11 +328,13 @@
             }
           });
         } catch (netErr) {
-          // Transient OPTIONS preflight rate-limit surfaces as TypeError before HTTP status
-          if (attempt < 3) {
-            await sleep(1250 * (attempt + 1));
+          // Ad-blockers (ERR_BLOCKED_BY_CLIENT) throw TypeError immediately; retry once briefly
+          // for transient preflight blips, then fall back immediately to ./vault-snapshot.json.
+          if (attempt === 0) {
+            await sleep(220);
             continue;
           }
+          netErr.isNetworkBlocked = true;
           throw netErr;
         }
 
@@ -264,7 +355,7 @@
         }
         return resp.json();
       }
-      throw new Error("GoatCounter API rate limit exceeded. Wait a moment and click Refresh.");
+      throw new Error("GoatCounter API rate limit exceeded.");
     };
 
     var task = requestQueue.then(run, run);
@@ -349,79 +440,156 @@
     } catch (_) {}
   }
 
-  async function fetchSiteBundle(siteObj, win, token, forceRefresh, onPartial) {
+  function readCachedSiteBundle(siteObj, win, forceRefresh) {
+    if (forceRefresh) return null;
     var cacheKey = siteObj.code + ":" + state.range + ":" + win.minDay;
-    if (!forceRefresh) {
-      var mem = memoryCache[cacheKey];
-      if (mem && Date.now() - mem.ts < CACHE_TTL_MS) return mem.data;
-      var persisted = readSessionCache()[cacheKey];
-      if (persisted && Date.now() - persisted.ts < CACHE_TTL_MS) {
-        memoryCache[cacheKey] = persisted;
-        return persisted.data;
+    var mem = memoryCache[cacheKey];
+    if (mem && Date.now() - mem.ts < CACHE_TTL_MS) return mem.data;
+    var persisted = readSessionCache()[cacheKey];
+    if (persisted && Date.now() - persisted.ts < CACHE_TTL_MS) {
+      memoryCache[cacheKey] = persisted;
+      return persisted.data;
+    }
+    return null;
+  }
+
+  async function fetchSitesTwoPhase(targetSites, win, token, forceRefresh, onTotalsReady) {
+    var qs = "start=" + encodeURIComponent(win.startIso) + "&end=" + encodeURIComponent(win.endIso);
+    var slots = [];
+
+    // Phase 1: Fetch total + hits across all target sites so KPIs, Trend, and Pages are 100% accurate
+    // while Breakdown panels remain cleanly in their Loading… spinner state.
+    for (var i = 0; i < targetSites.length; i++) {
+      var siteObj = targetSites[i];
+      var cached = readCachedSiteBundle(siteObj, win, forceRefresh);
+      if (cached) {
+        slots.push({ siteObj: siteObj, complete: true, bundle: cached });
+        continue;
+      }
+
+      var base = "https://" + siteObj.code + ".goatcounter.com/api/v0/";
+      var totalResp = await scheduleApiFetch(base + "stats/total?" + qs, token);
+      var filteredDays = (totalResp.stats || []).filter(function (d) {
+        return d.day >= win.minDay && d.day <= win.todayPT;
+      });
+      var computedTotal = filteredDays.reduce(function (acc, d) {
+        return acc + (d.daily || 0);
+      }, 0);
+
+      if ((totalResp.total || 0) === 0 && computedTotal === 0) {
+        var emptyBundle = {
+          site: siteObj,
+          total: 0,
+          days: filteredDays,
+          hits: [],
+          toprefs: [],
+          browsers: [],
+          systems: [],
+          locations: [],
+          sizes: []
+        };
+        saveBundleCache(siteObj.code + ":" + state.range + ":" + win.minDay, emptyBundle);
+        slots.push({ siteObj: siteObj, complete: true, bundle: emptyBundle });
+      } else {
+        var hitsResp = await scheduleApiFetch(base + "stats/hits?" + qs + "&limit=50", token);
+        slots.push({
+          siteObj: siteObj,
+          complete: false,
+          base: base,
+          qs: qs,
+          bundle: {
+            site: siteObj,
+            total: computedTotal,
+            days: filteredDays,
+            hits: hitsResp.hits || [],
+            toprefs: [],
+            browsers: [],
+            systems: [],
+            locations: [],
+            sizes: []
+          }
+        });
       }
     }
 
-    var qs = "start=" + encodeURIComponent(win.startIso) + "&end=" + encodeURIComponent(win.endIso);
-    var base = "https://" + siteObj.code + ".goatcounter.com/api/v0/";
+    var anyIncomplete = slots.some(function (s) { return !s.complete; });
+    if (anyIncomplete && typeof onTotalsReady === "function") {
+      var partialBundles = slots.map(function (s) { return s.bundle; });
+      onTotalsReady(mergeBundles(partialBundles, win));
+    }
 
-    var totalResp = await scheduleApiFetch(base + "stats/total?" + qs, token);
-    var filteredDays = (totalResp.stats || []).filter(function (d) {
-      return d.day >= win.minDay && d.day <= win.todayPT;
-    });
-    var computedTotal = filteredDays.reduce(function (acc, d) {
-      return acc + (d.daily || 0);
-    }, 0);
+    // Phase 2: Fetch breakdown dimensions for sites with non-zero traffic
+    for (var j = 0; j < slots.length; j++) {
+      var slot = slots[j];
+      if (slot.complete) continue;
+      var toprefsResp = await scheduleApiFetch(slot.base + "stats/toprefs?" + slot.qs + "&limit=20", token);
+      var browsersResp = await scheduleApiFetch(slot.base + "stats/browsers?" + slot.qs + "&limit=20", token);
+      var systemsResp = await scheduleApiFetch(slot.base + "stats/systems?" + slot.qs + "&limit=20", token);
+      var locationsResp = await scheduleApiFetch(slot.base + "stats/locations?" + slot.qs + "&limit=20", token);
+      var sizesResp = await scheduleApiFetch(slot.base + "stats/sizes?" + slot.qs + "&limit=20", token);
 
-    // Optimization: if a site has 0 views in this window, skip the 6 empty breakdown requests!
-    if ((totalResp.total || 0) === 0 && computedTotal === 0) {
-      var emptyBundle = {
-        site: siteObj,
-        total: 0,
-        days: filteredDays,
-        hits: [],
-        toprefs: [],
-        browsers: [],
-        systems: [],
-        locations: [],
-        sizes: []
+      slot.bundle = {
+        site: slot.siteObj,
+        total: slot.bundle.total,
+        days: slot.bundle.days,
+        hits: slot.bundle.hits,
+        toprefs: toprefsResp.stats || [],
+        browsers: browsersResp.stats || [],
+        systems: systemsResp.stats || [],
+        locations: locationsResp.stats || [],
+        sizes: sizesResp.stats || []
       };
-      saveBundleCache(cacheKey, emptyBundle);
-      return emptyBundle;
+      slot.complete = true;
+      saveBundleCache(slot.siteObj.code + ":" + state.range + ":" + win.minDay, slot.bundle);
     }
 
-    var hitsResp = await scheduleApiFetch(base + "stats/hits?" + qs + "&limit=50", token);
-    if (typeof onPartial === "function") {
-      onPartial({
-        site: siteObj,
-        total: computedTotal,
-        days: filteredDays,
-        hits: hitsResp.hits || [],
-        toprefs: [],
-        browsers: [],
-        systems: [],
-        locations: [],
-        sizes: []
-      });
-    }
-    var toprefsResp = await scheduleApiFetch(base + "stats/toprefs?" + qs + "&limit=20", token);
-    var browsersResp = await scheduleApiFetch(base + "stats/browsers?" + qs + "&limit=20", token);
-    var systemsResp = await scheduleApiFetch(base + "stats/systems?" + qs + "&limit=20", token);
-    var locationsResp = await scheduleApiFetch(base + "stats/locations?" + qs + "&limit=20", token);
-    var sizesResp = await scheduleApiFetch(base + "stats/sizes?" + qs + "&limit=20", token);
+    return mergeBundles(slots.map(function (s) { return s.bundle; }), win);
+  }
 
-    var bundle = {
-      site: siteObj,
-      total: computedTotal,
-      days: filteredDays,
-      hits: hitsResp.hits || [],
-      toprefs: toprefsResp.stats || [],
-      browsers: browsersResp.stats || [],
-      systems: systemsResp.stats || [],
-      locations: locationsResp.stats || [],
-      sizes: sizesResp.stats || []
-    };
-    saveBundleCache(cacheKey, bundle);
-    return bundle;
+  async function loadMergedFromSnapshot(targetSites, fallbackWin, forceRefresh) {
+    var snap = await fetchDecryptedSnapshot(forceRefresh);
+    var rangeEntry = snap.ranges && snap.ranges[state.range];
+    if (!rangeEntry || !rangeEntry.bundles) {
+      throw new Error("Missing range in snapshot.");
+    }
+    var snapWin = rangeEntry.win || fallbackWin;
+    var bundles = [];
+    for (var i = 0; i < targetSites.length; i++) {
+      var siteObj = targetSites[i];
+      var b = rangeEntry.bundles[siteObj.code];
+      if (b) {
+        bundles.push({
+          site: siteObj,
+          total: b.total || 0,
+          days: b.days || [],
+          hits: b.hits || [],
+          toprefs: b.toprefs || [],
+          browsers: b.browsers || [],
+          systems: b.systems || [],
+          locations: b.locations || [],
+          sizes: b.sizes || []
+        });
+      } else {
+        bundles.push({
+          site: siteObj,
+          total: 0,
+          days: [],
+          hits: [],
+          toprefs: [],
+          browsers: [],
+          systems: [],
+          locations: [],
+          sizes: []
+        });
+      }
+    }
+    var merged = mergeBundles(bundles, snapWin);
+    if (snap.generatedAt) {
+      var parsedTs = new Date(snap.generatedAt);
+      if (!isNaN(parsedTs.getTime())) merged.fetchedAt = parsedTs;
+    }
+    merged.fromSnapshot = true;
+    return merged;
   }
 
   function saveBundleCache(key, data) {
@@ -1141,17 +1309,252 @@
     });
   }
 
-  function renderEnvironmentCard(data) {
-    var listEl = document.getElementById("env-breakdown-list");
-    if (!listEl) return;
-    var items = state.envTab === "systems" ? data.systems : data.browsers;
-    var emptyMsg = state.envTab === "systems"
-      ? "No operating system data in this window."
-      : "No browser data in this window.";
-    renderBreakdownRows(listEl, items, data.totalViews, emptyMsg);
+  // --------------------------------------------------------------------------
+  // Tokenized GM3 Panel Loading Spinners & Honest Total-Failure Error States
+  // --------------------------------------------------------------------------
+  function clearChildren(el) {
+    if (!el) return;
+    while (el.firstChild) el.removeChild(el.firstChild);
   }
 
-  function renderDashboard(data) {
+  function createGm3SpinnerSvg() {
+    var svg = createSvgEl("svg", {
+      class: "gm3-spinner",
+      viewBox: "0 0 24 24",
+      "aria-hidden": "true"
+    });
+    svg.appendChild(createSvgEl("circle", {
+      class: "gm3-spinner-track",
+      cx: "12",
+      cy: "12",
+      r: "9",
+      fill: "none",
+      "stroke-width": "2.5"
+    }));
+    svg.appendChild(createSvgEl("circle", {
+      class: "gm3-spinner-arc",
+      cx: "12",
+      cy: "12",
+      r: "9",
+      fill: "none",
+      "stroke-width": "2.5",
+      "stroke-linecap": "round"
+    }));
+    return svg;
+  }
+
+  function createPanelLoadingNode(compact) {
+    var wrap = document.createElement("div");
+    wrap.className = compact ? "kpi-loading-inline" : "panel-state panel-state--loading";
+    wrap.setAttribute("role", "status");
+    wrap.setAttribute("aria-live", "polite");
+    if (compact) {
+      wrap.style.display = "inline-flex";
+      wrap.style.alignItems = "center";
+      wrap.style.gap = "10px";
+    }
+    wrap.appendChild(createGm3SpinnerSvg());
+    var lbl = document.createElement("span");
+    lbl.className = "panel-state-label";
+    lbl.textContent = "Loading…";
+    wrap.appendChild(lbl);
+    return wrap;
+  }
+
+  function createPanelErrorNode(message) {
+    var wrap = document.createElement("div");
+    wrap.className = "panel-state panel-state--error";
+    wrap.setAttribute("role", "alert");
+
+    var icon = document.createElement("span");
+    icon.className = "material-symbols-outlined panel-error-icon";
+    icon.setAttribute("aria-hidden", "true");
+    icon.textContent = "cloud_off";
+    wrap.appendChild(icon);
+
+    var lbl = document.createElement("span");
+    lbl.className = "panel-state-label";
+    lbl.textContent = message || "Failed to fetch";
+    wrap.appendChild(lbl);
+
+    var retryBtn = document.createElement("button");
+    retryBtn.type = "button";
+    retryBtn.className = "btn btn-tonal btn-compact panel-retry-btn";
+    retryBtn.textContent = "Retry";
+    retryBtn.addEventListener("click", function () {
+      loadAnalytics(true);
+    });
+    wrap.appendChild(retryBtn);
+    return wrap;
+  }
+
+  function renderPanelLoadingInto(container) {
+    if (!container) return;
+    clearChildren(container);
+    container.appendChild(createPanelLoadingNode(false));
+  }
+
+  function renderPanelErrorInto(container, message) {
+    if (!container) return;
+    clearChildren(container);
+    container.appendChild(createPanelErrorNode(message));
+  }
+
+  function setKpisLoading() {
+    var pvState = document.getElementById("kpi-pageviews-state");
+    var pvBody = document.getElementById("kpi-pageviews-body");
+    var pvMeta = document.getElementById("kpi-pageviews-meta");
+    var heroBadge = document.getElementById("kpi-hero-badge");
+    if (pvState) {
+      clearChildren(pvState);
+      pvState.appendChild(createPanelLoadingNode(true));
+      pvState.hidden = false;
+    }
+    if (pvBody) pvBody.hidden = true;
+    if (pvMeta) pvMeta.textContent = "";
+    if (heroBadge) heroBadge.hidden = true;
+
+    var uqState = document.getElementById("kpi-unique-state");
+    var uqVal = document.getElementById("kpi-unique-visits");
+    var uqMeta = document.getElementById("kpi-unique-meta");
+    if (uqState) {
+      clearChildren(uqState);
+      uqState.appendChild(createPanelLoadingNode(true));
+      uqState.hidden = false;
+    }
+    if (uqVal) uqVal.hidden = true;
+    if (uqMeta) uqMeta.textContent = "";
+
+    var tpState = document.getElementById("kpi-top-project-state");
+    var tpName = document.getElementById("kpi-top-project-name");
+    var tpStats = document.getElementById("kpi-top-project-stats");
+    var tpLink = document.getElementById("kpi-top-project-link");
+    if (tpState) {
+      clearChildren(tpState);
+      tpState.appendChild(createPanelLoadingNode(true));
+      tpState.hidden = false;
+    }
+    if (tpName) tpName.hidden = true;
+    if (tpStats) tpStats.textContent = "";
+    if (tpLink) tpLink.hidden = true;
+  }
+
+  function setAllPanelsLoading() {
+    state.lastData = null;
+    setKpisLoading();
+
+    var syncLabel = document.getElementById("sync-status-label");
+    if (syncLabel) syncLabel.textContent = "Loading…";
+
+    var chartState = document.getElementById("trend-chart-state");
+    var trendSvg = document.getElementById("trend-chart-svg");
+    var trendReadout = document.getElementById("trend-chart-readout");
+    if (chartState) {
+      renderPanelLoadingInto(chartState);
+      chartState.hidden = false;
+    }
+    if (trendSvg) trendSvg.hidden = true;
+    if (trendReadout) trendReadout.hidden = true;
+
+    [
+      "referrers-count-label",
+      "pages-count-label",
+      "browsers-count-label",
+      "systems-count-label",
+      "sizes-count-label",
+      "locations-count-label"
+    ].forEach(function (id) {
+      var el = document.getElementById(id);
+      if (el) el.textContent = "";
+    });
+
+    [
+      "referrers-list",
+      "pages-list",
+      "browsers-breakdown-list",
+      "systems-breakdown-list",
+      "sizes-breakdown-list",
+      "locations-breakdown-list"
+    ].forEach(function (id) {
+      renderPanelLoadingInto(document.getElementById(id));
+    });
+  }
+
+  function setAllPanelsError(message) {
+    state.lastData = null;
+    var msg = message || "Failed to fetch";
+
+    var syncLabel = document.getElementById("sync-status-label");
+    if (syncLabel) syncLabel.textContent = msg;
+
+    var pvState = document.getElementById("kpi-pageviews-state");
+    var pvBody = document.getElementById("kpi-pageviews-body");
+    var pvViews = document.getElementById("kpi-pageviews");
+    var pvSpark = document.getElementById("kpi-hero-sparkline");
+    var pvMeta = document.getElementById("kpi-pageviews-meta");
+    var heroBadge = document.getElementById("kpi-hero-badge");
+    if (pvState) {
+      clearChildren(pvState);
+      pvState.hidden = true;
+    }
+    if (pvBody) pvBody.hidden = false;
+    if (pvViews) pvViews.textContent = "—";
+    if (pvSpark) clearChildren(pvSpark);
+    if (pvMeta) pvMeta.textContent = msg;
+    if (heroBadge) heroBadge.hidden = true;
+
+    var uqState = document.getElementById("kpi-unique-state");
+    var uqVal = document.getElementById("kpi-unique-visits");
+    var uqMeta = document.getElementById("kpi-unique-meta");
+    if (uqState) {
+      clearChildren(uqState);
+      uqState.hidden = true;
+    }
+    if (uqVal) {
+      uqVal.hidden = false;
+      uqVal.textContent = "—";
+    }
+    if (uqMeta) uqMeta.textContent = msg;
+
+    var tpState = document.getElementById("kpi-top-project-state");
+    var tpName = document.getElementById("kpi-top-project-name");
+    var tpStats = document.getElementById("kpi-top-project-stats");
+    var tpLink = document.getElementById("kpi-top-project-link");
+    if (tpState) {
+      clearChildren(tpState);
+      tpState.hidden = true;
+    }
+    if (tpName) {
+      tpName.hidden = false;
+      tpName.textContent = "—";
+    }
+    if (tpStats) tpStats.textContent = msg;
+    if (tpLink) tpLink.hidden = true;
+
+    var chartState = document.getElementById("trend-chart-state");
+    var trendSvg = document.getElementById("trend-chart-svg");
+    var trendReadout = document.getElementById("trend-chart-readout");
+    if (chartState) {
+      renderPanelErrorInto(chartState, msg);
+      chartState.hidden = false;
+    }
+    if (trendSvg) trendSvg.hidden = true;
+    if (trendReadout) trendReadout.hidden = true;
+
+    [
+      "referrers-list",
+      "pages-list",
+      "browsers-breakdown-list",
+      "systems-breakdown-list",
+      "sizes-breakdown-list",
+      "locations-breakdown-list"
+    ].forEach(function (id) {
+      renderPanelErrorInto(document.getElementById(id), msg);
+    });
+  }
+
+  function renderDashboard(data, opts) {
+    var breakdownsPending = Boolean(opts && opts.breakdownsPending);
     state.lastData = data;
 
     // Subtitle
@@ -1170,6 +1573,14 @@
     }
 
     // Hero KPI 1: Total Pageviews + Sparkline + Site Breakdown
+    var pvState = document.getElementById("kpi-pageviews-state");
+    var pvBody = document.getElementById("kpi-pageviews-body");
+    if (pvState) {
+      clearChildren(pvState);
+      pvState.hidden = true;
+    }
+    if (pvBody) pvBody.hidden = false;
+
     var kpiViews = document.getElementById("kpi-pageviews");
     if (kpiViews) kpiViews.textContent = data.totalViews.toLocaleString();
 
@@ -1177,6 +1588,7 @@
     var todayCount = todayEntry ? todayEntry.daily : 0;
     var heroBadge = document.getElementById("kpi-hero-badge");
     if (heroBadge) {
+      heroBadge.hidden = false;
       if (todayCount > 0) {
         heroBadge.className = "badge badge-success";
         heroBadge.textContent = "+" + todayCount.toLocaleString() + " today";
@@ -1215,23 +1627,41 @@
       }
     }
 
-    // KPI 2: Unique Visits (GoatCounter counts privacy-preserving unique session visits)
+    // KPI 2: Unique Visits
+    var uqState = document.getElementById("kpi-unique-state");
     var kpiUnique = document.getElementById("kpi-unique-visits");
-    if (kpiUnique) kpiUnique.textContent = data.totalViews.toLocaleString();
     var kpiUniqueMeta = document.getElementById("kpi-unique-meta");
+    if (uqState) {
+      clearChildren(uqState);
+      uqState.hidden = true;
+    }
+    if (kpiUnique) {
+      kpiUnique.hidden = false;
+      kpiUnique.textContent = data.totalViews.toLocaleString();
+    }
     if (kpiUniqueMeta) {
-      var numCountries = data.locations.length;
-      var numRefs = data.referrers.length;
-      kpiUniqueMeta.textContent =
-        numCountries + (numCountries === 1 ? " country" : " countries") + " · " +
-        numRefs + (numRefs === 1 ? " source" : " sources") + " · Cookieless";
+      if (breakdownsPending) {
+        kpiUniqueMeta.textContent = "Loading country & source breakdown…";
+      } else {
+        var numCountries = data.locations.length;
+        var numRefs = data.referrers.length;
+        kpiUniqueMeta.textContent =
+          numCountries + (numCountries === 1 ? " country" : " countries") + " · " +
+          numRefs + (numRefs === 1 ? " source" : " sources") + " · Cookieless";
+      }
     }
 
     // KPI 3: Top Project (e.g. Groove Explorer highlighted cleanly with external link!)
+    var tpState = document.getElementById("kpi-top-project-state");
     var topPage = data.pages[0] || null;
     var topNameEl = document.getElementById("kpi-top-project-name");
     var topMetaText = document.getElementById("kpi-top-project-stats");
     var topLinkEl = document.getElementById("kpi-top-project-link");
+    if (tpState) {
+      clearChildren(tpState);
+      tpState.hidden = true;
+    }
+    if (topNameEl) topNameEl.hidden = false;
     if (topPage) {
       if (topNameEl) topNameEl.textContent = topPage.name;
       var sharePct = data.totalViews > 0 ? Math.round((topPage.count / data.totalViews) * 100) : 100;
@@ -1250,9 +1680,33 @@
     }
 
     // Main Trend Chart
+    var chartState = document.getElementById("trend-chart-state");
     var trendSvg = document.getElementById("trend-chart-svg");
     var trendReadout = document.getElementById("trend-chart-readout");
+    if (chartState) {
+      clearChildren(chartState);
+      chartState.hidden = true;
+    }
+    if (trendSvg) trendSvg.hidden = false;
+    if (trendReadout) trendReadout.hidden = false;
     if (trendSvg) renderMainTrendChart(trendSvg, trendReadout, data);
+
+    // Per-page / Per-project Breakdown
+    renderPagesList(data);
+
+    // If breakdowns are still queued/in-flight during Phase 1 streaming, keep those 5 panels spinning!
+    if (breakdownsPending) {
+      [
+        "referrers-list",
+        "browsers-breakdown-list",
+        "systems-breakdown-list",
+        "sizes-breakdown-list",
+        "locations-breakdown-list"
+      ].forEach(function (id) {
+        renderPanelLoadingInto(document.getElementById(id));
+      });
+      return;
+    }
 
     // Top Referrers
     var refsCountEl = document.getElementById("referrers-count-label");
@@ -1264,17 +1718,37 @@
       renderBreakdownRows(refsList, data.referrers, data.totalViews, "No referrer data recorded in this window.");
     }
 
-    // Per-page / Per-project Breakdown
-    renderPagesList(data);
+    // Separate Browsers Panel
+    var browsersCountEl = document.getElementById("browsers-count-label");
+    if (browsersCountEl) {
+      browsersCountEl.textContent = "· " + data.browsers.length + (data.browsers.length === 1 ? " browser" : " browsers");
+    }
+    var browsersList = document.getElementById("browsers-breakdown-list");
+    if (browsersList) {
+      renderBreakdownRows(browsersList, data.browsers, data.totalViews, "No browser data recorded in this window.");
+    }
 
-    // Bottom 3-Column Bento: Environment (Browsers/Systems), Screen Sizes, Locations
-    renderEnvironmentCard(data);
+    // Separate Systems Panel
+    var systemsCountEl = document.getElementById("systems-count-label");
+    if (systemsCountEl) {
+      systemsCountEl.textContent = "· " + data.systems.length + (data.systems.length === 1 ? " system" : " systems");
+    }
+    var systemsList = document.getElementById("systems-breakdown-list");
+    if (systemsList) {
+      renderBreakdownRows(systemsList, data.systems, data.totalViews, "No operating system data recorded in this window.");
+    }
 
+    // Screen Sizes Panel
+    var sizesCountEl = document.getElementById("sizes-count-label");
+    if (sizesCountEl) {
+      sizesCountEl.textContent = "· " + data.sizes.length + (data.sizes.length === 1 ? " viewport" : " viewports");
+    }
     var sizesList = document.getElementById("sizes-breakdown-list");
     if (sizesList) {
       renderBreakdownRows(sizesList, data.sizes, data.totalViews, "No screen size data recorded in this window.");
     }
 
+    // Locations Panel
     var locCountEl = document.getElementById("locations-count-label");
     if (locCountEl) {
       locCountEl.textContent = "· " + data.locations.length + (data.locations.length === 1 ? " country" : " countries");
@@ -1349,38 +1823,70 @@
     var seq = ++state.loadSeq;
     state.loading = true;
 
+    if (forceRefresh) {
+      state.liveBlocked = false;
+      decryptedSnapshotCache = null;
+    }
+
     var refreshBtn = document.getElementById("refresh-btn");
     if (refreshBtn) refreshBtn.classList.add("is-spinning");
 
-    var apiBanner = document.getElementById("api-error-banner");
-    if (apiBanner) apiBanner.hidden = true;
+    var win = computeRangeWindow(state.range);
+    var targetSites = state.site === "all"
+      ? session.sites
+      : session.sites.filter(function (s) { return s.code === state.site; });
+
+    // Check if every target site is already hot in cache so tab switches don't flash unnecessarily
+    var allHotCached = !forceRefresh && !state.liveBlocked && targetSites.every(function (s) {
+      return Boolean(readCachedSiteBundle(s, win, false));
+    });
+
+    if (!allHotCached && !(state.liveBlocked && !forceRefresh && decryptedSnapshotCache)) {
+      setAllPanelsLoading();
+    }
 
     try {
-      var win = computeRangeWindow(state.range);
-      var targetSites = state.site === "all"
-        ? session.sites
-        : session.sites.filter(function (s) { return s.code === state.site; });
-
-      var bundles = [];
-      for (var i = 0; i < targetSites.length; i++) {
-        var b = await fetchSiteBundle(targetSites[i], win, session.token, Boolean(forceRefresh), function (partialSiteBundle) {
-          if (seq !== state.loadSeq) return;
-          renderDashboard(mergeBundles(bundles.concat([partialSiteBundle]), win));
-        });
+      if (state.liveBlocked && !forceRefresh) {
+        var cachedSnapMerged = await loadMergedFromSnapshot(targetSites, win, false);
         if (seq !== state.loadSeq) return;
-        bundles.push(b);
-        renderDashboard(mergeBundles(bundles, win));
-      }
-    } catch (err) {
-      if (seq !== state.loadSeq) return;
-      if (err && err.isAuthError) {
-        performSignOut("Session expired. Sign in again with your GoatCounter password.");
+        renderDashboard(cachedSnapMerged, { breakdownsPending: false });
         return;
       }
-      if (apiBanner) {
-        document.getElementById("api-error-text").textContent = err.message || String(err);
-        apiBanner.hidden = false;
+
+      try {
+        var liveMerged = await fetchSitesTwoPhase(
+          targetSites,
+          win,
+          session.token,
+          Boolean(forceRefresh),
+          function (partialMerged) {
+            if (seq !== state.loadSeq) return;
+            renderDashboard(partialMerged, { breakdownsPending: true });
+          }
+        );
+        if (seq !== state.loadSeq) return;
+        renderDashboard(liveMerged, { breakdownsPending: false });
+        return;
+      } catch (liveErr) {
+        if (seq !== state.loadSeq) return;
+        if (liveErr && liveErr.isAuthError) {
+          performSignOut("Session expired. Sign in again with your GoatCounter password.");
+          return;
+        }
+        if (liveErr && liveErr.isNetworkBlocked) {
+          state.liveBlocked = true;
+        }
+        // Keep pending panels in their GM3 Loading… spinner state while falling back
+        // to the same-origin AES-256-GCM encrypted ./vault-snapshot.json!
+        var fallbackMerged = await loadMergedFromSnapshot(targetSites, win, Boolean(forceRefresh));
+        if (seq !== state.loadSeq) return;
+        renderDashboard(fallbackMerged, { breakdownsPending: false });
       }
+    } catch (_finalErr) {
+      if (seq !== state.loadSeq) return;
+      // ONLY render "Failed to fetch" inside panels after BOTH live retries AND
+      // same-origin ./vault-snapshot.json fallback have definitively failed!
+      setAllPanelsError("Failed to fetch");
     } finally {
       if (seq === state.loadSeq) {
         state.loading = false;
@@ -1406,6 +1912,9 @@
   function performSignOut(optionalErrorMsg) {
     session = null;
     memoryCache = {};
+    decryptedSnapshotCache = null;
+    state.liveBlocked = false;
+    state.lastData = null;
     state.loadSeq++;
     try {
       localStorage.removeItem(SESSION_STORAGE_KEY);
@@ -1474,10 +1983,11 @@
         try {
           var unlocked = await unlockVault(emailEl.value, passEl.value);
           var sessionRecord = {
-            v: 1,
+            v: 2,
             email: unlocked.email,
             token: unlocked.token,
             sites: unlocked.sites,
+            snapshotKey: unlocked.snapshotKey,
             unlockedAt: Date.now()
           };
           localStorage.setItem(SESSION_STORAGE_KEY, JSON.stringify(sessionRecord));
@@ -1522,13 +2032,6 @@
     if (signoutBtn) {
       signoutBtn.addEventListener("click", function () {
         performSignOut("");
-      });
-    }
-
-    var retryBtn = document.getElementById("api-retry-btn");
-    if (retryBtn) {
-      retryBtn.addEventListener("click", function () {
-        loadAnalytics(true);
       });
     }
 
@@ -1630,22 +2133,11 @@
         state.granularity = g;
         state.granularityManual = true;
         syncGranularityTabs();
-        if (state.lastData) renderDashboard(state.lastData);
-      });
-    });
-
-    // Environment switcher (Browsers / Systems)
-    document.querySelectorAll("[data-env]").forEach(function (tab) {
-      tab.addEventListener("click", function () {
-        var env = tab.getAttribute("data-env");
-        if (!env || env === state.envTab) return;
-        state.envTab = env;
-        document.querySelectorAll("[data-env]").forEach(function (t) {
-          var active = t === tab;
-          t.classList.toggle("active", active);
-          t.setAttribute("aria-selected", active ? "true" : "false");
-        });
-        if (state.lastData) renderEnvironmentCard(state.lastData);
+        if (state.lastData) {
+          var trendSvg = document.getElementById("trend-chart-svg");
+          var trendReadout = document.getElementById("trend-chart-readout");
+          if (trendSvg) renderMainTrendChart(trendSvg, trendReadout, state.lastData);
+        }
       });
     });
 
@@ -1683,7 +2175,7 @@
       if (state.lastData) {
         var trendSvg = document.getElementById("trend-chart-svg");
         var trendReadout = document.getElementById("trend-chart-readout");
-        if (trendSvg) renderMainTrendChart(trendSvg, trendReadout, state.lastData);
+        if (trendSvg && !trendSvg.hidden) renderMainTrendChart(trendSvg, trendReadout, state.lastData);
       }
     }, { passive: true });
 
@@ -1708,7 +2200,7 @@
       var saved = localStorage.getItem(SESSION_STORAGE_KEY);
       if (saved) {
         var parsed = JSON.parse(saved);
-        if (parsed && parsed.v === 1 && parsed.token && Array.isArray(parsed.sites)) {
+        if (parsed && (parsed.v === 1 || parsed.v === 2) && parsed.token && Array.isArray(parsed.sites)) {
           enterSignedInState(parsed);
           document.documentElement.dataset.bootReady = "1";
           return;

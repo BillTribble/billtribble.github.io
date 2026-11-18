@@ -1,0 +1,52 @@
+name: Sync Encrypted Analytics Snapshot
+
+on:
+  schedule:
+    - cron: '*/30 * * * *'
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+concurrency:
+  group: sync-analytics-snapshot
+  cancel-in-progress: false
+
+jobs:
+  sync-snapshot:
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+
+      - name: Install cryptography
+        run: python3 -m pip install --disable-pip-version-check --quiet cryptography
+
+      - name: Fetch and encrypt GoatCounter snapshot
+        env:
+          GOATCOUNTER_READONLY_TOKEN: ${{ secrets.GOATCOUNTER_READONLY_TOKEN }}
+          STATS_SNAPSHOT_KEY_B64: ${{ secrets.STATS_SNAPSHOT_KEY_B64 }}
+        run: python3 .github/scripts/sync_analytics_snapshot.py
+
+      - name: Commit and push encrypted snapshot
+        run: |
+          if git diff --quiet -- stats/vault-snapshot.json && [ -f stats/vault-snapshot.json ]; then
+            echo "No changes to stats/vault-snapshot.json"
+            exit 0
+          fi
+          git config user.name "Bill Tribble"
+          git config user.email "5898620+BillTribble@users.noreply.github.com"
+          git add stats/vault-snapshot.json
+          if git diff --cached --quiet; then
+            echo "Nothing staged to commit"
+            exit 0
+          fi
+          git commit -m "Refresh encrypted analytics snapshot"
+          git pull --rebase -X theirs origin master
+          git push origin HEAD:master

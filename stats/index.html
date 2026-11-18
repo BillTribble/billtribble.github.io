@@ -194,35 +194,32 @@
           </nav>
         </div>
 
-        <div class="api-banner" id="api-error-banner" role="alert" hidden>
-          <span id="api-error-text">Unable to reach GoatCounter API.</span>
-          <button type="button" class="btn btn-tonal btn-compact" id="api-retry-btn">Retry</button>
-        </div>
-
         <!-- Asymmetric Hero KPI Strip (1.65fr 1fr 1fr) -->
         <section class="kpi-focal-grid" aria-label="Key traffic metrics">
-          <article class="kpi-card kpi-card--hero">
+          <article class="kpi-card kpi-card--hero" id="kpi-card-pageviews">
             <div class="card-header-inline">
               <span class="kpi-label">Total pageviews</span>
-              <span class="badge badge-success" id="kpi-hero-badge">Live</span>
+              <span class="badge badge-success" id="kpi-hero-badge" hidden>Live</span>
             </div>
-            <div class="kpi-hero-body">
+            <div class="kpi-loading-slot" id="kpi-pageviews-state" hidden></div>
+            <div class="kpi-hero-body" id="kpi-pageviews-body">
               <div class="kpi-value" id="kpi-pageviews">0</div>
               <svg class="kpi-sparkline" id="kpi-hero-sparkline" viewBox="0 0 132 36" aria-hidden="true"></svg>
             </div>
-            <div class="kpi-meta" id="kpi-pageviews-meta">Loading live GoatCounter telemetry…</div>
+            <div class="kpi-meta" id="kpi-pageviews-meta"></div>
           </article>
 
-          <article class="kpi-card">
+          <article class="kpi-card" id="kpi-card-unique">
             <div class="card-header-inline">
               <span class="kpi-label">Unique visits</span>
-              <span class="status-dot-inline"><span class="status-dot green" aria-hidden="true"></span>Session deduplicated</span>
+              <span class="status-dot-inline" id="kpi-unique-pill"><span class="status-dot green" aria-hidden="true"></span>Session deduplicated</span>
             </div>
+            <div class="kpi-loading-slot" id="kpi-unique-state" hidden></div>
             <div class="kpi-value" id="kpi-unique-visits">0</div>
-            <div class="kpi-meta" id="kpi-unique-meta">0 countries · 0 sources</div>
+            <div class="kpi-meta" id="kpi-unique-meta"></div>
           </article>
 
-          <article class="kpi-card">
+          <article class="kpi-card" id="kpi-card-top-project">
             <div class="card-header-inline">
               <span class="kpi-label">Top project</span>
               <a href="https://billtribble.github.io/" target="_blank" rel="noopener noreferrer" class="inline-ext-link" id="kpi-top-project-link" hidden>
@@ -230,8 +227,9 @@
                 <span class="material-symbols-outlined" aria-hidden="true">open_in_new</span>
               </a>
             </div>
+            <div class="kpi-loading-slot" id="kpi-top-project-state" hidden></div>
             <div class="kpi-top-project-name" id="kpi-top-project-name">—</div>
-            <div class="kpi-meta" id="kpi-top-project-stats">Waiting for telemetry</div>
+            <div class="kpi-meta" id="kpi-top-project-stats"></div>
           </article>
         </section>
 
@@ -249,6 +247,7 @@
               </nav>
             </div>
             <div class="chart-stage">
+              <div class="chart-state-slot" id="trend-chart-state" hidden></div>
               <svg class="trend-svg" id="trend-chart-svg" role="img" aria-label="Pageviews trend chart"></svg>
               <div class="chart-hover-readout" id="trend-chart-readout"></div>
             </div>
@@ -258,7 +257,7 @@
             <div class="card-header">
               <div class="card-title-group">
                 <h2 class="card-title">Top referrers</h2>
-                <span class="header-count" id="referrers-count-label">· 0 sources</span>
+                <span class="header-count" id="referrers-count-label"></span>
               </div>
             </div>
             <div class="breakdown-list" id="referrers-list"></div>
@@ -270,7 +269,7 @@
           <div class="card-header">
             <div class="card-title-group">
               <h2 class="card-title">Pages and projects</h2>
-              <span class="header-count" id="pages-count-label">· 0 pages</span>
+              <span class="header-count" id="pages-count-label"></span>
             </div>
             <div class="filter-box">
               <span class="material-symbols-outlined search-icon" aria-hidden="true">search</span>
@@ -283,25 +282,33 @@
           <div class="pages-list" id="pages-list"></div>
         </article>
 
-        <!-- Bottom 3-Column Bento: Browsers/Systems · Screen Sizes · Locations -->
-        <section class="bento-three-col" aria-label="Environment, screen sizes, and locations">
-          <article class="card" id="devices-card">
+        <!-- Separate Breakdown Panels: Browsers · Systems · Screen sizes · Locations -->
+        <section class="bento-four-grid" aria-label="Browsers, systems, screen sizes, and locations">
+          <article class="card" id="browsers-card">
             <div class="card-header">
               <div class="card-title-group">
-                <h2 class="card-title">Environment</h2>
+                <h2 class="card-title">Browsers</h2>
+                <span class="header-count" id="browsers-count-label"></span>
               </div>
-              <nav class="m3-pill-tabs m3-connected-tabs" role="tablist" aria-label="Environment dimension">
-                <button type="button" class="m3-pill-tab active" role="tab" aria-selected="true" data-env="browsers">Browsers</button>
-                <button type="button" class="m3-pill-tab" role="tab" aria-selected="false" data-env="systems">Systems</button>
-              </nav>
             </div>
-            <div class="breakdown-list" id="env-breakdown-list"></div>
+            <div class="breakdown-list" id="browsers-breakdown-list"></div>
+          </article>
+
+          <article class="card" id="systems-card">
+            <div class="card-header">
+              <div class="card-title-group">
+                <h2 class="card-title">Systems</h2>
+                <span class="header-count" id="systems-count-label"></span>
+              </div>
+            </div>
+            <div class="breakdown-list" id="systems-breakdown-list"></div>
           </article>
 
           <article class="card" id="sizes-card">
             <div class="card-header">
               <div class="card-title-group">
                 <h2 class="card-title">Screen sizes</h2>
+                <span class="header-count" id="sizes-count-label"></span>
               </div>
             </div>
             <div class="breakdown-list" id="sizes-breakdown-list"></div>
@@ -311,7 +318,7 @@
             <div class="card-header">
               <div class="card-title-group">
                 <h2 class="card-title">Locations</h2>
-                <span class="header-count" id="locations-count-label">· 0 countries</span>
+                <span class="header-count" id="locations-count-label"></span>
               </div>
             </div>
             <div class="breakdown-list" id="locations-breakdown-list"></div>
