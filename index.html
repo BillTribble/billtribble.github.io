@@ -77,6 +77,18 @@
             font-size: 1.5rem;
             margin: 0 0 5px 0;
             font-weight: 600;
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+
+        .profile-icon {
+            width: 28px;
+            height: 28px;
+            flex-shrink: 0;
+            display: block;
+            border-radius: 21.875%;
+            box-shadow: 0 1px 4px rgba(0, 0, 0, 0.35);
         }
 
         .profile p {
@@ -169,16 +181,22 @@
 <body>
 
     <div class="profile">
-        <h1 id="user-title">Bill Tribble</h1>
+        <h1 id="user-title">
+            <svg class="profile-icon" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 256 256" width="28" height="28" aria-hidden="true">
+                <rect width="256" height="256" rx="56" fill="#5246E5"/>
+                <path fill="#FFFFFF" fill-rule="evenodd" d="M90,28h76c5.52,0 10,4.48 10,10c0,5.52 -4.48,10 -10,10h-5v40.25c0,2.46 0.65,4.87 1.88,7l48.93,84.75c5,8.66 5,19.34 0,28c-5,8.66 -14.25,14 -24.25,14h-119.12c-10,0 -19.25,-5.34 -24.25,-14c-5,-8.66 -5,-19.34 0,-28l48.93,-84.75c1.23,-2.13 1.88,-4.54 1.88,-7v-40.25h-5c-5.52,0 -10,-4.48 -10,-10c0,-5.52 4.48,-10 10,-10zM114,54v39.32c0,1.76 -0.46,3.48 -1.34,5l-25.8,44.68c-1.07,1.86 -1.07,4.15 0,6c1.07,1.86 3.05,3 5.2,3c29.75,0 36.36,-10 66.11,-10c2.14,0 4.12,-1.15 5.19,-3c1.07,-1.86 1.07,-4.14 0,-6l-20.02,-34.68c-0.88,-1.52 -1.34,-3.24 -1.34,-5v-39.32c0,-3.31 -2.69,-6 -6,-6h-16c-3.31,0 -6,2.69 -6,6zM95,186c0,7.18 5.82,13 13,13c7.18,0 13,-5.82 13,-13c0,-7.18 -5.82,-13 -13,-13c-7.18,0 -13,5.82 -13,13zM139.5,171c0,5.25 4.25,9.5 9.5,9.5c5.25,0 9.5,-4.25 9.5,-9.5c0,-5.25 -4.25,-9.5 -9.5,-9.5c-5.25,0 -9.5,4.25 -9.5,9.5z"/>
+            </svg>
+            <span>Bill Tribble</span>
+        </h1>
         <p>Projects</p>
     </div>
 
     <div id="links-container" class="links-container">
         <a href="https://billtribble.github.io/groove-explorer/" target="_blank" class="link-card">
-            <video class="repo-thumb" autoplay loop muted playsinline preload="auto" poster="thumbs/groove-explorer.webp?v=7" width="52" height="52" aria-label="Groove Explorer preview">
-                <source src="thumbs/groove-explorer.webm?v=7" type="video/webm">
-                <source src="thumbs/groove-explorer.mp4?v=7" type="video/mp4">
-                <img class="repo-thumb" src="thumbs/groove-explorer.gif?v=7" alt="Groove Explorer preview">
+            <video class="repo-thumb" autoplay loop muted playsinline preload="auto" poster="thumbs/groove-explorer.webp?v=8" width="52" height="52" aria-label="Groove Explorer preview">
+                <source src="thumbs/groove-explorer.webm?v=8" type="video/webm">
+                <source src="thumbs/groove-explorer.mp4?v=8" type="video/mp4">
+                <img class="repo-thumb" src="thumbs/groove-explorer.gif?v=8" alt="Groove Explorer preview">
             </video>
             <div class="repo-info">
                 <span class="repo-name">Groove Explorer</span>
@@ -422,10 +440,10 @@
                     const thumbSlug = THUMB_SLUG_MAP[key] || 'crystal-transformer';
 
                     card.innerHTML = `
-                        <video class="repo-thumb" autoplay loop muted playsinline preload="auto" poster="thumbs/${thumbSlug}.webp?v=7" width="52" height="52" aria-label="${displayName} preview">
-                            <source src="thumbs/${thumbSlug}.webm?v=7" type="video/webm">
-                            <source src="thumbs/${thumbSlug}.mp4?v=7" type="video/mp4">
-                            <img class="repo-thumb" src="thumbs/${thumbSlug}.gif?v=7" alt="${displayName} preview">
+                        <video class="repo-thumb" autoplay loop muted playsinline preload="auto" poster="thumbs/${thumbSlug}.webp?v=8" width="52" height="52" aria-label="${displayName} preview">
+                            <source src="thumbs/${thumbSlug}.webm?v=8" type="video/webm">
+                            <source src="thumbs/${thumbSlug}.mp4?v=8" type="video/mp4">
+                            <img class="repo-thumb" src="thumbs/${thumbSlug}.gif?v=8" alt="${displayName} preview">
                         </video>
                         <div class="repo-info">
                             <span class="repo-name">${displayName}</span>
