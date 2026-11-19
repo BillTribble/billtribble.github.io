@@ -49,7 +49,8 @@ h1, h2 { font-family: var(--md-ref-typeface-brand); margin: 0; font-weight: 500;
   display: flex; flex-direction: column; gap: 8px;
 }
 .app-bar-row { display: flex; align-items: center; gap: 24px; flex-wrap: wrap; }
-.app-title { font-family: var(--md-ref-typeface-brand); font-size: 22px; font-weight: 500; color: var(--md-sys-color-on-surface); white-space: nowrap; }
+.app-title { display: inline-flex; align-items: center; gap: 8px; font-family: var(--md-ref-typeface-brand); font-size: 22px; font-weight: 500; color: var(--md-sys-color-on-surface); white-space: nowrap; }
+.app-logo { width: 24px; height: 24px; flex: none; fill: var(--md-sys-color-primary); }
 .region-tabs { padding: 0 24px 8px; max-width: 1440px; margin: 0 auto; }
 
 .tempo { display: flex; align-items: center; gap: 8px; }
@@ -119,7 +120,7 @@ h1, h2 { font-family: var(--md-ref-typeface-brand); margin: 0; font-weight: 500;
   #search-toggle { display: none; }
   .search-input:placeholder-shown ~ #search-close { visibility: hidden; }
 }
-@media (min-width: 841px) and (max-width: 1040px) { .app-bar .app-title { display: none; } } /* keeps the bar to one row */
+@media (min-width: 841px) and (max-width: 1072px) { .app-bar .app-title { display: none; } } /* keeps the bar to one row */
 .search-empty { padding: 48px 16px; text-align: center; color: var(--md-sys-color-on-surface-variant); }
 @media (max-width: 840px) {
   .app-bar-row.searching > :not(.search):not(#view-toggle) { display: none; }
