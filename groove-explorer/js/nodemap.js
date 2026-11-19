@@ -451,6 +451,15 @@ RX.nodeMap = (function () {
     const fam = panelId == null ? null : groupOf[panelId], inFam = (id) => fam == null || id === panelId || groupOf[id] === fam;
     nodes.forEach((n) => n.g.classList.toggle('map-node-dim', !inFam(n.id)));
     links.forEach((l) => l.line.classList.toggle('map-link-dim', !inFam(l.a.id) && !inFam(l.b.id)));
+    // Keep queued and selected/playing nodes painted above dense neighbours so their ring and label stay unobstructed.
+    [pend, panelId, cur].forEach((id) => {
+      const n = id && nodes.find((x) => x.id === id);
+      if (n && gNodes.lastElementChild !== n.g) {
+        const hadFocus = document.activeElement === n.g;
+        gNodes.appendChild(n.g);
+        if (hadFocus) n.g.focus({ preventScroll: true });
+      }
+    });
     // Search: everything that does not match fades (still tappable); a link stays lit if either end matches.
     const hit = (id) => !filter || filter.has(id);
     nodes.forEach((n) => n.g.classList.toggle('map-node-miss', !hit(n.id)));
