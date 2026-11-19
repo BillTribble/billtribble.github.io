@@ -367,11 +367,8 @@ h1, h2 { font-family: var(--md-ref-typeface-brand); margin: 0; font-weight: 500;
 .map-highlight-family .map-node-dim .map-label-on { opacity: 0.18; }
 .map-highlight-family .map-link-dim { opacity: 0.08; }
 .map-highlight-family .map-link-fam {
-  stroke: var(--md-sys-color-on-surface-variant);
-  stroke-width: 3;
-  stroke-opacity: 0.85;
-  stroke-dasharray: none;
-  stroke-linecap: round;
+  stroke: var(--md-sys-color-on-surface);
+  stroke-opacity: 0.9;
 }
 .map-node-miss .map-dot,
 .map-highlight-family .map-node-miss .map-dot { opacity: 0.1; } /* search: not a match (still tappable) */
@@ -379,7 +376,7 @@ h1, h2 { font-family: var(--md-ref-typeface-brand); margin: 0; font-weight: 500;
 .map-highlight-family .map-node-miss .map-label-on { opacity: 0.1; }
 .map-link-miss { opacity: 0.1; }
 .map-highlight-family .map-link-miss { opacity: 0.08; }
-.map-dot, .map-label, .map-link { transition: opacity 0.2s, filter 0.2s, stroke-width 0.2s, stroke-opacity 0.2s; }
+.map-dot, .map-label, .map-link { transition: opacity 0.2s, filter 0.2s, stroke 0.2s, stroke-opacity 0.2s; }
 .map-node-pending .map-dot { stroke: var(--md-sys-color-primary); stroke-width: 3; stroke-dasharray: 4 3; }
 .map-label {
   font: 500 12px var(--md-ref-typeface-plain, Inter, sans-serif); fill: var(--md-sys-color-on-surface); opacity: 0; pointer-events: none;
