@@ -34,15 +34,15 @@ RX.nodeMap = (function () {
   const el = (tag, cls, text) => { const e = document.createElement(tag); if (cls) e.className = cls; if (text != null) e.textContent = text; return e; };
   const project = ([lat, lon]) => [(lon + 180) * U, (LAND.top - lat) * U];
 
-  // 30 perceptually distinct [light, dark] OKLCH pairs across lightness and chroma tiers so every cluster gets its own
-  // unmistakable colour on both white and dark surfaces, assigned so neighbouring clusters maximise perceptual contrast.
+  // 30 bright, high-chroma [light, dark] pairs spanning the vivid spectrum (zero dark browns, olives, maroons or slates)
+  // so every cluster pops cleanly on both white and dark surfaces and neighbouring clusters get contrasting hues.
   const PALETTE = [
-    ['#bb0850', '#e44672'], ['#d93b33', '#fd6d5f'], ['#ac3b04', '#e5520a'], ['#ec6734', '#fe9976'], ['#793e02', '#b25e07'],
-    ['#b26908', '#e4890e'], ['#d89b10', '#feba29'], ['#7b6305', '#a5860a'], ['#8b9030', '#adb24f'], ['#93b738', '#b1d954'],
-    ['#397805', '#539f1d'], ['#035f3d', '#0a8d5d'], ['#0b9461', '#13bf7f'], ['#14c39e', '#1ae8bc'], ['#077479', '#0d9ca2'],
-    ['#0d9bab', '#1bc0d3'], ['#13b9e6', '#6ad7fe'], ['#03557f', '#097fbb'], ['#0981d4', '#43a7fd'], ['#045bd8', '#3a83fd'],
-    ['#728afd', '#9fb3fe'], ['#57529d', '#7b77ca'], ['#835ee5', '#a58cfd'], ['#6227a4', '#8b52d7'], ['#be6edd', '#e094fe'],
-    ['#962bad', '#bb58d1'], ['#bc44b0', '#e56bd7'], ['#8c0467', '#c03793'], ['#f07ab2', '#feaacf'], ['#c0698b', '#e889ad'],
+    ['#fd264a', '#ff617b'], ['#fb4a41', '#ff7770'], ['#fd5021', '#ff7b57'], ['#fd7b30', '#ff9b61'], ['#ff870f', '#ffa64d'],
+    ['#ffa914', '#ffbe4d'], ['#fcbe03', '#ffcd38'], ['#f5d105', '#ffe033'], ['#9fe10e', '#bdfa38'], ['#6be713', '#8ff844'],
+    ['#24dd13', '#50f641'], ['#10da3f', '#3bf767'], ['#0bd574', '#30f897'], ['#09d7a4', '#30f8c6'], ['#07dacf', '#2efaef'],
+    ['#05cceb', '#3be2fc'], ['#0ab6fa', '#49cafd'], ['#1d9ffc', '#58b9fe'], ['#2b86fd', '#66a8ff'], ['#4979fd', '#7a9eff'],
+    ['#5f6afc', '#8a92ff'], ['#7864fc', '#9e8fff'], ['#905afc', '#ad85ff'], ['#a94cfa', '#c17bfe'], ['#c938fa', '#da6cfe'],
+    ['#f22af8', '#f862fd'], ['#fa2ed4', '#fe67e2'], ['#fb28a6', '#ff61c0'], ['#fc3b8b', '#ff70ac'], ['#fc4a7d', '#ff7aa0'],
   ];
   const hexLab = (hex) => {
     const lin = [1, 3, 5].map((i) => { const v = parseInt(hex.slice(i, i + 2), 16) / 255; return v <= 0.04045 ? v / 12.92 : Math.pow((v + 0.055) / 1.055, 2.4); });
@@ -157,8 +157,8 @@ RX.nodeMap = (function () {
 
     const pool = PALETTE.slice();
     while (pool.length < K) {
-      const i = pool.length, h = Math.round((i * 137.508) % 360), tier = i % 3;
-      pool.push([`hsl(${h} ${68 - tier * 10}% ${38 + tier * 13}%)`, `hsl(${h} ${74 - tier * 8}% ${58 + tier * 11}%)`]);
+      const i = pool.length, h = Math.round((i * 137.508) % 360), tier = i % 2;
+      pool.push([`hsl(${h} ${92 - tier * 6}% ${52 + tier * 8}%)`, `hsl(${h} ${96 - tier * 4}% ${66 + tier * 7}%)`]);
     }
     const M = pool.length;
     const labs = pool.map(([lt, dk]) => lt.startsWith('#') ? [hexLab(lt), hexLab(dk)] : null);
