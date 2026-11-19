@@ -236,6 +236,17 @@
                 <span class="repo-desc">An interactive 3D ecosystem.</span>
             </div>
         </a>
+        <a href="https://billtribble.github.io/film-lab/" target="_blank" class="link-card">
+            <video class="repo-thumb" autoplay loop muted playsinline preload="auto" poster="thumbs/film-lab.webp?v=10" width="52" height="52" aria-label="Film Lab preview">
+                <source src="thumbs/film-lab.webm?v=10" type="video/webm">
+                <source src="thumbs/film-lab.mp4?v=10" type="video/mp4">
+                <img class="repo-thumb" src="thumbs/film-lab.gif?v=10" alt="Film Lab preview">
+            </video>
+            <div class="repo-info">
+                <span class="repo-name">Film Lab</span>
+                <span class="repo-desc">Slide-film look, scanned grain and light leaks for your photos, in the browser</span>
+            </div>
+        </a>
         <a href="https://billtribble.github.io/hybridizer/" target="_blank" class="link-card">
             <video class="repo-thumb" autoplay loop muted playsinline preload="auto" poster="thumbs/hybridizer.webp?v=4" width="52" height="52" aria-label="Hybridizer preview">
                 <source src="thumbs/hybridizer.webm?v=4" type="video/webm">
@@ -267,17 +278,6 @@
             <div class="repo-info">
                 <span class="repo-name">Prismata-UI</span>
                 <span class="repo-desc">Visualising LLM structure</span>
-            </div>
-        </a>
-        <a href="https://billtribble.github.io/film-lab/" target="_blank" class="link-card">
-            <video class="repo-thumb" autoplay loop muted playsinline preload="auto" poster="thumbs/film-lab.webp?v=1" width="52" height="52" aria-label="Film Lab preview">
-                <source src="thumbs/film-lab.webm?v=1" type="video/webm">
-                <source src="thumbs/film-lab.mp4?v=1" type="video/mp4">
-                <img class="repo-thumb" src="thumbs/film-lab.gif?v=1" alt="Film Lab preview">
-            </video>
-            <div class="repo-info">
-                <span class="repo-name">Film Lab</span>
-                <span class="repo-desc">Slide-film look, scanned grain and light leaks for your photos, in the browser</span>
             </div>
         </a>
     </div>
@@ -339,7 +339,7 @@
                     description: 'Generative ambient soundscapes and probabilistic tape-loop studio.'
                 });
 
-                // Ensure Hybridizer appears after LifeSim
+                // Ensure Hybridizer appears after Film Lab
                 const existingHybridizerIdx = filteredRepos.findIndex(repo => repo.name.toLowerCase() === 'hybridizer');
                 if (existingHybridizerIdx !== -1) {
                     filteredRepos.splice(existingHybridizerIdx, 1);
@@ -350,7 +350,18 @@
                     description: 'Botanical hybridisation and procedural plant breeding study'
                 });
 
-                // Ensure LifeSim appears second right after Crystal Transformer
+                // Ensure Film Lab appears directly underneath LifeSim
+                const existingFilmLabIdx = filteredRepos.findIndex(repo => repo.name.toLowerCase() === 'film-lab');
+                if (existingFilmLabIdx !== -1) {
+                    filteredRepos.splice(existingFilmLabIdx, 1);
+                }
+                filteredRepos.unshift({
+                    name: 'film-lab',
+                    slug: 'film-lab/',
+                    description: 'Slide-film look, scanned grain and light leaks for your photos, in the browser'
+                });
+
+                // Ensure LifeSim appears right after Crystal Transformer
                 const existingLifeSimIdx = filteredRepos.findIndex(repo => repo.name.toLowerCase() === 'lifesim');
                 if (existingLifeSimIdx !== -1) {
                     filteredRepos.splice(existingLifeSimIdx, 1);
@@ -389,10 +400,10 @@
                     'crystal transformer',
                     'crystal-transformer',
                     'lifesim',
+                    'film-lab',
                     'hybridizer',
                     'enso-soundscapes',
-                    'prismata-ui',
-                    'film-lab'
+                    'prismata-ui'
                 ];
                 filteredRepos.sort((a, b) => {
                     const ai = PINNED_ORDER.indexOf(a.name.toLowerCase());
@@ -426,6 +437,9 @@
                     if (key === 'lifesim') {
                         description = 'An interactive 3D ecosystem.';
                     }
+                    if (key === 'film-lab') {
+                        description = 'Slide-film look, scanned grain and light leaks for your photos, in the browser';
+                    }
                     if (key === 'groove-explorer') {
                         description = 'Discover global drum rhythms with etymology, displayed on a world map and grouped by similarity.';
                     }
@@ -438,12 +452,13 @@
 
                     const displayName = DISPLAY_NAME_MAP[key] || repo.name;
                     const thumbSlug = THUMB_SLUG_MAP[key] || 'crystal-transformer';
+                    const thumbVer = thumbSlug === 'film-lab' ? '10' : '9';
 
                     card.innerHTML = `
-                        <video class="repo-thumb" autoplay loop muted playsinline preload="auto" poster="thumbs/${thumbSlug}.webp?v=9" width="52" height="52" aria-label="${displayName} preview">
-                            <source src="thumbs/${thumbSlug}.webm?v=9" type="video/webm">
-                            <source src="thumbs/${thumbSlug}.mp4?v=9" type="video/mp4">
-                            <img class="repo-thumb" src="thumbs/${thumbSlug}.gif?v=9" alt="${displayName} preview">
+                        <video class="repo-thumb" autoplay loop muted playsinline preload="auto" poster="thumbs/${thumbSlug}.webp?v=${thumbVer}" width="52" height="52" aria-label="${displayName} preview">
+                            <source src="thumbs/${thumbSlug}.webm?v=${thumbVer}" type="video/webm">
+                            <source src="thumbs/${thumbSlug}.mp4?v=${thumbVer}" type="video/mp4">
+                            <img class="repo-thumb" src="thumbs/${thumbSlug}.gif?v=${thumbVer}" alt="${displayName} preview">
                         </video>
                         <div class="repo-info">
                             <span class="repo-name">${displayName}</span>
