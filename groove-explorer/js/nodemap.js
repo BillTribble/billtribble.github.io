@@ -34,15 +34,15 @@ RX.nodeMap = (function () {
   const el = (tag, cls, text) => { const e = document.createElement(tag); if (cls) e.className = cls; if (text != null) e.textContent = text; return e; };
   const project = ([lat, lon]) => [(lon + 180) * U, (LAND.top - lat) * U];
 
-  // 30 bright, high-chroma [light, dark] pairs spanning the vivid spectrum (zero dark browns, olives, maroons or slates)
-  // so every cluster pops cleanly on both white and dark surfaces and neighbouring clusters get contrasting hues.
+  // Balanced midpoint [light, dark] OKLCH pigment palette (between dull/muddy tones and dayglo neons):
+  // rich editorial & mineral pigments across hue and lightness tiers (ΔE_ok >= 0.09 globally, >= 0.16 across spatial neighbours).
   const PALETTE = [
-    ['#fd264a', '#ff617b'], ['#fb4a41', '#ff7770'], ['#fd5021', '#ff7b57'], ['#fd7b30', '#ff9b61'], ['#ff870f', '#ffa64d'],
-    ['#ffa914', '#ffbe4d'], ['#fcbe03', '#ffcd38'], ['#f5d105', '#ffe033'], ['#9fe10e', '#bdfa38'], ['#6be713', '#8ff844'],
-    ['#24dd13', '#50f641'], ['#10da3f', '#3bf767'], ['#0bd574', '#30f897'], ['#09d7a4', '#30f8c6'], ['#07dacf', '#2efaef'],
-    ['#05cceb', '#3be2fc'], ['#0ab6fa', '#49cafd'], ['#1d9ffc', '#58b9fe'], ['#2b86fd', '#66a8ff'], ['#4979fd', '#7a9eff'],
-    ['#5f6afc', '#8a92ff'], ['#7864fc', '#9e8fff'], ['#905afc', '#ad85ff'], ['#a94cfa', '#c17bfe'], ['#c938fa', '#da6cfe'],
-    ['#f22af8', '#f862fd'], ['#fa2ed4', '#fe67e2'], ['#fb28a6', '#ff61c0'], ['#fc3b8b', '#ff70ac'], ['#fc4a7d', '#ff7aa0'],
+    ['#ec4958', '#fa777b'], ['#ba1734', '#db3d4d'], ['#c84b15', '#f05d1e'], ['#c7761b', '#ea8c22'], ['#f2a326', '#fcbf70'],
+    ['#c3bb27', '#dbd236'], ['#7cb42c', '#96cd53'], ['#2b9022', '#4fab46'], ['#2fae77', '#55c690'], ['#2dd2ab', '#34ecc0'],
+    ['#1a8c77', '#22aa90'], ['#23a7b5', '#2ac2d2'], ['#2cc8f0', '#73dcfc'], ['#1a84aa', '#21a0cd'], ['#1267b4', '#1981e0'],
+    ['#5597e6', '#73b0fa'], ['#5865ef', '#7487f9'], ['#713ece', '#8960e5'], ['#a280db', '#ba99f3'], ['#a347cb', '#bd67e4'],
+    ['#e88df6', '#f2b0fc'], ['#d055b8', '#e975d0'], ['#a3278e', '#bd4da7'], ['#f666a4', '#fb94bc'], ['#cf2c78', '#ea5392'],
+    ['#f07c20', '#fba066'], ['#c39a21', '#e1b228'], ['#61d26e', '#7ee888'], ['#474ed9', '#5f6ef1'], ['#d473e4', '#ec90fb'],
   ];
   const hexLab = (hex) => {
     const lin = [1, 3, 5].map((i) => { const v = parseInt(hex.slice(i, i + 2), 16) / 255; return v <= 0.04045 ? v / 12.92 : Math.pow((v + 0.055) / 1.055, 2.4); });
@@ -51,13 +51,14 @@ RX.nodeMap = (function () {
     const s = Math.cbrt(0.08830246 * lin[0] + 0.28171884 * lin[1] + 0.62997870 * lin[2]);
     return [0.21045426 * l + 0.79361779 * m - 0.00407205 * s, 1.97799850 * l - 2.42859220 * m + 0.45059371 * s, 0.02590404 * l + 0.78277177 * m - 0.80867577 * s];
   };
+  const deltaE = (p, q) => Math.hypot(p[0] - q[0], p[1] - q[1], p[2] - q[2]);
   const colorSep = (p, q) => {
     const da = p[1] - q[1], db = p[2] - q[2], dl = p[0] - q[0];
     const ca = Math.hypot(p[1], p[2]), cb = Math.hypot(q[1], q[2]);
     const cosH = ca > 1e-3 && cb > 1e-3 ? (p[1] * q[1] + p[2] * q[2]) / (ca * cb) : 0;
     // Penalise same-hue-family neighbours (within ~50 deg) so blues, greens or purples never sit side by side.
     const sameHue = cosH > 0.64 ? 1 - 0.55 * ((cosH - 0.64) / 0.36) : 1;
-    return Math.hypot(0.45 * dl, da, db) * sameHue;
+    return Math.hypot(0.85 * dl, da, db) * sameHue;
   };
 
   // Signature rhythm -> concise, musical 1–2 word family / flagship-rhythm label for each of the 25 local Pattern clusters.
@@ -156,17 +157,28 @@ RX.nodeMap = (function () {
     const K = clusters.length;
     clusters.forEach((ms, idx) => ms.forEach((id) => { clusterOf[id] = idx; }));
 
-    const pool = PALETTE.slice();
+    const pool = PALETTE.slice(0, Math.max(K, 25));
     while (pool.length < K) {
       const i = pool.length, h = Math.round((i * 137.508) % 360), tier = i % 2;
-      pool.push([`hsl(${h} ${92 - tier * 6}% ${52 + tier * 8}%)`, `hsl(${h} ${96 - tier * 4}% ${66 + tier * 7}%)`]);
+      pool.push([`hsl(${h} ${74 - tier * 8}% ${48 + tier * 9}%)`, `hsl(${h} ${78 - tier * 6}% ${64 + tier * 8}%)`]);
     }
     const M = pool.length;
     const labs = pool.map(([lt, dk]) => lt.startsWith('#') ? [hexLab(lt), hexLab(dk)] : null);
     const Sep = Array.from({ length: M }, (_, i) => Array.from({ length: M }, (__, j) => (
       i === j ? 0 : (labs[i] && labs[j] ? Math.min(colorSep(labs[i][0], labs[j][0]), colorSep(labs[i][1], labs[j][1])) : 0.12)
     )));
-    const Dcol = Sep.map((row) => row.map((d) => (d ? 1 / Math.pow(Math.max(0.025, d), 3) : 0)));
+    const TrueDE = Array.from({ length: M }, (_, i) => Array.from({ length: M }, (__, j) => (
+      i === j ? 0 : (labs[i] && labs[j] ? Math.min(deltaE(labs[i][0], labs[j][0]), deltaE(labs[i][1], labs[j][1])) : 0.14)
+    )));
+    const Dcol = Sep.map((row, i) => row.map((d, j) => (
+      i === j ? 0 : 1 / Math.pow(Math.max(0.025, d), 3) + (TrueDE[i][j] < 0.155 ? Math.pow((0.16 - TrueDE[i][j]) * 40, 4) : 0)
+    )));
+    const centW = clusters.map((ms) => {
+      const pts = ms.map((id) => origin[id]).filter(Boolean);
+      return pts.length ? [pts.reduce((s, p) => s + p[0], 0) / pts.length, pts.reduce((s, p) => s + p[1], 0) / pts.length] : [0, 0];
+    });
+    const minPMtx = Array.from({ length: K }, () => new Float64Array(K));
+    const centWMtx = Array.from({ length: K }, () => new Float64Array(K));
     const W = Array.from({ length: K }, () => new Float64Array(K));
     for (let i = 0; i < K; i++) {
       for (let j = i + 1; j < K; j++) {
@@ -176,9 +188,16 @@ RX.nodeMap = (function () {
           if (origin[a] && origin[b]) minW = Math.min(minW, Math.hypot((origin[a][1] - origin[b][1]) / 360, (origin[a][0] - origin[b][0]) / 180));
           if (adj[a].has(b)) linked++;
         }));
-        // Pattern-map proximity dominates so adjacent visual clusters always get contrasting hue families.
-        W[i][j] = W[j][i] = 1 / Math.pow(Math.max(0.04, minP), 2.6) + 0.08 / Math.pow(Math.max(0.06, minW), 2) + linked * 24;
+        minPMtx[i][j] = minPMtx[j][i] = minP;
+        const cw = Math.hypot((centW[i][1] - centW[j][1]) / 360, (centW[i][0] - centW[j][0]) / 180);
+        centWMtx[i][j] = centWMtx[j][i] = cw;
+        // Separate neighbours across both Pattern and World views so adjacent clusters always contrast cleanly.
+        W[i][j] = W[j][i] = 1 / Math.pow(Math.max(0.055, minP), 2.4) + 0.35 / Math.pow(Math.max(0.055, cw), 2.0) + 0.15 / Math.pow(Math.max(0.055, minW), 2.0) + linked * 18;
       }
+    }
+    for (let i = 0; i < K; i++) {
+      Array.from({ length: K }, (_, j) => [j, minPMtx[i][j]]).filter(([j]) => j !== i).sort((a, b) => a[1] - b[1]).slice(0, 3).forEach(([j]) => { W[i][j] += 450; W[j][i] += 450; });
+      Array.from({ length: K }, (_, j) => [j, centWMtx[i][j]]).filter(([j]) => j !== i).sort((a, b) => a[1] - b[1]).slice(0, 2).forEach(([j]) => { W[i][j] += 320; W[j][i] += 320; });
     }
     // Greedy max-min spatial graph-colouring seed, followed by 2-opt swaps across all M pool slots.
     const used = new Set(), assigned = new Array(K).fill(-1);
@@ -198,7 +217,7 @@ RX.nodeMap = (function () {
       assigned[ci] = bestSlot; used.add(bestSlot);
     });
     const slots = assigned.concat(Array.from({ length: M }, (_, s) => s).filter((s) => !used.has(s)));
-    for (let iter = 0; iter < 50; iter++) {
+    for (let iter = 0; iter < 80; iter++) {
       let improved = false;
       for (let i = 0; i < K; i++) {
         for (let j = i + 1; j < M; j++) {
