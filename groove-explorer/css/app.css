@@ -364,15 +364,22 @@ h1, h2 { font-family: var(--md-ref-typeface-brand); margin: 0; font-weight: 500;
 .map-node-dim .map-label-on { opacity: 0.9; }
 .map-link-dim { opacity: 0.9; }
 .map-highlight-family .map-node-dim .map-dot,
-.map-highlight-family .map-node-dim .map-label-on,
-.map-highlight-family .map-link-dim { opacity: 0.5; }
+.map-highlight-family .map-node-dim .map-label-on { opacity: 0.18; }
+.map-highlight-family .map-link-dim { opacity: 0.08; }
+.map-highlight-family .map-link-fam {
+  stroke: var(--md-sys-color-on-surface-variant);
+  stroke-width: 3;
+  stroke-opacity: 0.85;
+  stroke-dasharray: none;
+  stroke-linecap: round;
+}
 .map-node-miss .map-dot,
 .map-highlight-family .map-node-miss .map-dot { opacity: 0.1; } /* search: not a match (still tappable) */
 .map-node-miss .map-label-on,
 .map-highlight-family .map-node-miss .map-label-on { opacity: 0.1; }
-.map-link-miss,
-.map-highlight-family .map-link-miss { opacity: 0.1; }
-.map-dot, .map-label, .map-link { transition: opacity 0.2s, filter 0.2s; }
+.map-link-miss { opacity: 0.1; }
+.map-highlight-family .map-link-miss { opacity: 0.08; }
+.map-dot, .map-label, .map-link { transition: opacity 0.2s, filter 0.2s, stroke-width 0.2s, stroke-opacity 0.2s; }
 .map-node-pending .map-dot { stroke: var(--md-sys-color-primary); stroke-width: 3; stroke-dasharray: 4 3; }
 .map-label {
   font: 500 12px var(--md-ref-typeface-plain, Inter, sans-serif); fill: var(--md-sys-color-on-surface); opacity: 0; pointer-events: none;
@@ -395,7 +402,7 @@ h1, h2 { font-family: var(--md-ref-typeface-brand); margin: 0; font-weight: 500;
   .map-zoomed .map-family-label { font-size: 20px; }
 }
 .map-family-dim { opacity: 0.9; }
-.map-highlight-family .map-family-dim { opacity: 0.5; }
+.map-highlight-family .map-family-dim { opacity: 0.18; }
 .map-family-miss, .map-highlight-family .map-family-miss { opacity: 0.1; }
 
 /* Picture of the playing rhythm: bottom third on phones, right quarter on desktop. */
@@ -471,6 +478,7 @@ button.map-step { cursor: pointer; }
   #view-toggle, .map-layout-toggle { display: none; }
 }
 .map-world .map-links { opacity: 0.3; } /* pattern links stay, but the map comes first */
+.map-world.map-highlight-family .map-links { opacity: 1; }
 .map-panel-title-row { display: flex; align-items: center; gap: 12px; }
 .map-panel-stop {
   display: inline-flex; align-items: center; justify-content: center; flex: none; width: 44px; height: 44px; border-radius: 9999px;

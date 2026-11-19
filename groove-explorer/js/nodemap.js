@@ -900,7 +900,7 @@ RX.nodeMap = (function () {
       familyBtn.setAttribute('aria-pressed', String(highlightFamily));
       familyBtn.title = highlightFamily
         ? 'Highlighting this pattern family — tap to show all rhythms normally'
-        : 'Dim rhythms outside this pattern family by 50%';
+        : 'Highlight this pattern family and bold its connections';
     }
     if (!on) panelLanes.forEach((l) => { if (l.now >= 0) l.cells[l.now].classList.remove('map-step-now'); l.now = -1; });
   }
@@ -916,12 +916,23 @@ RX.nodeMap = (function () {
     });
     // The panel follows the playing rhythm and stays on the last one after it stops.
     if (cur && cur !== panelId) buildPanel(cur);
-    // The selected rhythm's map cluster stays in full colour; every other node, and links outside it, fade (10% normally, 50% when Highlight family is on).
-    const fam = panelId == null ? null : clusterOf[panelId], inFam = (id) => fam == null || id === panelId || clusterOf[id] === fam;
-    svg.classList.toggle('map-highlight-family', highlightFamily && fam != null);
+    // The selected rhythm's map cluster stays in full colour; every other node, and links outside it, fade (10% normally, 82% when Highlight family is on).
+    const fam = panelId == null ? null : clusterOf[panelId], hasSel = panelId != null;
+    const inFam = (id) => !hasSel || id === panelId || (fam != null && clusterOf[id] === fam);
+    svg.classList.toggle('map-highlight-family', highlightFamily && hasSel);
     nodes.forEach((n) => n.g.classList.toggle('map-node-dim', !inFam(n.id)));
-    links.forEach((l) => l.line.classList.toggle('map-link-dim', highlightFamily ? (!inFam(l.a.id) || !inFam(l.b.id)) : (!inFam(l.a.id) && !inFam(l.b.id))));
+    links.forEach((l) => {
+      const bothFam = hasSel && inFam(l.a.id) && inFam(l.b.id);
+      l.line.classList.toggle('map-link-fam', bothFam);
+      l.line.classList.toggle('map-link-dim', highlightFamily ? !bothFam : (!inFam(l.a.id) && !inFam(l.b.id)));
+    });
+    if (hasSel) {
+      links.forEach((l) => { if (inFam(l.a.id) && inFam(l.b.id)) gLinks.appendChild(l.line); });
+    }
     clusterMeta.forEach((f) => { if (f.el) f.el.classList.toggle('map-family-dim', fam != null && f.idx !== fam); });
+    if (fam != null && gFamilies && clusterMeta[fam] && clusterMeta[fam].el && gFamilies.lastElementChild !== clusterMeta[fam].el) {
+      gFamilies.appendChild(clusterMeta[fam].el);
+    }
     // Keep highlighted family members above dimmed nodes, and queued/selected/playing nodes on top of everything.
     if (highlightFamily && fam != null) {
       const active = document.activeElement;
