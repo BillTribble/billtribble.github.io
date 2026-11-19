@@ -34,15 +34,147 @@ RX.nodeMap = (function () {
   const el = (tag, cls, text) => { const e = document.createElement(tag); if (cls) e.className = cls; if (text != null) e.textContent = text; return e; };
   const project = ([lat, lon]) => [(lon + 180) * U, (LAND.top - lat) * U];
 
-  // One hue per pattern group (golden-angle spacing keeps neighbouring groups apart).
-  const groupOf = {}, groupLabel = {};
-  function indexGroups() {
-    (RX.PATTERN_GROUPS || []).forEach(([gid, label, ids], i) => ids.forEach((id) => { groupOf[id] = i; groupLabel[id] = label; }));
+  // 30 perceptually distinct [light, dark] OKLCH pairs across lightness and chroma tiers so every cluster gets its own
+  // unmistakable colour on both white and dark surfaces, assigned so neighbouring clusters maximise perceptual contrast.
+  const PALETTE = [
+    ['#bb0850', '#e44672'], ['#d93b33', '#fd6d5f'], ['#ac3b04', '#e5520a'], ['#ec6734', '#fe9976'], ['#793e02', '#b25e07'],
+    ['#b26908', '#e4890e'], ['#d89b10', '#feba29'], ['#7b6305', '#a5860a'], ['#8b9030', '#adb24f'], ['#93b738', '#b1d954'],
+    ['#397805', '#539f1d'], ['#035f3d', '#0a8d5d'], ['#0b9461', '#13bf7f'], ['#14c39e', '#1ae8bc'], ['#077479', '#0d9ca2'],
+    ['#0d9bab', '#1bc0d3'], ['#13b9e6', '#6ad7fe'], ['#03557f', '#097fbb'], ['#0981d4', '#43a7fd'], ['#045bd8', '#3a83fd'],
+    ['#728afd', '#9fb3fe'], ['#57529d', '#7b77ca'], ['#835ee5', '#a58cfd'], ['#6227a4', '#8b52d7'], ['#be6edd', '#e094fe'],
+    ['#962bad', '#bb58d1'], ['#bc44b0', '#e56bd7'], ['#8c0467', '#c03793'], ['#f07ab2', '#feaacf'], ['#c0698b', '#e889ad'],
+  ];
+  const hexLab = (hex) => {
+    const lin = [1, 3, 5].map((i) => { const v = parseInt(hex.slice(i, i + 2), 16) / 255; return v <= 0.04045 ? v / 12.92 : Math.pow((v + 0.055) / 1.055, 2.4); });
+    const l = Math.cbrt(0.41222147 * lin[0] + 0.53633254 * lin[1] + 0.05144599 * lin[2]);
+    const m = Math.cbrt(0.21190350 * lin[0] + 0.68069955 * lin[1] + 0.10739696 * lin[2]);
+    const s = Math.cbrt(0.08830246 * lin[0] + 0.28171884 * lin[1] + 0.62997870 * lin[2]);
+    return [0.21045426 * l + 0.79361779 * m - 0.00407205 * s, 1.97799850 * l - 2.42859220 * m + 0.45059371 * s, 0.02590404 * l + 0.78277177 * m - 0.80867577 * s];
+  };
+  const colorSep = (p, q) => {
+    const da = p[1] - q[1], db = p[2] - q[2], dl = p[0] - q[0];
+    const ca = Math.hypot(p[1], p[2]), cb = Math.hypot(q[1], q[2]);
+    const cosH = ca > 1e-3 && cb > 1e-3 ? (p[1] * q[1] + p[2] * q[2]) / (ca * cb) : 0;
+    // Penalise same-hue-family neighbours (within ~50 deg) so blues, greens or purples never sit side by side.
+    const sameHue = cosH > 0.64 ? 1 - 0.55 * ((cosH - 0.64) / 0.36) : 1;
+    return Math.hypot(0.45 * dl, da, db) * sameHue;
+  };
+
+  const clusterOf = {}, groupLabel = {};
+  let clusterColours = [];
+  function indexGroups(ids) {
+    const pos = RX.PATTERN_MAP || {}, near = RX.PATTERN_NEAR || {}, origin = RX.ORIGIN || {};
+    const adj = Object.fromEntries(ids.map((id) => [id, new Set()]));
+    ids.forEach((id) => (near[id] || []).slice(0, LINKS).forEach(([to]) => { if (adj[to]) { adj[id].add(to); adj[to].add(id); } }));
+    const dist = (a, b) => Math.hypot(pos[a][0] - pos[b][0], pos[a][1] - pos[b][1]);
+
+    // Feel-separated pattern groups (12/8, odd meters) can sit in several distant islands on the 2D pattern map.
+    // Split disconnected islands into local map clusters, then fold lone 1-node outliers into their tight local link cluster.
+    const raw = [];
+    (RX.PATTERN_GROUPS || []).forEach(([, label, gids]) => {
+      const present = gids.filter((id) => pos[id]);
+      present.forEach((id) => { groupLabel[id] = label; });
+      const p = Object.fromEntries(present.map((id) => [id, id]));
+      const find = (x) => (p[x] === x ? x : (p[x] = find(p[x])));
+      for (let i = 0; i < present.length; i++) {
+        for (let j = i + 1; j < present.length; j++) {
+          const a = present[i], b = present[j], d = dist(a, b);
+          if ((adj[a].has(b) && d <= 0.18) || d <= 0.12) p[find(a)] = find(b);
+        }
+      }
+      const comps = {};
+      present.forEach((id) => (comps[find(id)] = comps[find(id)] || []).push(id));
+      Object.values(comps).forEach((ms) => raw.push(ms));
+    });
+    const cid = {};
+    raw.forEach((ms, ci) => ms.forEach((id) => { cid[id] = ci; }));
+    ids.forEach((id) => { if (cid[id] == null) cid[id] = raw.push([id]) - 1; });
+    for (let pass = 0; pass < 3; pass++) {
+      raw.forEach((_, ci) => {
+        const cur = ids.filter((id) => cid[id] === ci);
+        if (cur.length !== 1) return;
+        const id = cur[0];
+        let best = null;
+        adj[id].forEach((nb) => {
+          const nci = cid[nb];
+          if (nci === ci) return;
+          const d = dist(id, nb), nbSize = ids.filter((x) => cid[x] === nci).length;
+          if (d <= 0.14 && (!best || (nbSize > 1 && best.nbSize === 1) || d < best.d)) best = { nci, d, nbSize };
+        });
+        if (best && (pass > 0 || best.nbSize > 1)) cid[id] = best.nci;
+      });
+    }
+    const grouped = {};
+    ids.forEach((id) => (grouped[cid[id]] = grouped[cid[id]] || []).push(id));
+    const clusters = Object.values(grouped).sort((a, b) => b.length - a.length);
+    const K = clusters.length;
+    clusters.forEach((ms, idx) => ms.forEach((id) => { clusterOf[id] = idx; }));
+
+    const pool = PALETTE.slice();
+    while (pool.length < K) {
+      const i = pool.length, h = Math.round((i * 137.508) % 360), tier = i % 3;
+      pool.push([`hsl(${h} ${68 - tier * 10}% ${38 + tier * 13}%)`, `hsl(${h} ${74 - tier * 8}% ${58 + tier * 11}%)`]);
+    }
+    const M = pool.length;
+    const labs = pool.map(([lt, dk]) => lt.startsWith('#') ? [hexLab(lt), hexLab(dk)] : null);
+    const Sep = Array.from({ length: M }, (_, i) => Array.from({ length: M }, (__, j) => (
+      i === j ? 0 : (labs[i] && labs[j] ? Math.min(colorSep(labs[i][0], labs[j][0]), colorSep(labs[i][1], labs[j][1])) : 0.12)
+    )));
+    const Dcol = Sep.map((row) => row.map((d) => (d ? 1 / Math.pow(Math.max(0.025, d), 3) : 0)));
+    const W = Array.from({ length: K }, () => new Float64Array(K));
+    for (let i = 0; i < K; i++) {
+      for (let j = i + 1; j < K; j++) {
+        let minP = Infinity, minW = Infinity, linked = 0;
+        clusters[i].forEach((a) => clusters[j].forEach((b) => {
+          minP = Math.min(minP, dist(a, b));
+          if (origin[a] && origin[b]) minW = Math.min(minW, Math.hypot((origin[a][1] - origin[b][1]) / 360, (origin[a][0] - origin[b][0]) / 180));
+          if (adj[a].has(b)) linked++;
+        }));
+        // Pattern-map proximity dominates so adjacent visual clusters always get contrasting hue families.
+        W[i][j] = W[j][i] = 1 / Math.pow(Math.max(0.04, minP), 2.6) + 0.08 / Math.pow(Math.max(0.06, minW), 2) + linked * 24;
+      }
+    }
+    // Greedy max-min spatial graph-colouring seed, followed by 2-opt swaps across all M pool slots.
+    const used = new Set(), assigned = new Array(K).fill(-1);
+    const order = Array.from({ length: K }, (_, i) => i).sort((a, b) => {
+      const sa = W[a].reduce((s, v) => s + v, 0), sb = W[b].reduce((s, v) => s + v, 0);
+      return sb - sa;
+    });
+    order.forEach((ci, stepIdx) => {
+      let bestSlot = 0, bestScore = -Infinity;
+      for (let s = 0; s < M; s++) {
+        if (used.has(s)) continue;
+        if (stepIdx === 0) { bestSlot = s; break; }
+        let cost = 0;
+        for (let m = 0; m < K; m++) if (assigned[m] >= 0) cost += W[ci][m] * Dcol[s][assigned[m]];
+        if (-cost > bestScore) { bestScore = -cost; bestSlot = s; }
+      }
+      assigned[ci] = bestSlot; used.add(bestSlot);
+    });
+    const slots = assigned.concat(Array.from({ length: M }, (_, s) => s).filter((s) => !used.has(s)));
+    for (let iter = 0; iter < 50; iter++) {
+      let improved = false;
+      for (let i = 0; i < K; i++) {
+        for (let j = i + 1; j < M; j++) {
+          let delta = 0;
+          if (j < K) {
+            for (let m = 0; m < K; m++) {
+              if (m === i || m === j) continue;
+              delta += W[i][m] * (Dcol[slots[j]][slots[m]] - Dcol[slots[i]][slots[m]])
+                     + W[j][m] * (Dcol[slots[i]][slots[m]] - Dcol[slots[j]][slots[m]]);
+            }
+          } else {
+            for (let m = 0; m < K; m++) if (m !== i) delta += W[i][m] * (Dcol[slots[j]][slots[m]] - Dcol[slots[i]][slots[m]]);
+          }
+          if (delta < -1e-6) { const t = slots[i]; slots[i] = slots[j]; slots[j] = t; improved = true; }
+        }
+      }
+      if (!improved) break;
+    }
+    clusterColours = clusters.map((_, i) => pool[slots[i]]);
   }
-  const colour = (id) => (groupOf[id] == null ? 'var(--md-sys-color-outline)' : `hsl(${Math.round((groupOf[id] * 137.5) % 360)} 60% 50%)`);
 
   function build() {
-    indexGroups();
     host = document.getElementById('map');
     panel = document.getElementById('map-panel');
     svg = svgEl('svg', { class: 'map-svg', role: 'img' });
@@ -72,10 +204,14 @@ RX.nodeMap = (function () {
     host.appendChild(seg);
 
     const pos = RX.PATTERN_MAP || {}, origin = RX.ORIGIN || {};
-    nodes = hooks.ids().filter((id) => pos[id]).map((id) => {
+    const validIds = hooks.ids().filter((id) => pos[id]);
+    indexGroups(validIds);
+    nodes = validIds.map((id) => {
       const g = svgEl('g', { class: 'map-node', 'data-id': id, tabindex: '0', role: 'button', 'aria-label': 'Play ' + hooks.name(id) });
       const hit = svgEl('circle', { r: HIT_R, class: 'map-hit' });
-      const dot = svgEl('circle', { r: NODE_R, class: 'map-dot', fill: colour(id) });
+      const cid = clusterOf[id], pair = cid != null && clusterColours[cid];
+      const dot = svgEl('circle', { r: NODE_R, class: 'map-dot', ...(cid != null ? { 'data-cluster': cid } : {}) });
+      if (pair) dot.setAttribute('style', `--dot-light:${pair[0]};--dot-dark:${pair[1]}`);
       const label = svgEl('text', { class: 'map-label', 'text-anchor': 'middle' });
       label.textContent = hooks.mapLabel ? hooks.mapLabel(id) : hooks.name(id).split(' (')[0];
       g.appendChild(hit); g.appendChild(dot); g.appendChild(label);
@@ -447,8 +583,8 @@ RX.nodeMap = (function () {
     });
     // The panel follows the playing rhythm and stays on the last one after it stops.
     if (cur && cur !== panelId) buildPanel(cur);
-    // The selected rhythm's pattern group stays in colour; every other node, and links with no end in it, fade.
-    const fam = panelId == null ? null : groupOf[panelId], inFam = (id) => fam == null || id === panelId || groupOf[id] === fam;
+    // The selected rhythm's map cluster stays in full colour; every other node, and links with no end in it, fade slightly.
+    const fam = panelId == null ? null : clusterOf[panelId], inFam = (id) => fam == null || id === panelId || clusterOf[id] === fam;
     nodes.forEach((n) => n.g.classList.toggle('map-node-dim', !inFam(n.id)));
     links.forEach((l) => l.line.classList.toggle('map-link-dim', !inFam(l.a.id) && !inFam(l.b.id)));
     // Keep queued and selected/playing nodes painted above dense neighbours so their ring and label stay unobstructed.
