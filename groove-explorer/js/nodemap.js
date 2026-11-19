@@ -21,7 +21,7 @@ RX.nodeMap = (function () {
   const LAND = RX.WORLD_LAND || { width: 1000, height: 383.3, top: 80, path: '' };
   const U = LAND.width / 360; // map units per degree (equirectangular, same as py/build_world_outline.py)
   const BOUNDS = { pattern: { w: 1000, h: 1000 }, world: { w: LAND.width, h: LAND.height } };
-  let hooks = null, host = null, svg = null, gLand = null, gLinks = null, gNodes = null, toggle = null, seg = null;
+  let hooks = null, host = null, svg = null, gLand = null, gLinks = null, gNodes = null, gFamilies = null, toggle = null, seg = null;
   let filter = null; // search: Set of ids that match, or null for no filter
   let panel = null, panelId = null, panelLanes = [], playBtn = null, collapseBtn = null, familyBtn = null, highlightFamily = false;
   let collapsed = false;
@@ -60,9 +60,54 @@ RX.nodeMap = (function () {
     return Math.hypot(0.45 * dl, da, db) * sameHue;
   };
 
+  // Signature rhythm -> concise, musical 1–2 word family / flagship-rhythm label for each of the 25 local Pattern clusters.
+  const CLUSTER_SIGNATURES = [
+    ['tresillo', 'Tresillo'],
+    ['son', 'Son clave'],
+    ['bell12', 'Bembé'],
+    ['maqsum', 'Maqsum'],
+    ['lesno', 'Lesno'],
+    ['djembe-yankadi', 'Djembe'],
+    ['kuduro', 'Kuduro'],
+    ['cumbia', 'Cumbia'],
+    ['samba', 'Samba'],
+    ['gnawa', 'Gnawa'],
+    ['bhangra', 'Bhangra'],
+    ['batuque', 'Batuque'],
+    ['afrobeat', 'Afrobeat'],
+    ['chakacha', 'Chakacha'],
+    ['keharwa', 'Keharwa'],
+    ['samulnori', 'Samulnori'],
+    ['bikutsi', 'Bikutsi'],
+    ['samai-thaqil', 'Samai'],
+    ['karsilama', 'Karsilama'],
+    ['kopanitsa', 'Kopanitsa'],
+    ['afoxe', 'Afoxé'],
+    ['zouk', 'Zouk'],
+    ['ndombolo-detailed', 'Soukous'],
+    ['zanku', 'Zanku'],
+    ['gqom', 'Gqom'],
+  ];
+
   const clusterOf = {}, groupLabel = {};
-  let clusterColours = [];
+  let clusterColours = [], clusterMeta = [], famCacheKey = '', fontsGen = 0, measureCtx = null;
+  const textWidth = (font, text) => {
+    if (!measureCtx) measureCtx = document.createElement('canvas').getContext('2d');
+    measureCtx.font = font;
+    return measureCtx.measureText(text).width;
+  };
+  function measureWidths() {
+    nodes.forEach((n) => { n.lw = textWidth('500 12px Inter, sans-serif', n.label.textContent); });
+    clusterMeta.forEach((f) => {
+      f.wOut = textWidth('500 12px Inter, sans-serif', f.name);
+      f.wIn = textWidth('600 20px "Google Sans Flex", "Google Sans", Inter, sans-serif', f.name);
+      f.wInMobile = textWidth('600 17px "Google Sans Flex", "Google Sans", Inter, sans-serif', f.name);
+    });
+    famCacheKey = '';
+  }
+
   function indexGroups(ids) {
+    if (clusterMeta.length) return;
     const pos = RX.PATTERN_MAP || {}, near = RX.PATTERN_NEAR || {}, origin = RX.ORIGIN || {};
     const adj = Object.fromEntries(ids.map((id) => [id, new Set()]));
     ids.forEach((id) => (near[id] || []).slice(0, LINKS).forEach(([to]) => { if (adj[to]) { adj[id].add(to); adj[to].add(id); } }));
@@ -172,6 +217,23 @@ RX.nodeMap = (function () {
       if (!improved) break;
     }
     clusterColours = clusters.map((_, i) => pool[slots[i]]);
+    const usedNames = new Set();
+    clusterMeta = clusters.map((ms, idx) => {
+      let name = null, anchorId = ms[0];
+      for (let s = 0; s < CLUSTER_SIGNATURES.length; s++) {
+        const [sigId, sigLabel] = CLUSTER_SIGNATURES[s];
+        if (ms.includes(sigId) && !usedNames.has(sigLabel)) { name = sigLabel; anchorId = sigId; break; }
+      }
+      if (!name) {
+        for (let m = 0; m < ms.length; m++) {
+          const cand = ((hooks && hooks.mapLabel ? hooks.mapLabel(ms[m]) : ms[m]).split(' / ')[0] || '').trim();
+          if (cand && !usedNames.has(cand)) { name = cand; anchorId = ms[m]; break; }
+        }
+      }
+      if (!name) name = (groupLabel[ms[0]] || ms[0]).replace(/\s+type$/i, '');
+      usedNames.add(name);
+      return { idx, ids: ms, name, anchorId, el: null, nodes: [], anchorNode: null, wOut: 48, wIn: 68, wInMobile: 62, u: 0, v: 0 };
+    });
   }
 
   function build() {
@@ -186,7 +248,8 @@ RX.nodeMap = (function () {
     gLand.appendChild(svgEl('path', { d: LAND.path, 'clip-path': 'url(#map-land-clip)' }));
     gLinks = svgEl('g', { class: 'map-links' });
     gNodes = svgEl('g', { class: 'map-nodes' });
-    svg.appendChild(gLand); svg.appendChild(gLinks); svg.appendChild(gNodes);
+    gFamilies = svgEl('g', { class: 'map-families', 'aria-hidden': 'true' });
+    svg.appendChild(gLand); svg.appendChild(gLinks); svg.appendChild(gNodes); svg.appendChild(gFamilies);
     host.appendChild(svg);
     toggle = el('button', 'bar-toggle map-layout-toggle');
     toggle.appendChild(el('span', 'material-symbols-outlined', 'public'));
@@ -218,9 +281,20 @@ RX.nodeMap = (function () {
       g.addEventListener('keydown', (e) => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); hooks.onTap(id); } });
       gNodes.appendChild(g);
       const at = { pattern: [pos[id][0] * 1000, pos[id][1] * 1000], world: origin[id] ? project(origin[id]) : [LAND.width / 2, LAND.height / 2] };
-      return { id, g, label, hit, at, wx: 0, wy: 0, sx: 0, sy: 0, reach: HIT_R };
+      return { id, g, label, hit, at, wx: 0, wy: 0, sx: 0, sy: 0, reach: HIT_R, lw: 48 };
     });
     const byId = Object.fromEntries(nodes.map((n) => [n.id, n]));
+    clusterMeta.forEach((f) => {
+      f.nodes = f.ids.map((id) => byId[id]).filter(Boolean);
+      f.anchorNode = byId[f.anchorId] || f.nodes[0] || null;
+      f.el = svgEl('text', { class: 'map-family-label', 'data-cluster': f.idx, 'text-anchor': 'middle' });
+      f.el.textContent = f.name;
+      gFamilies.appendChild(f.el);
+    });
+    measureWidths();
+    if (document.fonts && document.fonts.ready) {
+      document.fonts.ready.then(() => { fontsGen++; measureWidths(); queueRender(); });
+    }
     const seen = new Set();
     nodes.forEach((n) => ((RX.PATTERN_NEAR || {})[n.id] || []).slice(0, LINKS).forEach(([to, sim]) => {
       const key = [n.id, to].sort().join('|');
@@ -336,6 +410,8 @@ RX.nodeMap = (function () {
     svg.setAttribute('aria-label', layout === 'world' ? 'Rhythms at their centres of origin' : 'Rhythms placed by pattern similarity');
     gLand.classList.toggle('map-land-on', layout === 'world');
     svg.classList.toggle('map-world', layout === 'world');
+    if (gFamilies) gFamilies.hidden = layout !== 'pattern';
+    famCacheKey = '';
     cancelAnimationFrame(anim);
     const to = nodes.map((n) => ({ wx: n.at[layout][0], wy: n.at[layout][1] }));
     if (!w) { nodes.forEach((n, i) => Object.assign(n, to[i])); return; } // not laid out yet: resize() fits
@@ -384,8 +460,231 @@ RX.nodeMap = (function () {
     requestAnimationFrame(() => { renderQueued = false; render(); });
   }
 
+  // Cartographic floating family labels in Pattern view: compact rhythm-label style when zoomed out, shifting to
+  // larger muted-gray area landmarks anchored outside each cluster's dots and rhythm names when zoomed in.
+  const boxOverlap = (a, b) => a[0] < b[2] && a[2] > b[0] && a[1] < b[3] && a[3] > b[1];
+  const RINGS_OUT = [8, 16, 25, 36, 48, 62, 78, 96, 118, 144];
+  const RINGS_IN = [22, 34, 48, 64, 84, 108, 136, 168, 206, 250, 300];
+  const ANGLES = [0, 1, -1, 2, -2, 3, -3, 4, -4, 5, -5, 6, -6, 7, -7, 8].map((s) => -Math.PI / 2 + (s * Math.PI) / 8);
+
+  function nodeLabelBox(n) {
+    const u = n.sx - view.x, v = n.sy - view.y;
+    const a = n.dir, c = a == null ? 0 : Math.cos(a), s = a == null ? -1 : Math.sin(a);
+    const lx = u + c * (NODE_R + 5), ly = v + s * (NODE_R + 5) + (s > 0.3 ? 9 : s < -0.3 ? 0 : 4);
+    const rw = n.lw * 1.07 + 5;
+    const rx0 = c > 0.35 ? lx - 2 : c < -0.35 ? lx - rw : lx - rw / 2;
+    return [rx0, ly - 13.5, rx0 + rw, ly + 4.5];
+  }
+
+  function placeFamilies(zoomed) {
+    const isWide = wide.matches, fs = zoomed ? (isWide ? 20 : 17) : 12;
+    const mapW = BOUNDS.pattern.w * view.k, mapH = BOUNDS.pattern.h * view.k;
+    const fit = fitView('pattern');
+    const minU = zoomed ? -PAD + 6 : -fit.x + 6;
+    const maxU = zoomed ? mapW + PAD - 6 : -fit.x + w - 6;
+    const minV = zoomed ? -PAD + 6 : -fit.y + 6;
+    const maxV = zoomed ? mapH + PAD - 6 : -fit.y + h - 6;
+    const clamp = (val, lo, hi) => (lo > hi ? (lo + hi) / 2 : Math.max(lo, Math.min(hi, val)));
+    const allDots = nodes.map((n) => [n.sx - view.x, n.sy - view.y, n.id]);
+
+    if (!zoomed) {
+      const hard = [[-fit.x, -fit.y, -fit.x + (isWide ? 204 : 114), -fit.y + 60]];
+      nodes.forEach((n) => {
+        if (!n._on) return;
+        const u = n.sx - view.x, v = n.sy - view.y;
+        hard.push([u - 11, v - 11, u + 11, v + 11], nodeLabelBox(n));
+      });
+      const dotBoxesOut = allDots.map(([u, v]) => [u - 9.5, v - 9.5, u + 9.5, v + 9.5]);
+      const items = clusterMeta.map((f) => {
+        const hw = Math.ceil(f.wOut * 0.54 + 3.5), hh = 9.5;
+        let eu0 = Infinity, ev0 = Infinity, eu1 = -Infinity, ev1 = -Infinity, su = 0, sv = 0, topU = 0, topV = Infinity;
+        f.nodes.forEach((n) => {
+          const u = n.sx - view.x, v = n.sy - view.y;
+          eu0 = Math.min(eu0, u); ev0 = Math.min(ev0, v); eu1 = Math.max(eu1, u); ev1 = Math.max(ev1, v);
+          if (v < topV) { topV = v; topU = u; }
+          su += u; sv += v;
+        });
+        const cnt = f.nodes.length || 1, mu = su / cnt, mv = sv / cnt;
+        const ownSet = new Set(f.ids);
+        // Pick an initial anchor near the cluster crown/perimeter that avoids sitting directly over dots when room exists.
+        const seedCands = [
+          [topU, ev0 - NODE_R - hh - 3],
+          [mu, ev0 - NODE_R - hh - 3],
+          [mu, ev1 + NODE_R + hh + 4],
+          [eu0 - NODE_R - hw - 5, mv],
+          [eu1 + NODE_R + hw + 5, mv],
+          [mu, mv - 10],
+        ];
+        [14, 24, 36].forEach((rad) => ANGLES.forEach((ang) => seedCands.push([mu + Math.cos(ang) * rad * 1.2, mv + Math.sin(ang) * rad])));
+        let bestA = [clamp(mu, minU + hw, maxU - hw), clamp(ev0 - NODE_R - hh - 3, minV + hh, maxV - hh)], bestAScore = Infinity;
+        seedCands.forEach(([rawU, rawV]) => {
+          const cu = clamp(rawU, minU + hw, maxU - hw), cv = clamp(rawV, minV + hh, maxV - hh);
+          const b = [cu - hw, cv - hh, cu + hw, cv + hh];
+          if (hard.some((hb) => boxOverlap(b, hb))) return;
+          let dotHits = 0, ownD = Infinity, otherD = Infinity;
+          for (let i = 0; i < dotBoxesOut.length; i++) {
+            if (boxOverlap(b, dotBoxesOut[i])) dotHits++;
+            const d = Math.hypot(cu - allDots[i][0], cv - allDots[i][1]);
+            if (ownSet.has(allDots[i][2])) { if (d < ownD) ownD = d; }
+            else if (d < otherD) otherD = d;
+          }
+          let sc = ownD + Math.hypot(cu - mu, cv - mv) * 0.35 + dotHits * (view.k >= 0.5 ? 42 : 16) + (cv < ev0 ? -5 : 0);
+          if (otherD < ownD) sc += (ownD - otherD) * 2 + 24;
+          if (sc < bestAScore) { bestAScore = sc; bestA = [cu, cv]; }
+        });
+        return { f, hw, hh, au: bestA[0], av: bestA[1], u: bestA[0], v: bestA[1], ownSet };
+      });
+
+      for (let iter = 0; iter < 30; iter++) {
+        const alpha = iter < 18 ? 0.1 * (1 - iter / 18) : 0;
+        items.forEach((it) => { it.u += (it.au - it.u) * alpha; it.v += (it.av - it.v) * alpha; });
+        for (let i = 0; i < items.length; i++) {
+          for (let j = i + 1; j < items.length; j++) {
+            const A = items[i], B = items[j];
+            const ox = A.hw + B.hw + 2 - Math.abs(A.u - B.u), oy = A.hh + B.hh + 1.5 - Math.abs(A.v - B.v);
+            if (ox <= 0 || oy <= 0) continue;
+            if (oy <= ox * 1.15) {
+              const s = A.v === B.v ? (A.f.idx < B.f.idx ? -1 : 1) : Math.sign(A.v - B.v);
+              A.v += s * (oy * 0.52); B.v -= s * (oy * 0.52);
+            } else {
+              const s = A.u === B.u ? (A.f.idx < B.f.idx ? -1 : 1) : Math.sign(A.u - B.u);
+              A.u += s * (ox * 0.52); B.u -= s * (ox * 0.52);
+            }
+          }
+        }
+        items.forEach((it) => {
+          hard.forEach((hb) => {
+            const hcx = (hb[0] + hb[2]) / 2, hcy = (hb[1] + hb[3]) / 2;
+            const hhw = (hb[2] - hb[0]) / 2 + it.hw + 2, hhh = (hb[3] - hb[1]) / 2 + it.hh + 2;
+            const ox = hhw - Math.abs(it.u - hcx), oy = hhh - Math.abs(it.v - hcy);
+            if (ox <= 0 || oy <= 0) return;
+            if (oy <= ox) it.v += (it.v < hcy ? -1 : 1) * (oy + 0.5);
+            else it.u += (it.u < hcx ? -1 : 1) * (ox + 0.5);
+          });
+          it.u = clamp(it.u, minU + it.hw, maxU - it.hw);
+          it.v = clamp(it.v, minV + it.hh, maxV - it.hh);
+        });
+      }
+
+      const placed = hard.slice();
+      items.forEach((it) => {
+        const clear = (cu, cv, noDots) => {
+          const b = [cu - it.hw, cv - it.hh, cu + it.hw, cv + it.hh];
+          if (placed.some((p) => boxOverlap(b, p))) return false;
+          if (noDots && dotBoxesOut.some((db) => boxOverlap(b, db))) return false;
+          return true;
+        };
+        if (!clear(it.u, it.v, view.k >= 0.5)) {
+          let found = null;
+          for (const strictDots of (view.k >= 0.5 ? [true, false] : [false])) {
+            if (clear(it.u, it.v, strictDots)) { found = [it.u, it.v]; break; }
+            for (let ri = 0; ri < RINGS_OUT.length && !found; ri++) {
+              const rad = RINGS_OUT[ri];
+              for (let ai = 0; ai < ANGLES.length; ai++) {
+                const cu = clamp(it.au + Math.cos(ANGLES[ai]) * rad * 1.25, minU + it.hw, maxU - it.hw);
+                const cv = clamp(it.av + Math.sin(ANGLES[ai]) * rad, minV + it.hh, maxV - it.hh);
+                if (clear(cu, cv, strictDots)) { found = [cu, cv]; break; }
+              }
+            }
+            if (found) break;
+          }
+          if (found) { it.u = found[0]; it.v = found[1]; }
+        }
+        placed.push([it.u - it.hw - 1, it.v - it.hh - 1, it.u + it.hw + 1, it.v + it.hh + 1]);
+        it.f.u = it.u; it.f.v = it.v;
+      });
+      return;
+    }
+
+    // Zoomed in: place each family landmark near its cluster's crown/heart, strictly clear of ALL dots and rhythm names.
+    const dotBoxes = allDots.map(([u, v]) => [u - 11.5, v - 11.5, u + 11.5, v + 11.5]);
+    const lblBoxes = nodes.filter((n) => n._on).map(nodeLabelBox);
+    const obstacles = dotBoxes.concat(lblBoxes);
+    const placedFam = [];
+
+    clusterMeta.forEach((f) => {
+      const tw = isWide ? f.wIn : f.wInMobile;
+      const hw = Math.ceil(tw * 0.55 + 5), hh = Math.ceil(fs * 0.66 + 3);
+      let eu0 = Infinity, ev0 = Infinity, eu1 = -Infinity, ev1 = -Infinity, su = 0, sv = 0;
+      let topU = 0, topV = Infinity, botU = 0, botV = -Infinity;
+      const memberUV = f.nodes.map((n) => {
+        const u = n.sx - view.x, v = n.sy - view.y;
+        su += u; sv += v;
+        eu0 = Math.min(eu0, u - 11.5); ev0 = Math.min(ev0, v - 11.5);
+        eu1 = Math.max(eu1, u + 11.5); ev1 = Math.max(ev1, v + 11.5);
+        if (n._on) {
+          const lb = nodeLabelBox(n);
+          eu0 = Math.min(eu0, lb[0]); ev0 = Math.min(ev0, lb[1]);
+          eu1 = Math.max(eu1, lb[2]); ev1 = Math.max(ev1, lb[3]);
+        }
+        if (v < topV) { topV = v; topU = u; }
+        if (v > botV) { botV = v; botU = u; }
+        return [u, v];
+      });
+      const cnt = memberUV.length || 1, mu = su / cnt, mv = sv / cnt;
+      const ecu = (eu0 + eu1) / 2, ecv = (ev0 + ev1) / 2;
+      const anchU = f.anchorNode ? f.anchorNode.sx - view.x : mu;
+      const anchV = f.anchorNode ? f.anchorNode.sy - view.y : mv;
+      const coreU = 0.55 * mu + 0.45 * anchU, coreV = 0.55 * mv + 0.45 * anchV;
+      const ownSet = new Set(f.ids);
+
+      const cands = [];
+      [5, 16, 28, 42].forEach((dv) => {
+        cands.push([topU, ev0 - hh - dv], [coreU, ev0 - hh - dv], [ecu, ev0 - hh - dv], [eu0 + hw, ev0 - hh - dv], [eu1 - hw, ev0 - hh - dv]);
+        cands.push([botU, ev1 + hh + dv], [coreU, ev1 + hh + dv], [ecu, ev1 + hh + dv], [eu0 + hw, ev1 + hh + dv], [eu1 - hw, ev1 + hh + dv]);
+      });
+      [8, 20, 34].forEach((du) => {
+        cands.push([eu0 - hw - du, coreV], [eu0 - hw - du, ev0 + hh], [eu0 - hw - du, ev1 - hh]);
+        cands.push([eu1 + hw + du, coreV], [eu1 + hw + du, ev0 + hh], [eu1 + hw + du, ev1 - hh]);
+      });
+      RINGS_IN.forEach((rad) => {
+        ANGLES.forEach((ang) => {
+          cands.push([coreU + Math.cos(ang) * rad * 1.15, coreV + Math.sin(ang) * rad]);
+          cands.push([anchU + Math.cos(ang) * rad * 1.15, anchV + Math.sin(ang) * rad]);
+          if (cnt > 2) cands.push([ecu + Math.cos(ang) * rad * 1.15, ecv + Math.sin(ang) * rad]);
+        });
+      });
+
+      let best = null, bestScore = Infinity;
+      for (let ci = 0; ci < cands.length; ci++) {
+        const cu = cands[ci][0], cv = cands[ci][1];
+        const box = [cu - hw, cv - hh, cu + hw, cv + hh];
+        let hit = false;
+        for (let oi = 0; oi < obstacles.length; oi++) { if (boxOverlap(box, obstacles[oi])) { hit = true; break; } }
+        if (hit) continue;
+        for (let pi = 0; pi < placedFam.length; pi++) { if (boxOverlap(box, placedFam[pi])) { hit = true; break; } }
+        if (hit) continue;
+
+        let ownD = Infinity, otherD = Infinity;
+        for (let m = 0; m < memberUV.length; m++) {
+          const d = Math.hypot(cu - memberUV[m][0], cv - memberUV[m][1]);
+          if (d < ownD) ownD = d;
+        }
+        for (let ni = 0; ni < allDots.length; ni++) {
+          if (ownSet.has(allDots[ni][2])) continue;
+          const d = Math.hypot(cu - allDots[ni][0], cv - allDots[ni][1]);
+          if (d < otherD) otherD = d;
+        }
+        const coreD = Math.hypot(cu - coreU, cv - coreV);
+        let score = ownD * 0.85 + coreD * 0.42 + (cv < coreV ? -10 : 0) + (cv + hh <= ev0 + 4 ? -8 : 0);
+        if (otherD < 34) score += (34 - otherD) * 1.6;
+        if (otherD < ownD) score += (ownD - otherD) * 2.4 + 36;
+        if (cu - hw < minU) score += (minU - (cu - hw)) * 1.8 + 18;
+        if (cu + hw > maxU) score += (cu + hw - maxU) * 1.8 + 18;
+        if (cv - hh < minV) score += (minV - (cv - hh)) * 1.8 + 18;
+        if (cv + hh > maxV) score += (cv + hh - maxV) * 1.8 + 18;
+        if (score < bestScore) { bestScore = score; best = [cu, cv]; }
+      }
+
+      if (!best) best = [ecu, ev0 - hh - 18];
+      f.u = best[0]; f.v = best[1];
+      placedFam.push([f.u - hw - 4, f.v - hh - 3, f.u + hw + 4, f.v + hh + 3]);
+    });
+  }
+
   function render() {
     const zoomed = view.k / fitK >= 1.8;
+    svg.classList.toggle('map-zoomed', zoomed);
     gLand.setAttribute('transform', `matrix(${view.k} 0 0 ${view.k} ${view.x.toFixed(1)} ${view.y.toFixed(1)})`);
     placeOnScreen();
     sizeTapAreas();
@@ -405,6 +704,17 @@ RX.nodeMap = (function () {
       l.line.setAttribute('x1', sx(l.a).toFixed(1)); l.line.setAttribute('y1', sy(l.a).toFixed(1));
       l.line.setAttribute('x2', sx(l.b).toFixed(1)); l.line.setAttribute('y2', sy(l.b).toFixed(1));
     });
+    if (layout === 'pattern' && gFamilies && w > 0) {
+      const morphing = nodes.some((n) => Math.abs(n.wx - n.at.pattern[0]) > 0.05 || Math.abs(n.wy - n.at.pattern[1]) > 0.05);
+      const onKey = zoomed ? 'all' : nodes.filter((n) => n._on).map((n) => n.id).join(',');
+      const key = morphing ? '' : `${zoomed ? 1 : 0}|${view.k.toFixed(4)}|${fitK.toFixed(4)}|${w}x${h}|${wide.matches ? 1 : 0}|${fontsGen}|${onKey}`;
+      if (!key || key !== famCacheKey) { placeFamilies(zoomed); famCacheKey = key; }
+      const dy = (zoomed ? (wide.matches ? 20 : 17) : 12) * 0.35;
+      clusterMeta.forEach((f) => {
+        f.el.setAttribute('x', (view.x + f.u).toFixed(1));
+        f.el.setAttribute('y', (view.y + f.v + dy).toFixed(1));
+      });
+    }
   }
 
   function zoomAt(px, py, factor) {
@@ -611,6 +921,7 @@ RX.nodeMap = (function () {
     svg.classList.toggle('map-highlight-family', highlightFamily && fam != null);
     nodes.forEach((n) => n.g.classList.toggle('map-node-dim', !inFam(n.id)));
     links.forEach((l) => l.line.classList.toggle('map-link-dim', highlightFamily ? (!inFam(l.a.id) || !inFam(l.b.id)) : (!inFam(l.a.id) && !inFam(l.b.id))));
+    clusterMeta.forEach((f) => { if (f.el) f.el.classList.toggle('map-family-dim', fam != null && f.idx !== fam); });
     // Keep highlighted family members above dimmed nodes, and queued/selected/playing nodes on top of everything.
     if (highlightFamily && fam != null) {
       const active = document.activeElement;
@@ -629,6 +940,7 @@ RX.nodeMap = (function () {
     const hit = (id) => !filter || filter.has(id);
     nodes.forEach((n) => n.g.classList.toggle('map-node-miss', !hit(n.id)));
     links.forEach((l) => l.line.classList.toggle('map-link-miss', !hit(l.a.id) && !hit(l.b.id)));
+    clusterMeta.forEach((f) => { if (f.el) f.el.classList.toggle('map-family-miss', !!filter && !f.ids.some(hit)); });
     const show = !host.hidden && !!panelId;
     panel.hidden = !show;
     document.body.classList.toggle('map-has-panel', show);
@@ -640,7 +952,8 @@ RX.nodeMap = (function () {
   function trackPanelSize() {
     const set = () => { const r = panel.getBoundingClientRect(); document.documentElement.style.setProperty('--panel-h', r.height + 'px'); document.documentElement.style.setProperty('--panel-w', r.width + 'px'); };
     if (window.ResizeObserver) new ResizeObserver(() => requestAnimationFrame(set)).observe(panel);
-    wide.addEventListener ? wide.addEventListener('change', paintPanelChrome) : wide.addListener(paintPanelChrome);
+    const onWide = () => { paintPanelChrome(); famCacheKey = ''; queueRender(); };
+    wide.addEventListener ? wide.addEventListener('change', onWide) : wide.addListener(onWide);
   }
 
   return {
@@ -649,6 +962,11 @@ RX.nodeMap = (function () {
     hide() { if (!host) return; host.hidden = true; if (panel) panel.hidden = true; document.body.classList.remove('map-has-panel'); },
     paint, step, focus,
     selected: () => panelId,
+    clusterLabel(id) {
+      if (!clusterMeta.length && hooks) indexGroups(hooks.ids().filter((x) => (RX.PATTERN_MAP || {})[x]));
+      const c = clusterOf[id];
+      return c != null && clusterMeta[c] ? clusterMeta[c].name : '';
+    },
     /** Search filter: a Set of matching ids (others dim) or null to clear. */
     setFilter(ids) { filter = ids; if (svg) paint(); },
   };

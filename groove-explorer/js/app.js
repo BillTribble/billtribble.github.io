@@ -639,7 +639,7 @@
   // rest; the list drops them (and any family left with nothing).
   const fold = (t) => String(t || '').normalize('NFD').replace(/[\u0300-\u036f]/g, '').toLowerCase();
   let searchSet = null, searchText = '';
-  const haystack = (r) => fold([r.name, r.mapLabel, r.region, FAMILY_LABEL[familyOf(r)], (RX.ORIGIN && RX.ORIGIN[r.id] || [])[2]].join(' '));
+  const haystack = (r) => fold([r.name, r.mapLabel, r.region, FAMILY_LABEL[familyOf(r)], RX.nodeMap.clusterLabel && RX.nodeMap.clusterLabel(r.id), (RX.ORIGIN && RX.ORIGIN[r.id] || [])[2]].join(' '));
   function setSearch(text) {
     searchText = text.trim();
     const words = fold(searchText).split(/\s+/).filter(Boolean);
