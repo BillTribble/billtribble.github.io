@@ -362,9 +362,15 @@ h1, h2 { font-family: var(--md-ref-typeface-brand); margin: 0; font-weight: 500;
 .map-node-dim .map-dot { opacity: 0.9; } /* outside the selected rhythm's pattern group (10% transparent) */
 .map-node-dim .map-label-on { opacity: 0.9; }
 .map-link-dim { opacity: 0.9; }
-.map-node-miss .map-dot { opacity: 0.1; } /* search: not a match (still tappable) */
-.map-node-miss .map-label-on { opacity: 0.1; }
-.map-link-miss { opacity: 0.1; }
+.map-highlight-family .map-node-dim .map-dot,
+.map-highlight-family .map-node-dim .map-label-on,
+.map-highlight-family .map-link-dim { opacity: 0.5; }
+.map-node-miss .map-dot,
+.map-highlight-family .map-node-miss .map-dot { opacity: 0.1; } /* search: not a match (still tappable) */
+.map-node-miss .map-label-on,
+.map-highlight-family .map-node-miss .map-label-on { opacity: 0.1; }
+.map-link-miss,
+.map-highlight-family .map-link-miss { opacity: 0.1; }
 .map-dot, .map-label, .map-link { transition: opacity 0.2s, filter 0.2s; }
 .map-node-pending .map-dot { stroke: var(--md-sys-color-primary); stroke-width: 3; stroke-dasharray: 4 3; }
 .map-label {
@@ -398,6 +404,12 @@ h1, h2 { font-family: var(--md-ref-typeface-brand); margin: 0; font-weight: 500;
 .map-panel-lanes { display: flex; flex-direction: column; gap: 10px; }
 /* Info below the instrument rows: always visible, the panel scrolls to it. */
 .map-panel-note { margin: 12px 0 0; max-width: 75ch; font-size: 14px; color: var(--md-sys-color-on-surface-variant); }
+.map-panel-actions { margin-top: 12px; display: flex; flex-wrap: wrap; align-items: center; gap: 8px; }
+.map-panel-family { background: var(--md-sys-color-surface-container-high); color: var(--md-sys-color-on-surface); }
+.map-panel-family:hover { background: var(--md-sys-color-surface-container-highest); }
+.map-panel-family[aria-pressed="true"] { background: var(--md-sys-color-secondary-container); color: var(--md-sys-color-on-secondary-container); }
+.map-panel-family[aria-pressed="true"]:hover { filter: brightness(0.96); }
+.map-panel-family[aria-pressed="true"] .material-symbols-outlined { font-variation-settings: 'FILL' 1; }
 .map-lane { display: flex; flex-direction: column; gap: 4px; }
 .map-lane-label {
   display: inline-flex; align-items: center; gap: 6px; align-self: flex-start; min-height: 26px; padding: 0 10px 0 6px; border-radius: 9999px;
@@ -455,7 +467,7 @@ button.map-step { cursor: pointer; }
 }
 /* Collapsed: the title strip on phones, a narrow strip with the buttons on desktop. */
 .map-panel-collapsed .map-panel { height: auto; overflow: hidden; }
-.map-panel-collapsed .map-panel-sub, .map-panel-collapsed .map-panel-lanes { display: none; }
+.map-panel-collapsed .map-panel-sub, .map-panel-collapsed .map-panel-lanes, .map-panel-collapsed .map-panel-note, .map-panel-collapsed .map-panel-actions { display: none; }
 .map-panel-collapsed .map-panel-head { margin-bottom: 0; }
 @media (min-width: 841px) {
   .map-panel-collapsed .map-panel { width: 72px; padding: 14px; }

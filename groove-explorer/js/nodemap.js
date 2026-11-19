@@ -23,7 +23,7 @@ RX.nodeMap = (function () {
   const BOUNDS = { pattern: { w: 1000, h: 1000 }, world: { w: LAND.width, h: LAND.height } };
   let hooks = null, host = null, svg = null, gLand = null, gLinks = null, gNodes = null, toggle = null, seg = null;
   let filter = null; // search: Set of ids that match, or null for no filter
-  let panel = null, panelId = null, panelLanes = [], playBtn = null, collapseBtn = null;
+  let panel = null, panelId = null, panelLanes = [], playBtn = null, collapseBtn = null, familyBtn = null, highlightFamily = false;
   let collapsed = false;
   try { collapsed = localStorage.getItem('rx-map-panel-collapsed') === '1'; } catch (e) { /* per-viewer convenience only */ }
   const wide = window.matchMedia('(min-width: 841px)');
@@ -510,10 +510,27 @@ RX.nodeMap = (function () {
     panel.appendChild(body);
     // Info below the instrument rows, always visible: scroll the panel to read it.
     if (hooks.note) {
-      const note = el('p', 'map-panel-note', '');
-      note.innerHTML = hooks.note(id);
-      panel.appendChild(note);
+      const text = hooks.note(id);
+      if (text) {
+        const note = el('p', 'map-panel-note', '');
+        note.innerHTML = text;
+        panel.appendChild(note);
+      }
     }
+    const actions = el('div', 'map-panel-actions');
+    familyBtn = el('button', 'bar-toggle map-panel-family');
+    familyBtn.type = 'button';
+    familyBtn.id = 'map-highlight-family';
+    const famIcon = el('span', 'material-symbols-outlined', 'workspaces');
+    famIcon.setAttribute('aria-hidden', 'true');
+    familyBtn.appendChild(famIcon);
+    familyBtn.appendChild(el('span', 'toggle-label', 'Highlight family'));
+    familyBtn.addEventListener('click', () => {
+      highlightFamily = !highlightFamily;
+      paint();
+    });
+    actions.appendChild(familyBtn);
+    panel.appendChild(actions);
   }
 
   /** Glide the view (zoom and pan) to a target over `ms`. `target` may be a function, re-read every frame, so the
@@ -569,6 +586,12 @@ RX.nodeMap = (function () {
     collapseBtn.title = collapsed ? 'Show the rhythm' : 'Hide the rhythm';
     collapseBtn.setAttribute('aria-label', collapseBtn.title); collapseBtn.setAttribute('aria-expanded', String(!collapsed));
     document.body.classList.toggle('map-panel-collapsed', collapsed);
+    if (familyBtn) {
+      familyBtn.setAttribute('aria-pressed', String(highlightFamily));
+      familyBtn.title = highlightFamily
+        ? 'Highlighting this pattern family — tap to show all rhythms normally'
+        : 'Dim rhythms outside this pattern family by 50%';
+    }
     if (!on) panelLanes.forEach((l) => { if (l.now >= 0) l.cells[l.now].classList.remove('map-step-now'); l.now = -1; });
   }
 
@@ -583,11 +606,17 @@ RX.nodeMap = (function () {
     });
     // The panel follows the playing rhythm and stays on the last one after it stops.
     if (cur && cur !== panelId) buildPanel(cur);
-    // The selected rhythm's map cluster stays in full colour; every other node, and links with no end in it, fade slightly.
+    // The selected rhythm's map cluster stays in full colour; every other node, and links outside it, fade (10% normally, 50% when Highlight family is on).
     const fam = panelId == null ? null : clusterOf[panelId], inFam = (id) => fam == null || id === panelId || clusterOf[id] === fam;
+    svg.classList.toggle('map-highlight-family', highlightFamily && fam != null);
     nodes.forEach((n) => n.g.classList.toggle('map-node-dim', !inFam(n.id)));
-    links.forEach((l) => l.line.classList.toggle('map-link-dim', !inFam(l.a.id) && !inFam(l.b.id)));
-    // Keep queued and selected/playing nodes painted above dense neighbours so their ring and label stay unobstructed.
+    links.forEach((l) => l.line.classList.toggle('map-link-dim', highlightFamily ? (!inFam(l.a.id) || !inFam(l.b.id)) : (!inFam(l.a.id) && !inFam(l.b.id))));
+    // Keep highlighted family members above dimmed nodes, and queued/selected/playing nodes on top of everything.
+    if (highlightFamily && fam != null) {
+      const active = document.activeElement;
+      nodes.forEach((n) => { if (inFam(n.id) && n.id !== pend && n.id !== panelId && n.id !== cur) gNodes.appendChild(n.g); });
+      if (active && active.parentNode === gNodes) active.focus({ preventScroll: true });
+    }
     [pend, panelId, cur].forEach((id) => {
       const n = id && nodes.find((x) => x.id === id);
       if (n && gNodes.lastElementChild !== n.g) {
