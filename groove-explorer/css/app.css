@@ -390,15 +390,14 @@ h1, h2 { font-family: var(--md-ref-typeface-brand); margin: 0; font-weight: 500;
 .map-families { pointer-events: none; }
 .map-world .map-families { display: none; }
 .map-family-label {
-  font: 500 12px var(--md-ref-typeface-plain, Inter, sans-serif); fill: var(--md-sys-color-on-surface); pointer-events: none;
-  paint-order: stroke; stroke: var(--md-sys-color-surface); stroke-width: 3px; stroke-linejoin: round;
+  font: 600 14px var(--md-ref-typeface-brand, 'Google Sans Flex', 'Google Sans', sans-serif);
+  fill: var(--md-sys-color-outline); pointer-events: none; letter-spacing: 0.01em;
+  paint-order: stroke; stroke: var(--md-sys-color-surface); stroke-width: 3.5px; stroke-linejoin: round;
   transition: opacity 0.2s;
 }
-.map-zoomed .map-family-label {
-  font: 600 17px var(--md-ref-typeface-brand, 'Google Sans Flex', 'Google Sans', sans-serif);
-  fill: var(--md-sys-color-outline); stroke-width: 4px; letter-spacing: 0.01em;
-}
+.map-zoomed .map-family-label { font-size: 17px; stroke-width: 4px; }
 @media (min-width: 841px) {
+  .map-family-label { font-size: 18px; stroke-width: 4px; }
   .map-zoomed .map-family-label { font-size: 20px; }
 }
 .map-family-dim { opacity: 0.9; }

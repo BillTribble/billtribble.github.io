@@ -99,7 +99,8 @@ RX.nodeMap = (function () {
   function measureWidths() {
     nodes.forEach((n) => { n.lw = textWidth('500 12px Inter, sans-serif', n.label.textContent); });
     clusterMeta.forEach((f) => {
-      f.wOut = textWidth('500 12px Inter, sans-serif', f.name);
+      f.wOut = textWidth('600 18px "Google Sans Flex", "Google Sans", Inter, sans-serif', f.name);
+      f.wOutMobile = textWidth('600 14px "Google Sans Flex", "Google Sans", Inter, sans-serif', f.name);
       f.wIn = textWidth('600 20px "Google Sans Flex", "Google Sans", Inter, sans-serif', f.name);
       f.wInMobile = textWidth('600 17px "Google Sans Flex", "Google Sans", Inter, sans-serif', f.name);
     });
@@ -232,7 +233,7 @@ RX.nodeMap = (function () {
       }
       if (!name) name = (groupLabel[ms[0]] || ms[0]).replace(/\s+type$/i, '');
       usedNames.add(name);
-      return { idx, ids: ms, name, anchorId, el: null, nodes: [], anchorNode: null, wOut: 48, wIn: 68, wInMobile: 62, u: 0, v: 0 };
+      return { idx, ids: ms, name, anchorId, el: null, nodes: [], anchorNode: null, wOut: 62, wOutMobile: 48, wIn: 68, wInMobile: 62, u: 0, v: 0 };
     });
   }
 
@@ -460,10 +461,10 @@ RX.nodeMap = (function () {
     requestAnimationFrame(() => { renderQueued = false; render(); });
   }
 
-  // Cartographic floating family labels in Pattern view: compact rhythm-label style when zoomed out, shifting to
-  // larger muted-gray area landmarks anchored outside each cluster's dots and rhythm names when zoomed in.
+  // Cartographic floating family labels in Pattern view: muted-gray Google Sans Flex area landmarks at every zoom,
+  // collision-free when zoomed out and anchored strictly outside all dots and rhythm names when zoomed in.
   const boxOverlap = (a, b) => a[0] < b[2] && a[2] > b[0] && a[1] < b[3] && a[3] > b[1];
-  const RINGS_OUT = [8, 16, 25, 36, 48, 62, 78, 96, 118, 144];
+  const RINGS_OUT = [8, 16, 26, 38, 52, 68, 86, 106, 128, 152, 180, 212, 248];
   const RINGS_IN = [22, 34, 48, 64, 84, 108, 136, 168, 206, 250, 300];
   const ANGLES = [0, 1, -1, 2, -2, 3, -3, 4, -4, 5, -5, 6, -6, 7, -7, 8].map((s) => -Math.PI / 2 + (s * Math.PI) / 8);
 
@@ -477,26 +478,52 @@ RX.nodeMap = (function () {
   }
 
   function placeFamilies(zoomed) {
-    const isWide = wide.matches, fs = zoomed ? (isWide ? 20 : 17) : 12;
+    const isWide = wide.matches, fs = zoomed ? (isWide ? 20 : 17) : (isWide ? 18 : 14);
     const mapW = BOUNDS.pattern.w * view.k, mapH = BOUNDS.pattern.h * view.k;
     const fit = fitView('pattern');
-    const minU = zoomed ? -PAD + 6 : -fit.x + 6;
-    const maxU = zoomed ? mapW + PAD - 6 : -fit.x + w - 6;
-    const minV = zoomed ? -PAD + 6 : -fit.y + 6;
-    const maxV = zoomed ? mapH + PAD - 6 : -fit.y + h - 6;
+    const extX = Math.max(PAD, (w - mapW) / 2), extY = Math.max(PAD, (h - mapH) / 2);
+    const minU = zoomed ? -PAD + 6 : -extX + 6;
+    const maxU = zoomed ? mapW + PAD - 6 : mapW + extX - 6;
+    const minV = zoomed ? -PAD + 6 : -extY + 6;
+    const maxV = zoomed ? mapH + PAD - 6 : mapH + extY - 6;
     const clamp = (val, lo, hi) => (lo > hi ? (lo + hi) / 2 : Math.max(lo, Math.min(hi, val)));
     const allDots = nodes.map((n) => [n.sx - view.x, n.sy - view.y, n.id]);
+    const labelHalfSize = (f) => {
+      const tw = zoomed ? (isWide ? f.wIn : f.wInMobile) : (isWide ? f.wOut : f.wOutMobile);
+      const domW = f.el && f.el.getComputedTextLength ? f.el.getComputedTextLength() : 0;
+      const effW = Math.max(tw * 1.04, domW);
+      return [Math.ceil(effW * 0.5 + (isWide ? 4.5 : 3.5)), Math.ceil(fs * 0.65 + (isWide ? 2.5 : 2))];
+    };
 
     if (!zoomed) {
-      const hard = [[-fit.x, -fit.y, -fit.x + (isWide ? 204 : 114), -fit.y + 60]];
+      const hard = view.k <= fit.k * 1.15 ? [[-fit.x, -fit.y, -fit.x + (isWide ? 204 : 114), -fit.y + 60]] : [];
       nodes.forEach((n) => {
         if (!n._on) return;
         const u = n.sx - view.x, v = n.sy - view.y;
         hard.push([u - 11, v - 11, u + 11, v + 11], nodeLabelBox(n));
       });
-      const dotBoxesOut = allDots.map(([u, v]) => [u - 9.5, v - 9.5, u + 9.5, v + 9.5]);
+      const dotPad = isWide ? 9.5 : 8.2;
+      const dotBoxesOut = allDots.map(([u, v]) => [u - dotPad, v - dotPad, u + dotPad, v + dotPad]);
+      const dotMetrics = (cu, cv, hw, hh, ownSet) => {
+        const b = [cu - hw, cv - hh, cu + hw, cv + hh];
+        let dotHits = 0, foreignDotHits = 0, dotCost = 0, ownD = Infinity, otherD = Infinity, ownBoxD = Infinity, otherBoxD = Infinity;
+        for (let i = 0; i < allDots.length; i++) {
+          const du = allDots[i][0], dv = allDots[i][1], isOwn = ownSet.has(allDots[i][2]);
+          const d = Math.hypot(cu - du, cv - dv);
+          const bd = Math.hypot(Math.max(0, Math.abs(cu - du) - hw), Math.max(0, Math.abs(cv - dv) - hh));
+          if (isOwn) { if (d < ownD) ownD = d; if (bd < ownBoxD) ownBoxD = bd; }
+          else { if (d < otherD) otherD = d; if (bd < otherBoxD) otherBoxD = bd; }
+          if (boxOverlap(b, dotBoxesOut[i])) {
+            dotHits++;
+            if (!isOwn) foreignDotHits++;
+            const pen = Math.min(hw + dotPad - Math.abs(cu - du), hh + dotPad - Math.abs(cv - dv));
+            dotCost += (isOwn ? (isWide ? 32 : 20) : 125) + pen * (isOwn ? 5 : 9) + (d < 15 ? (15 - d) * 20 : 0);
+          }
+        }
+        return { dotHits, foreignDotHits, dotCost, ownD, otherD, ownBoxD, otherBoxD };
+      };
       const items = clusterMeta.map((f) => {
-        const hw = Math.ceil(f.wOut * 0.54 + 3.5), hh = 9.5;
+        const [hw, hh] = labelHalfSize(f);
         let eu0 = Infinity, ev0 = Infinity, eu1 = -Infinity, ev1 = -Infinity, su = 0, sv = 0, topU = 0, topV = Infinity;
         f.nodes.forEach((n) => {
           const u = n.sx - view.x, v = n.sy - view.y;
@@ -508,40 +535,36 @@ RX.nodeMap = (function () {
         const ownSet = new Set(f.ids);
         // Pick an initial anchor near the cluster crown/perimeter that avoids sitting directly over dots when room exists.
         const seedCands = [
-          [topU, ev0 - NODE_R - hh - 3],
-          [mu, ev0 - NODE_R - hh - 3],
-          [mu, ev1 + NODE_R + hh + 4],
-          [eu0 - NODE_R - hw - 5, mv],
-          [eu1 + NODE_R + hw + 5, mv],
-          [mu, mv - 10],
+          [topU, ev0 - NODE_R - hh - 2.5],
+          [mu, ev0 - NODE_R - hh - 2.5],
+          [mu, ev1 + NODE_R + hh + 3.5],
+          [eu0 - NODE_R - hw - 4, mv],
+          [eu1 + NODE_R + hw + 4, mv],
+          [mu, mv - 12],
         ];
-        [14, 24, 36].forEach((rad) => ANGLES.forEach((ang) => seedCands.push([mu + Math.cos(ang) * rad * 1.2, mv + Math.sin(ang) * rad])));
-        let bestA = [clamp(mu, minU + hw, maxU - hw), clamp(ev0 - NODE_R - hh - 3, minV + hh, maxV - hh)], bestAScore = Infinity;
+        (isWide ? [16, 28, 42, 58] : [12, 20, 30, 42]).forEach((rad) => ANGLES.forEach((ang) => seedCands.push([mu + Math.cos(ang) * rad * 1.2, mv + Math.sin(ang) * rad])));
+        let bestA = [clamp(mu, minU + hw, maxU - hw), clamp(ev0 - NODE_R - hh - 2.5, minV + hh, maxV - hh)], bestAScore = Infinity;
         seedCands.forEach(([rawU, rawV]) => {
           const cu = clamp(rawU, minU + hw, maxU - hw), cv = clamp(rawV, minV + hh, maxV - hh);
           const b = [cu - hw, cv - hh, cu + hw, cv + hh];
           if (hard.some((hb) => boxOverlap(b, hb))) return;
-          let dotHits = 0, ownD = Infinity, otherD = Infinity;
-          for (let i = 0; i < dotBoxesOut.length; i++) {
-            if (boxOverlap(b, dotBoxesOut[i])) dotHits++;
-            const d = Math.hypot(cu - allDots[i][0], cv - allDots[i][1]);
-            if (ownSet.has(allDots[i][2])) { if (d < ownD) ownD = d; }
-            else if (d < otherD) otherD = d;
-          }
-          let sc = ownD + Math.hypot(cu - mu, cv - mv) * 0.35 + dotHits * (view.k >= 0.5 ? 42 : 16) + (cv < ev0 ? -5 : 0);
-          if (otherD < ownD) sc += (ownD - otherD) * 2 + 24;
+          const { dotCost, ownD, otherD, ownBoxD, otherBoxD } = dotMetrics(cu, cv, hw, hh, ownSet);
+          let sc = ownD + Math.hypot(cu - mu, cv - mv) * 0.35 + dotCost + (cv < ev0 ? -5 : 0);
+          if (otherD < ownD) sc += (ownD - otherD) * 10 + 120;
+          if (otherBoxD + 2 < ownBoxD) sc += (ownBoxD - otherBoxD) * 8 + 60;
           if (sc < bestAScore) { bestAScore = sc; bestA = [cu, cv]; }
         });
-        return { f, hw, hh, au: bestA[0], av: bestA[1], u: bestA[0], v: bestA[1], ownSet };
+        return { f, hw, hh, mu, mv, ev0, seedCands, au: bestA[0], av: bestA[1], u: bestA[0], v: bestA[1], ownSet };
       });
 
-      for (let iter = 0; iter < 30; iter++) {
-        const alpha = iter < 18 ? 0.1 * (1 - iter / 18) : 0;
+      const maxDrift = isWide ? 54 : 20;
+      for (let iter = 0; iter < 40; iter++) {
+        const alpha = isWide ? (iter < 22 ? 0.1 * (1 - iter / 22) : 0.015) : 0.08;
         items.forEach((it) => { it.u += (it.au - it.u) * alpha; it.v += (it.av - it.v) * alpha; });
         for (let i = 0; i < items.length; i++) {
           for (let j = i + 1; j < items.length; j++) {
             const A = items[i], B = items[j];
-            const ox = A.hw + B.hw + 2 - Math.abs(A.u - B.u), oy = A.hh + B.hh + 1.5 - Math.abs(A.v - B.v);
+            const ox = A.hw + B.hw + 3 - Math.abs(A.u - B.u), oy = A.hh + B.hh + 2 - Math.abs(A.v - B.v);
             if (ox <= 0 || oy <= 0) continue;
             if (oy <= ox * 1.15) {
               const s = A.v === B.v ? (A.f.idx < B.f.idx ? -1 : 1) : Math.sign(A.v - B.v);
@@ -561,32 +584,71 @@ RX.nodeMap = (function () {
             if (oy <= ox) it.v += (it.v < hcy ? -1 : 1) * (oy + 0.5);
             else it.u += (it.u < hcx ? -1 : 1) * (ox + 0.5);
           });
+          const dx = it.u - it.au, dy = it.v - it.av, dr = Math.hypot(dx, dy);
+          if (dr > maxDrift) { it.u = it.au + (dx / dr) * maxDrift; it.v = it.av + (dy / dr) * maxDrift; }
           it.u = clamp(it.u, minU + it.hw, maxU - it.hw);
           it.v = clamp(it.v, minV + it.hh, maxV - it.hh);
         });
       }
 
+      // On compact screens, finalize interior clusters before outer-perimeter clusters so outer ones expand outward.
+      const order = isWide ? items : items.slice().sort((a, b) => {
+        const crowd = (x) => items.reduce((s, y) => (x === y ? s : s + 1 / Math.max(18, Math.hypot(x.mu - y.mu, x.mv - y.mv))), 0);
+        return crowd(b) - crowd(a);
+      });
       const placed = hard.slice();
-      items.forEach((it) => {
+      order.forEach((it) => {
         const clear = (cu, cv, noDots) => {
           const b = [cu - it.hw, cv - it.hh, cu + it.hw, cv + it.hh];
           if (placed.some((p) => boxOverlap(b, p))) return false;
-          if (noDots && dotBoxesOut.some((db) => boxOverlap(b, db))) return false;
+          if (noDots) {
+            const { dotHits, ownD, otherD, ownBoxD, otherBoxD } = dotMetrics(cu, cv, it.hw, it.hh, it.ownSet);
+            if (dotHits > 0 || otherD + 2 < ownD || otherBoxD + 3 < ownBoxD) return false;
+          }
           return true;
         };
-        if (!clear(it.u, it.v, view.k >= 0.5)) {
-          let found = null;
-          for (const strictDots of (view.k >= 0.5 ? [true, false] : [false])) {
-            if (clear(it.u, it.v, strictDots)) { found = [it.u, it.v]; break; }
-            for (let ri = 0; ri < RINGS_OUT.length && !found; ri++) {
+        const candScore = (cu, cv) => {
+          const { dotCost, ownD, otherD, ownBoxD, otherBoxD } = dotMetrics(cu, cv, it.hw, it.hh, it.ownSet);
+          return Math.hypot(cu - it.u, cv - it.v) * (isWide ? 0.55 : 0.25)
+            + Math.hypot(cu - it.au, cv - it.av) * 0.45
+            + Math.hypot(cu - it.mu, cv - it.mv) * 0.25
+            + ownD * 0.7
+            + dotCost
+            + (otherD < ownD ? (ownD - otherD) * 14 + 180 : 0)
+            + (otherBoxD + 2 < ownBoxD ? (ownBoxD - otherBoxD) * 12 + 95 : 0);
+        };
+        if (!clear(it.u, it.v, true)) {
+          let found = null, bestSc = Infinity;
+          const tryCand = (rawU, rawV, strictDots) => {
+            const cu = clamp(rawU, minU + it.hw, maxU - it.hw), cv = clamp(rawV, minV + it.hh, maxV - it.hh);
+            if (!clear(cu, cv, strictDots)) return;
+            const sc = candScore(cu, cv);
+            if (sc < bestSc) { bestSc = sc; found = [cu, cv]; }
+          };
+          for (const strictDots of [true, false]) {
+            const maxRing = strictDots ? (isWide ? 86 : 30) : 260;
+            const bases = [[it.au, it.av], [it.u, it.v], [it.mu, it.mv]];
+            tryCand(it.u, it.v, strictDots);
+            tryCand(it.au, it.av, strictDots);
+            it.seedCands.forEach(([su, sv]) => tryCand(su, sv, strictDots));
+            for (let ri = 0; ri < RINGS_OUT.length; ri++) {
               const rad = RINGS_OUT[ri];
-              for (let ai = 0; ai < ANGLES.length; ai++) {
-                const cu = clamp(it.au + Math.cos(ANGLES[ai]) * rad * 1.25, minU + it.hw, maxU - it.hw);
-                const cv = clamp(it.av + Math.sin(ANGLES[ai]) * rad, minV + it.hh, maxV - it.hh);
-                if (clear(cu, cv, strictDots)) { found = [cu, cv]; break; }
+              if (rad > maxRing) break;
+              for (let bi = 0; bi < bases.length; bi++) {
+                for (let ai = 0; ai < ANGLES.length; ai++) {
+                  tryCand(bases[bi][0] + Math.cos(ANGLES[ai]) * rad * 1.25, bases[bi][1] + Math.sin(ANGLES[ai]) * rad, strictDots);
+                }
               }
+              if (strictDots && found && ri >= 2) break;
             }
             if (found) break;
+          }
+          if (!found) {
+            for (let gv = minV + it.hh; gv <= maxV - it.hh; gv += 10) {
+              for (let gu = minU + it.hw; gu <= maxU - it.hw; gu += 12) {
+                tryCand(gu, gv, false);
+              }
+            }
           }
           if (found) { it.u = found[0]; it.v = found[1]; }
         }
@@ -603,8 +665,7 @@ RX.nodeMap = (function () {
     const placedFam = [];
 
     clusterMeta.forEach((f) => {
-      const tw = isWide ? f.wIn : f.wInMobile;
-      const hw = Math.ceil(tw * 0.55 + 5), hh = Math.ceil(fs * 0.66 + 3);
+      const [hw, hh] = labelHalfSize(f);
       let eu0 = Infinity, ev0 = Infinity, eu1 = -Infinity, ev1 = -Infinity, su = 0, sv = 0;
       let topU = 0, topV = Infinity, botU = 0, botV = -Infinity;
       const memberUV = f.nodes.map((n) => {
@@ -709,7 +770,7 @@ RX.nodeMap = (function () {
       const onKey = zoomed ? 'all' : nodes.filter((n) => n._on).map((n) => n.id).join(',');
       const key = morphing ? '' : `${zoomed ? 1 : 0}|${view.k.toFixed(4)}|${fitK.toFixed(4)}|${w}x${h}|${wide.matches ? 1 : 0}|${fontsGen}|${onKey}`;
       if (!key || key !== famCacheKey) { placeFamilies(zoomed); famCacheKey = key; }
-      const dy = (zoomed ? (wide.matches ? 20 : 17) : 12) * 0.35;
+      const dy = (zoomed ? (wide.matches ? 20 : 17) : (wide.matches ? 18 : 14)) * 0.35;
       clusterMeta.forEach((f) => {
         f.el.setAttribute('x', (view.x + f.u).toFixed(1));
         f.el.setAttribute('y', (view.y + f.v + dy).toFixed(1));
