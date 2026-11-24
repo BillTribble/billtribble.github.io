@@ -203,6 +203,13 @@
                 <span class="repo-desc">Discover global drum rhythms with etymology, displayed on a world map and grouped by similarity.</span>
             </div>
         </a>
+        <a href="https://billtribble.github.io/music-map/" target="_blank" class="link-card">
+            <img class="repo-thumb" src="thumbs/music-map.webp?v=1" width="52" height="52" alt="Music Map preview">
+            <div class="repo-info">
+                <span class="repo-name">Music Map</span>
+                <span class="repo-desc">Interactive map of my 2001–2026 music catalog by vibe, era, harmony and groove.</span>
+            </div>
+        </a>
         <a href="https://billtribble.github.io/Sangha-Looper/" target="_blank" class="link-card">
             <video class="repo-thumb" autoplay loop muted playsinline preload="auto" poster="thumbs/sangha-looper.webp?v=4" width="52" height="52" aria-label="Sangha-Looper preview">
                 <source src="thumbs/sangha-looper.webm?v=4" type="video/webm">
@@ -293,6 +300,7 @@
             'enso-soundscapes': 'enso-soundscapes',
             'lifesim': 'lifesim',
             'groove-explorer': 'groove-explorer',
+            'music-map': 'music-map',
             'sangha-looper': 'sangha-looper',
             'prismata-ui': 'prismata-ui',
             'prismata': 'prismata-ui',
@@ -302,6 +310,7 @@
         const DISPLAY_NAME_MAP = {
             'crystal-transformer': 'Crystal Transformer',
             'groove-explorer': 'Groove Explorer',
+            'music-map': 'Music Map',
             'film-lab': 'Film Lab'
         };
 
@@ -396,6 +405,7 @@
 
                 const PINNED_ORDER = [
                     'groove-explorer',
+                    'music-map',
                     'sangha-looper',
                     'crystal transformer',
                     'crystal-transformer',
@@ -443,6 +453,9 @@
                     if (key === 'groove-explorer') {
                         description = 'Discover global drum rhythms with etymology, displayed on a world map and grouped by similarity.';
                     }
+                    if (key === 'music-map') {
+                        description = 'Interactive map of my 2001–2026 music catalog by vibe, era, harmony and groove.';
+                    }
                     if (key === 'prismata-ui' || key === 'prismata') {
                         description = 'Visualising LLM structure';
                     }
@@ -454,7 +467,13 @@
                     const thumbSlug = THUMB_SLUG_MAP[key] || 'crystal-transformer';
                     const thumbVer = thumbSlug === 'film-lab' ? '10' : '9';
 
-                    card.innerHTML = `
+                    card.innerHTML = key === 'music-map' ? `
+                        <img class="repo-thumb" src="thumbs/music-map.webp?v=1" width="52" height="52" alt="${displayName} preview">
+                        <div class="repo-info">
+                            <span class="repo-name">${displayName}</span>
+                            <span class="repo-desc">${description}</span>
+                        </div>
+                    ` : `
                         <video class="repo-thumb" autoplay loop muted playsinline preload="auto" poster="thumbs/${thumbSlug}.webp?v=${thumbVer}" width="52" height="52" aria-label="${displayName} preview">
                             <source src="thumbs/${thumbSlug}.webm?v=${thumbVer}" type="video/webm">
                             <source src="thumbs/${thumbSlug}.mp4?v=${thumbVer}" type="video/mp4">
