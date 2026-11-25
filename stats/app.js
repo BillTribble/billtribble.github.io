@@ -59,6 +59,9 @@
   var SNAPSHOT_PATH = "./vault-snapshot.json";
   var TOKEN_WRAP_DOMAIN = "bt-stats-snapshot-wrap-v1:";
   var DEFAULT_MUSIC_MAP_API = "https://music-map-events.billtribble.workers.dev";
+  var VISITOR_SEED_KEY = "btmm.visitor_seed";
+  var IGNORE_ANALYTICS_KEY = "bt_ignore_analytics";
+  var SKIPGC_STORAGE_KEY = "skipgc";
 
   var PROJECT_DIRECTORY = {
     "/music-map": { name: "Music Map", url: "https://billtribble.github.io/music-map/" },
@@ -84,6 +87,7 @@
   // State
   var session = null;
   var state = {
+    audience: "visitors",
     site: "all",
     range: "7d",
     granularity: "hourly",
@@ -93,6 +97,8 @@
     liveBlocked: false,
     loadSeq: 0,
     lastData: null,
+    lastDataRange: null,
+    lastDataSite: null,
     selectedPage: null,
     hotlistFilter: "all",
     lastHotlist: null,
@@ -1549,6 +1555,8 @@
 
   function setAllPanelsLoading() {
     state.lastData = null;
+    state.lastDataRange = null;
+    state.lastDataSite = null;
     setKpisLoading();
 
     var syncLabel = document.getElementById("sync-status-label");
@@ -1664,12 +1672,25 @@
   function renderDashboard(data, opts) {
     var breakdownsPending = Boolean(opts && opts.breakdownsPending);
     state.lastData = data;
+    state.lastDataRange = (opts && opts.rangeKey) || state.range;
+    state.lastDataSite = (opts && opts.siteKey) || state.site;
+
+    var updatedText = "Updated " + formatLocalUpdatedTime(data.fetchedAt);
+    // Sync timestamp
+    var syncLabel = document.getElementById("sync-status-label");
+    if (syncLabel) {
+      syncLabel.textContent = updatedText;
+      syncLabel.title = getLocalTimeZoneId();
+    }
+
+    if (state.audience === "owner") {
+      return;
+    }
 
     // Subtitle & Trend timezone label (browser-local timezone)
     var scopeLabel = state.site === "all"
       ? "All 3 properties"
       : (session.sites.find(function (s) { return s.code === state.site; }) || { domain: state.site }).domain;
-    var updatedText = "Updated " + formatLocalUpdatedTime(data.fetchedAt);
     var subEl = document.getElementById("active-scope-subtitle");
     if (subEl) {
       clearChildren(subEl);
@@ -1686,13 +1707,6 @@
     if (trendTzEl) {
       trendTzEl.textContent = getLocalShortZone(data.fetchedAt);
       trendTzEl.title = getLocalTimeZoneId();
-    }
-
-    // Sync timestamp
-    var syncLabel = document.getElementById("sync-status-label");
-    if (syncLabel) {
-      syncLabel.textContent = updatedText;
-      syncLabel.title = getLocalTimeZoneId();
     }
 
     // Hero KPI 1: Total Pageviews + Sparkline + Site Breakdown
@@ -1886,10 +1900,309 @@
   // Music Map 2D Popularity Constellation Map & Hot List (Cloudflare D1 + Snapshot)
   // --------------------------------------------------------------------------
   function getMusicMapApiBase() {
-    if (typeof window !== "undefined" && typeof window.BTMM_STATS_HOTLIST_API_URL === "string" && window.BTMM_STATS_HOTLIST_API_URL.trim()) {
-      return window.BTMM_STATS_HOTLIST_API_URL.trim().replace(/\/+$/, "");
+    if (typeof window !== "undefined") {
+      if (typeof window.BTMM_STATS_HOTLIST_API_URL === "string" && window.BTMM_STATS_HOTLIST_API_URL.trim()) {
+        return window.BTMM_STATS_HOTLIST_API_URL.trim().replace(/\/+$/, "");
+      }
+      try {
+        var u = new URL(window.location.href);
+        var qp = u.searchParams.get("events_api");
+        if (qp && /^https?:\/\//i.test(qp)) {
+          return qp.trim().replace(/\/+$/, "");
+        }
+      } catch (_) {}
     }
     return DEFAULT_MUSIC_MAP_API.replace(/\/+$/, "");
+  }
+
+  function getOrCreateVisitorSeed() {
+    try {
+      var existing = localStorage.getItem(VISITOR_SEED_KEY);
+      if (existing && existing.length >= 16) return existing;
+      var bytes = new Uint8Array(16);
+      if (window.crypto && window.crypto.getRandomValues) {
+        window.crypto.getRandomValues(bytes);
+      } else {
+        for (var i = 0; i < 16; i++) bytes[i] = Math.floor(Math.random() * 256);
+      }
+      var seed = Array.from(bytes).map(function (b) { return b.toString(16).padStart(2, "0"); }).join("");
+      localStorage.setItem(VISITOR_SEED_KEY, seed);
+      return seed;
+    } catch (_) {
+      return "";
+    }
+  }
+
+  function isOwnerDevice() {
+    try {
+      return localStorage.getItem(IGNORE_ANALYTICS_KEY) === "1";
+    } catch (_) {
+      return false;
+    }
+  }
+
+  function setOwnerDeviceLocal(isOwner) {
+    try {
+      if (isOwner) {
+        localStorage.setItem(IGNORE_ANALYTICS_KEY, "1");
+        localStorage.setItem(SKIPGC_STORAGE_KEY, "t");
+      } else {
+        localStorage.setItem(IGNORE_ANALYTICS_KEY, "0");
+        localStorage.removeItem(SKIPGC_STORAGE_KEY);
+      }
+    } catch (_) {}
+  }
+
+  async function enrollOwnerSessionRemote(isOwner) {
+    var seed = getOrCreateVisitorSeed();
+    if (!seed || seed.length < 16) return null;
+    try {
+      var resp = await fetch(getMusicMapApiBase() + "/api/enroll-owner-session", {
+        method: "POST",
+        mode: "cors",
+        credentials: "omit",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ session_id: seed, is_owner: Boolean(isOwner) })
+      });
+      if (!resp.ok) return null;
+      return await resp.json().catch(function () { return null; });
+    } catch (_) {
+      return null;
+    }
+  }
+
+  function applyUrlOwnerParam() {
+    try {
+      var u = new URL(window.location.href);
+      var p = u.searchParams.get("owner");
+      if (p === "1") {
+        setOwnerDeviceLocal(true);
+        u.searchParams.delete("owner");
+        if (window.history && window.history.replaceState) {
+          window.history.replaceState(null, "", u.pathname + u.search + u.hash);
+        }
+        return true;
+      } else if (p === "0") {
+        setOwnerDeviceLocal(false);
+        u.searchParams.delete("owner");
+        if (window.history && window.history.replaceState) {
+          window.history.replaceState(null, "", u.pathname + u.search + u.hash);
+        }
+        return false;
+      }
+    } catch (_) {}
+    return null;
+  }
+
+  function syncDeviceStatusPill() {
+    var btn = document.getElementById("device-ignore-btn");
+    var icon = document.getElementById("device-ignore-icon");
+    var label = document.getElementById("device-ignore-label");
+    if (!btn || !icon || !label) return;
+    var owner = isOwnerDevice();
+    btn.classList.toggle("is-owner", owner);
+    btn.setAttribute("aria-pressed", owner ? "true" : "false");
+    icon.textContent = owner ? "verified_user" : "visibility";
+    label.textContent = owner ? "Owner ✓" : "Visitor";
+    btn.title = owner
+      ? "This device is enrolled as Owner: GoatCounter pageviews are skipped and Music Map plays, stars, and downloads are saved under Only my stats. Click to count this device as Visitor."
+      : "This device is currently counted as a public Visitor. Click to enroll as Owner (excludes from Visitor stats and saves under Only my stats).";
+  }
+
+  function renderOwnerKpisFromHotlist(payload) {
+    if (state.audience !== "owner") return;
+    var sum = (payload && payload.summary) || {};
+    var winInfo = computeRangeWindow(state.range);
+    var hasWindowFields = Object.prototype.hasOwnProperty.call(sum, "window_plays");
+    var winPlays = Number(hasWindowFields ? sum.window_plays : sum.total_plays) || 0;
+    var winManualPlays = Number(hasWindowFields ? sum.window_manual_plays : sum.manual_plays) || 0;
+    var winAutoplayPlays = Number(hasWindowFields ? sum.window_autoplay_plays : sum.autoplay_plays) || 0;
+    var winListenSec = Number(hasWindowFields ? sum.window_listen_sec : sum.total_listen_sec) || 0;
+    var activeStars = Number(sum.active_stars || 0);
+    var winStars = Number(hasWindowFields ? sum.window_stars : sum.active_stars) || 0;
+    var winDownloads = Number(hasWindowFields ? sum.window_downloads : sum.total_downloads) || 0;
+    var winFlacDownloads = Number(
+      Object.prototype.hasOwnProperty.call(sum, "window_flac_downloads") ? sum.window_flac_downloads : sum.flac_downloads
+    ) || 0;
+    var winMp3Downloads = Number(
+      Object.prototype.hasOwnProperty.call(sum, "window_mp3_downloads") ? sum.window_mp3_downloads : sum.mp3_downloads
+    ) || 0;
+
+    var rawTracks = (payload && Array.isArray(payload.top_tracks)) ? payload.top_tracks : [];
+    var windowTracks = rawTracks
+      .filter(function (t) {
+        if (!hasWindowFields) {
+          return Number(t.total_plays || 0) > 0 || Number(t.active_stars || 0) > 0 || Number(t.total_downloads || 0) > 0;
+        }
+        return Number(t.window_plays || 0) > 0 || Number(t.window_stars || 0) > 0 || Number(t.window_downloads || 0) > 0;
+      })
+      .sort(function (a, b) {
+        return (
+          (Number(b.window_popularity_score || 0) - Number(a.window_popularity_score || 0)) ||
+          (Number(b.window_plays || 0) - Number(a.window_plays || 0)) ||
+          (Number(b.window_stars || 0) - Number(a.window_stars || 0)) ||
+          (Number(b.window_downloads || 0) - Number(a.window_downloads || 0))
+        );
+      });
+    var topTrack = windowTracks[0] || null;
+
+    var pvState = document.getElementById("kpi-pageviews-state");
+    var pvBody = document.getElementById("kpi-pageviews-body");
+    if (pvState) {
+      clearChildren(pvState);
+      pvState.hidden = true;
+    }
+    if (pvBody) pvBody.hidden = false;
+
+    var kpiViews = document.getElementById("kpi-pageviews");
+    if (kpiViews) kpiViews.textContent = winPlays.toLocaleString();
+
+    var heroBadge = document.getElementById("kpi-hero-badge");
+    if (heroBadge) {
+      heroBadge.hidden = false;
+      heroBadge.className = "badge badge-play";
+      heroBadge.textContent = winInfo.label;
+    }
+
+    var heroSpark = document.getElementById("kpi-hero-sparkline");
+    if (heroSpark) clearChildren(heroSpark);
+
+    var heroMeta = document.getElementById("kpi-pageviews-meta");
+    if (heroMeta) {
+      heroMeta.textContent = winPlays > 0
+        ? (formatListenDuration(winListenSec) + " listened · " + winManualPlays + " manual · " + winAutoplayPlays + " autoplay")
+        : "No owner plays in " + winInfo.label.toLowerCase();
+    }
+
+    var uqState = document.getElementById("kpi-unique-state");
+    var kpiUnique = document.getElementById("kpi-unique-visits");
+    var kpiUniqueMeta = document.getElementById("kpi-unique-meta");
+    if (uqState) {
+      clearChildren(uqState);
+      uqState.hidden = true;
+    }
+    if (kpiUnique) {
+      kpiUnique.hidden = false;
+      kpiUnique.textContent = activeStars.toLocaleString() + " ★";
+    }
+    if (kpiUniqueMeta) {
+      var starPrefix = winStars > 0 ? ("+" + winStars.toLocaleString() + " ★ in window · ") : "";
+      kpiUniqueMeta.textContent =
+        starPrefix +
+        winDownloads.toLocaleString() +
+        (winDownloads === 1 ? " download" : " downloads") +
+        " (" + winFlacDownloads + " FLAC · " + winMp3Downloads + " MP3)";
+    }
+
+    var tpState = document.getElementById("kpi-top-project-state");
+    var topNameEl = document.getElementById("kpi-top-project-name");
+    var topMetaText = document.getElementById("kpi-top-project-stats");
+    var topLinkEl = document.getElementById("kpi-top-project-link");
+    if (tpState) {
+      clearChildren(tpState);
+      tpState.hidden = true;
+    }
+    if (topNameEl) topNameEl.hidden = false;
+    if (topTrack) {
+      if (topNameEl) topNameEl.textContent = topTrack.track_title || topTrack.track_id;
+      if (topMetaText) {
+        var trPlays = Number(hasWindowFields ? topTrack.window_plays : topTrack.total_plays) || 0;
+        var trListen = Number(hasWindowFields ? topTrack.window_listen_sec : topTrack.total_listen_sec) || 0;
+        var trStars = Number(hasWindowFields ? topTrack.window_stars : topTrack.active_stars) || 0;
+        var trDownloads = Number(hasWindowFields ? topTrack.window_downloads : topTrack.total_downloads) || 0;
+        var bits = [];
+        if (trPlays > 0) {
+          bits.push(trPlays.toLocaleString() + (trPlays === 1 ? " play" : " plays"));
+        }
+        if (trListen > 0) {
+          bits.push(formatListenDuration(trListen));
+        }
+        if (trStars > 0) {
+          bits.push(trStars + " ★");
+        }
+        if (trDownloads > 0) {
+          bits.push(trDownloads + (trDownloads === 1 ? " download" : " downloads"));
+        }
+        if (!bits.length) bits.push("Recent owner activity");
+        topMetaText.textContent = bits.join(" · ");
+      }
+      if (topLinkEl) {
+        topLinkEl.href = topTrack.url || ("https://billtribble.github.io/music-map/?track=" + encodeURIComponent(topTrack.track_id));
+        topLinkEl.hidden = false;
+      }
+    } else {
+      if (topNameEl) topNameEl.textContent = "No activity in window";
+      if (topMetaText) topMetaText.textContent = "No owner plays, stars, or downloads in " + winInfo.label.toLowerCase();
+      if (topLinkEl) topLinkEl.hidden = true;
+    }
+  }
+
+  function syncAudienceModeUI() {
+    var isOwnerMode = state.audience === "owner";
+    document.querySelectorAll("[data-audience]").forEach(function (btn) {
+      var active = btn.getAttribute("data-audience") === state.audience;
+      btn.classList.toggle("active", active);
+      btn.setAttribute("aria-selected", active ? "true" : "false");
+    });
+
+    var controlsBar = document.getElementById("controls-bar");
+    if (controlsBar) controlsBar.classList.toggle("is-owner-mode", isOwnerMode);
+
+    var siteTabs = document.getElementById("site-switcher-tabs");
+    if (siteTabs) siteTabs.hidden = isOwnerMode;
+
+    var trendBento = document.getElementById("visitor-bento-trend");
+    if (trendBento) trendBento.hidden = isOwnerMode;
+
+    var pagesCard = document.getElementById("pages-card");
+    if (pagesCard) pagesCard.hidden = isOwnerMode;
+
+    var fourBento = document.getElementById("visitor-bento-four");
+    if (fourBento) fourBento.hidden = isOwnerMode;
+
+    var headingEl = document.getElementById("dashboard-heading");
+    if (headingEl) headingEl.textContent = isOwnerMode ? "Only my stats" : "Site traffic";
+
+    var popHeading = document.getElementById("popmap-card-heading");
+    if (popHeading) popHeading.textContent = isOwnerMode ? "My Music Map constellation" : "Music Map popularity map";
+
+    var hotHeading = document.getElementById("hotlist-card-heading");
+    if (hotHeading) hotHeading.textContent = isOwnerMode ? "My Music Map activity" : "Music Map hot list";
+
+    var lbl1 = document.getElementById("kpi-label-pageviews");
+    var lbl2 = document.getElementById("kpi-label-unique");
+    var pill2 = document.getElementById("kpi-unique-pill-label");
+    var lbl3 = document.getElementById("kpi-label-top-project");
+    if (lbl1) lbl1.textContent = isOwnerMode ? "My track plays" : "Total pageviews";
+    if (lbl2) lbl2.textContent = isOwnerMode ? "My starred & downloads" : "Unique visits";
+    if (pill2) pill2.textContent = isOwnerMode ? "Personal library" : "Session deduplicated";
+    if (lbl3) lbl3.textContent = isOwnerMode ? "My top track" : "Top project";
+
+    if (isOwnerMode) {
+      var win = computeRangeWindow(state.range);
+      var subEl = document.getElementById("active-scope-subtitle");
+      if (subEl) {
+        subEl.textContent = "Enrolled owner devices · " + win.label + " · Pageviews skipped in GoatCounter";
+      }
+      renderOwnerKpisFromHotlist(state.lastHotlist);
+    } else if (state.lastData && state.lastDataRange === state.range && state.lastDataSite === state.site) {
+      renderDashboard(state.lastData, {
+        breakdownsPending: false,
+        rangeKey: state.lastDataRange,
+        siteKey: state.lastDataSite
+      });
+    } else {
+      var winVis = computeRangeWindow(state.range);
+      var scopeVis = state.site === "all"
+        ? "All 3 properties"
+        : ((session && session.sites && session.sites.find(function (s) { return s.code === state.site; })) || { domain: state.site }).domain;
+      var subVis = document.getElementById("active-scope-subtitle");
+      if (subVis) {
+        subVis.textContent = scopeVis + " · " + winVis.label + " · " + formatLocalZoneSubtitle(new Date());
+      }
+      setAllPanelsLoading();
+    }
+    syncMusicMapCardsVisibility();
   }
 
   function formatListenDuration(rawSec) {
@@ -1926,7 +2239,7 @@
   }
 
   function syncMusicMapCardsVisibility() {
-    var show = state.site !== "awake-in";
+    var show = state.audience === "owner" || state.site !== "awake-in";
     var popCard = document.getElementById("music-map-popularity-card");
     var hotCard = document.getElementById("music-map-hotlist-card");
     if (popCard) popCard.hidden = !show;
@@ -2564,6 +2877,7 @@
     }
 
     var effectiveRange = getEffectivePopmapRange();
+    var reqAudience = state.audience;
     var apiBase = getMusicMapApiBase();
     var geomPromise = loadMusicMapCatalogGeometry();
 
@@ -2571,7 +2885,12 @@
     try {
       var freshParam = forceRefresh ? "&fresh=1" : "";
       var resp = await fetch(
-        apiBase + "/api/popular?range=" + encodeURIComponent(effectiveRange) + "&limit=500" + freshParam,
+        apiBase +
+          "/api/popular?range=" +
+          encodeURIComponent(effectiveRange) +
+          "&limit=500&audience=" +
+          encodeURIComponent(reqAudience) +
+          freshParam,
         {
           method: "GET",
           mode: "cors",
@@ -2585,16 +2904,18 @@
         popPayload = json;
       }
     } catch (_) {
-      try {
-        var snap = await fetchDecryptedSnapshot(Boolean(forceRefresh));
-        if (snap && snap.musicMapPopular) {
-          popPayload = snap.musicMapPopular[effectiveRange] || snap.musicMapPopular.all || null;
-        }
-      } catch (_snapErr) {}
+      if (reqAudience === "visitors") {
+        try {
+          var snap = await fetchDecryptedSnapshot(Boolean(forceRefresh));
+          if (snap && snap.musicMapPopular) {
+            popPayload = snap.musicMapPopular[effectiveRange] || snap.musicMapPopular.all || null;
+          }
+        } catch (_snapErr) {}
+      }
     }
 
     await geomPromise;
-    if (expectedSeq !== state.loadSeq) return;
+    if (expectedSeq !== state.loadSeq || reqAudience !== state.audience) return;
 
     state.lastPopular = popPayload || {
       ok: true,
@@ -2630,6 +2951,9 @@
 
   function renderMusicMapHotlist(payload) {
     state.lastHotlist = payload || null;
+    if (state.audience === "owner") {
+      renderOwnerKpisFromHotlist(payload);
+    }
     if (!syncMusicMapCardsVisibility()) return;
 
     var tracksEl = document.getElementById("hotlist-tracks-list");
@@ -2645,11 +2969,15 @@
     if (!payload || !payload.summary) {
       var emptyMsg = document.createElement("p");
       emptyMsg.className = "empty-hint";
-      emptyMsg.textContent = "No Music Map play, star, or download activity recorded yet.";
+      emptyMsg.textContent = state.audience === "owner"
+        ? "No personal Music Map plays, stars, or downloads recorded yet."
+        : "No Music Map play, star, or download activity recorded yet.";
       tracksEl.appendChild(emptyMsg);
       var emptyRecent = document.createElement("p");
       emptyRecent.className = "empty-hint";
-      emptyRecent.textContent = "Waiting for first qualified play, star, or download.";
+      emptyRecent.textContent = state.audience === "owner"
+        ? "Plays, stars, and downloads from enrolled owner devices appear here."
+        : "Waiting for first qualified play, star, or download.";
       recentEl.appendChild(emptyRecent);
       return;
     }
@@ -2937,36 +3265,48 @@
 
   async function loadMusicMapHotlist(expectedSeq, forceRefresh) {
     if (!syncMusicMapCardsVisibility()) return;
+    var reqAudience = state.audience;
     loadMusicMapPopular(expectedSeq, forceRefresh);
     if (!state.lastHotlist || forceRefresh) {
       setHotlistLoading();
     }
     var apiBase = getMusicMapApiBase();
     try {
-      var resp = await fetch(apiBase + "/api/hotlist?range=" + encodeURIComponent(state.range), {
-        method: "GET",
-        mode: "cors",
-        credentials: "omit",
-        cache: forceRefresh ? "no-store" : "default"
-      });
+      var freshParam = forceRefresh ? "&fresh=1" : "";
+      var resp = await fetch(
+        apiBase +
+          "/api/hotlist?range=" +
+          encodeURIComponent(state.range) +
+          "&audience=" +
+          encodeURIComponent(reqAudience) +
+          freshParam,
+        {
+          method: "GET",
+          mode: "cors",
+          credentials: "omit",
+          cache: forceRefresh ? "no-store" : "default"
+        }
+      );
       if (!resp.ok) throw new Error("HTTP " + resp.status);
       var json = await resp.json();
-      if (expectedSeq !== state.loadSeq) return;
+      if (expectedSeq !== state.loadSeq || reqAudience !== state.audience) return;
       if (json && json.ok) {
         renderMusicMapHotlist(json);
         return;
       }
       throw new Error("Invalid hotlist payload");
     } catch (_) {
-      try {
-        var snap = await fetchDecryptedSnapshot(Boolean(forceRefresh));
-        if (expectedSeq !== state.loadSeq) return;
-        if (snap && snap.musicMapHotlist) {
-          renderMusicMapHotlist(snap.musicMapHotlist);
-          return;
-        }
-      } catch (_snapErr) {}
-      if (expectedSeq !== state.loadSeq) return;
+      if (reqAudience === "visitors") {
+        try {
+          var snap = await fetchDecryptedSnapshot(Boolean(forceRefresh));
+          if (expectedSeq !== state.loadSeq || reqAudience !== state.audience) return;
+          if (snap && snap.musicMapHotlist) {
+            renderMusicMapHotlist(snap.musicMapHotlist);
+            return;
+          }
+        } catch (_snapErr) {}
+      }
+      if (expectedSeq !== state.loadSeq || reqAudience !== state.audience) return;
       renderMusicMapHotlist({
         summary: { total_plays: 0, active_stars: 0, total_downloads: 0, total_requests: 0 },
         top_tracks: [],
@@ -3052,10 +3392,32 @@
     var refreshBtn = document.getElementById("refresh-btn");
     if (refreshBtn) refreshBtn.classList.add("is-spinning");
 
-    var win = computeRangeWindow(state.range);
-    var targetSites = state.site === "all"
+    if (state.audience === "owner") {
+      syncAudienceModeUI();
+      setKpisLoading();
+      try {
+        await loadMusicMapHotlist(seq, Boolean(forceRefresh));
+        if (seq === state.loadSeq) {
+          var syncLabelOwner = document.getElementById("sync-status-label");
+          if (syncLabelOwner) {
+            syncLabelOwner.textContent = "Updated " + formatLocalUpdatedTime(new Date().toISOString());
+          }
+        }
+      } finally {
+        if (seq === state.loadSeq) {
+          state.loading = false;
+          if (refreshBtn) refreshBtn.classList.remove("is-spinning");
+        }
+      }
+      return;
+    }
+
+    var reqRange = state.range;
+    var reqSite = state.site;
+    var win = computeRangeWindow(reqRange);
+    var targetSites = reqSite === "all"
       ? session.sites
-      : session.sites.filter(function (s) { return s.code === state.site; });
+      : session.sites.filter(function (s) { return s.code === reqSite; });
 
     // Check if every target site is already hot in cache so tab switches don't flash unnecessarily
     var allHotCached = !forceRefresh && !state.liveBlocked && targetSites.every(function (s) {
@@ -3071,7 +3433,7 @@
       if (state.liveBlocked && !forceRefresh) {
         var cachedSnapMerged = await loadMergedFromSnapshot(targetSites, win, false);
         if (seq !== state.loadSeq) return;
-        renderDashboard(cachedSnapMerged, { breakdownsPending: false });
+        renderDashboard(cachedSnapMerged, { breakdownsPending: false, rangeKey: reqRange, siteKey: reqSite });
         return;
       }
 
@@ -3083,11 +3445,11 @@
           Boolean(forceRefresh),
           function (partialMerged) {
             if (seq !== state.loadSeq) return;
-            renderDashboard(partialMerged, { breakdownsPending: true });
+            renderDashboard(partialMerged, { breakdownsPending: true, rangeKey: reqRange, siteKey: reqSite });
           }
         );
         if (seq !== state.loadSeq) return;
-        renderDashboard(liveMerged, { breakdownsPending: false });
+        renderDashboard(liveMerged, { breakdownsPending: false, rangeKey: reqRange, siteKey: reqSite });
         return;
       } catch (liveErr) {
         if (seq !== state.loadSeq) return;
@@ -3102,7 +3464,7 @@
         // to the same-origin AES-256-GCM encrypted ./vault-snapshot.json!
         var fallbackMerged = await loadMergedFromSnapshot(targetSites, win, Boolean(forceRefresh));
         if (seq !== state.loadSeq) return;
-        renderDashboard(fallbackMerged, { breakdownsPending: false });
+        renderDashboard(fallbackMerged, { breakdownsPending: false, rangeKey: reqRange, siteKey: reqSite });
       }
     } catch (_finalErr) {
       if (seq !== state.loadSeq) return;
@@ -3119,6 +3481,14 @@
 
   function enterSignedInState(unlockedSession) {
     session = unlockedSession;
+    try {
+      if (localStorage.getItem(IGNORE_ANALYTICS_KEY) === null) {
+        setOwnerDeviceLocal(true);
+      }
+    } catch (_) {}
+    syncDeviceStatusPill();
+    syncAudienceModeUI();
+
     safeViewTransition(function () {
       document.getElementById("signin-screen").hidden = true;
       document.getElementById("dashboard-screen").hidden = false;
@@ -3128,6 +3498,14 @@
       var popEmail = document.getElementById("popover-email");
       if (popEmail) popEmail.textContent = session.email || "bill@btribble.com";
     });
+
+    if (isOwnerDevice()) {
+      enrollOwnerSessionRemote(true).then(function (res) {
+        if (res && Number(res.migrated_events || 0) > 0 && session) {
+          loadMusicMapHotlist(state.loadSeq, true);
+        }
+      });
+    }
     loadAnalytics(false);
   }
 
@@ -3137,6 +3515,8 @@
     decryptedSnapshotCache = null;
     state.liveBlocked = false;
     state.lastData = null;
+    state.lastDataRange = null;
+    state.lastDataSite = null;
     state.lastHotlist = null;
     state.lastPopular = null;
     state.popmapHoverId = null;
@@ -3282,6 +3662,35 @@
     if (popSignout) {
       popSignout.addEventListener("click", function () {
         performSignOut("");
+      });
+    }
+
+    // Audience switcher (Visitors <-> Only my stats) + This-device Owner status pill
+    document.querySelectorAll("[data-audience]").forEach(function (tab) {
+      tab.addEventListener("click", function () {
+        var nextAud = tab.getAttribute("data-audience");
+        if (!nextAud || nextAud === state.audience) return;
+        state.audience = nextAud;
+        state.lastHotlist = null;
+        state.lastPopular = null;
+        state.popmapHoverId = null;
+        state.popmapPinnedId = null;
+        syncAudienceModeUI();
+        loadAnalytics(false);
+      });
+    });
+
+    var deviceBtn = document.getElementById("device-ignore-btn");
+    if (deviceBtn) {
+      deviceBtn.addEventListener("click", async function () {
+        var nextOwner = !isOwnerDevice();
+        setOwnerDeviceLocal(nextOwner);
+        syncDeviceStatusPill();
+        await enrollOwnerSessionRemote(nextOwner);
+        if (session) {
+          var seq = ++state.loadSeq;
+          loadMusicMapHotlist(seq, true);
+        }
       });
     }
 
@@ -3525,6 +3934,12 @@
   }
 
   function init() {
+    var explicitOwner = applyUrlOwnerParam();
+    syncDeviceStatusPill();
+    syncAudienceModeUI();
+    if (explicitOwner !== null) {
+      enrollOwnerSessionRemote(explicitOwner);
+    }
     hydrateStaticTimezoneLabels();
     wireControls();
     try {

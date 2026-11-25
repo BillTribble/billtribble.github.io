@@ -572,9 +572,77 @@ h1 {
   display: flex;
   align-items: center;
   justify-content: space-between;
-  gap: 12px;
+  gap: 12px 16px;
+  flex-wrap: wrap;
   width: 100%;
   min-width: 0;
+}
+
+.dashboard-title-left {
+  min-width: 0;
+  flex: 1 1 260px;
+}
+
+.dashboard-heading-line {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+}
+
+.dashboard-title-controls {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  flex-wrap: wrap;
+  flex-shrink: 0;
+}
+
+.audience-tabs .audience-tab-icon {
+  font-size: 17px;
+  width: 17px;
+  height: 17px;
+  flex-shrink: 0;
+}
+
+.device-status-pill {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 6px;
+  height: 36px;
+  padding: 0 14px;
+  border-radius: 9999px;
+  font-family: var(--md-ref-typeface-plain);
+  font-size: 12.5px;
+  font-weight: 600;
+  line-height: 1;
+  white-space: nowrap;
+  cursor: pointer;
+  user-select: none;
+  background-color: var(--md-sys-color-surface-container-highest);
+  color: var(--md-sys-color-on-surface-variant);
+  border: none;
+  transition: background-color 150ms ease, color 150ms ease, transform 120ms ease;
+}
+
+.device-status-pill .material-symbols-outlined {
+  font-size: 16px;
+  width: 16px;
+  height: 16px;
+}
+
+.device-status-pill.is-owner {
+  background-color: var(--md-sys-color-status-success-container);
+  color: var(--md-sys-color-on-status-success-container);
+}
+
+.device-status-pill:hover {
+  filter: brightness(0.97);
+}
+
+.controls-bar.is-owner-mode {
+  justify-content: flex-end;
 }
 
 .mobile-range-select {
@@ -1879,9 +1947,34 @@ select:focus,
   .desktop-range-tabs {
     display: none;
   }
+  .controls-bar.is-owner-mode {
+    display: none;
+  }
+  .dashboard-title-left {
+    flex: 1 1 100%;
+  }
+  .dashboard-title-controls {
+    width: 100%;
+    justify-content: space-between;
+    gap: 8px;
+  }
+  .device-pill-prefix,
+  .audience-tabs .audience-tab-icon {
+    display: none;
+  }
+  .audience-tabs.m3-pill-tabs.m3-connected-tabs .m3-pill-tab {
+    padding: 0 14px;
+    font-size: 12.5px;
+  }
+  .device-status-pill {
+    min-height: 44px;
+    padding: 0 14px;
+    font-size: 12.5px;
+  }
   .mobile-range-select {
     display: inline-block;
     min-height: 44px;
+    padding: 8px 32px 8px 12px;
     flex-shrink: 0;
   }
   .controls-bar > .m3-pill-tabs {

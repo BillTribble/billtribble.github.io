@@ -49,20 +49,46 @@
       try {
         var url = new URL(window.location.href);
         var ownerParam = url.searchParams.get("owner");
+        var explicitOwner = null;
         if (ownerParam === "1") {
           localStorage.setItem("bt_ignore_analytics", "1");
           localStorage.setItem("skipgc", "t");
+          explicitOwner = true;
           url.searchParams.delete("owner");
           history.replaceState(null, "", url.pathname + url.search + url.hash);
         } else if (ownerParam === "0") {
           localStorage.setItem("bt_ignore_analytics", "0");
           localStorage.removeItem("skipgc");
+          explicitOwner = false;
           url.searchParams.delete("owner");
           history.replaceState(null, "", url.pathname + url.search + url.hash);
         }
-        if (localStorage.getItem("bt_ignore_analytics") === "1" || localStorage.getItem("skipgc") === "t") {
-          localStorage.setItem("skipgc", "t");
-          window.goatcounter = Object.assign(window.goatcounter || {}, { no_onload: true });
+        if (localStorage.getItem("bt_ignore_analytics") === "1") {
+          if (localStorage.getItem("skipgc") !== "t") {
+            localStorage.setItem("skipgc", "t");
+          }
+          window.goatcounter = { no_onload: true, no_events: true, count: function () {} };
+          window.__BT_SKIP_GC__ = true;
+        } else if (localStorage.getItem("skipgc") === "t") {
+          window.goatcounter = { no_onload: true, no_events: true, count: function () {} };
+          window.__BT_SKIP_GC__ = true;
+        }
+        if (explicitOwner !== null) {
+          var seed = localStorage.getItem("btmm.visitor_seed") || "";
+          if (!seed || seed.length < 16) {
+            var arr = new Uint8Array(16);
+            if (window.crypto && window.crypto.getRandomValues) window.crypto.getRandomValues(arr);
+            seed = Array.from(arr).map(function (b) { return b.toString(16).padStart(2, "0"); }).join("");
+            localStorage.setItem("btmm.visitor_seed", seed);
+          }
+          fetch("https://music-map-events.billtribble.workers.dev/api/enroll-owner-session", {
+            method: "POST",
+            mode: "cors",
+            credentials: "omit",
+            keepalive: true,
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({ session_id: seed, is_owner: explicitOwner })
+          }).catch(function () {});
         }
       } catch (_) {}
 
@@ -730,7 +756,15 @@
       }
     }
   </style>
-  <script data-goatcounter="https://billtribble.goatcounter.com/count" async src="https://gc.zgo.at/count.js"></script>
+  <script>
+    if (!window.__BT_SKIP_GC__) {
+      var gc = document.createElement("script");
+      gc.setAttribute("data-goatcounter", "https://billtribble.goatcounter.com/count");
+      gc.async = true;
+      gc.src = "https://gc.zgo.at/count.js";
+      document.head.appendChild(gc);
+    }
+  </script>
 </head>
 <body>
   <header class="app-bar" role="banner">

@@ -17,7 +17,7 @@
   <link href="https://fonts.googleapis.com/css2?family=Google+Sans+Flex:opsz,wght@6..144,400..700&family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
   <link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:opsz,wght,FILL,GRAD@20..48,100..700,0..1,-50..200" rel="stylesheet">
 
-  <link rel="stylesheet" href="./gm3-color-tokens.css?v=20261125a">
+  <link rel="stylesheet" href="./gm3-color-tokens.css?v=20261125b">
   <script>
     (function () {
       var m = localStorage.getItem("gm3_theme_mode") || "auto";
@@ -25,7 +25,7 @@
       if (dark) document.documentElement.setAttribute("data-theme", "dark");
     })();
   </script>
-  <link rel="stylesheet" href="./styles.css?v=20261125a">
+  <link rel="stylesheet" href="./styles.css?v=20261125b">
 </head>
 <body>
   <div class="app-shell">
@@ -158,20 +158,40 @@
       <!-- Unlocked Analytics Dashboard -->
       <section class="dashboard-stack" id="dashboard-screen" aria-labelledby="dashboard-heading" hidden>
         <div class="dashboard-title-row">
-          <div>
-            <h1 id="dashboard-heading">Site traffic</h1>
+          <div class="dashboard-title-left">
+            <div class="dashboard-heading-line">
+              <h1 id="dashboard-heading">Site traffic</h1>
+              <select id="mobile-range-select" class="m3-select mobile-range-select" aria-label="Date range">
+                <option value="today">Today</option>
+                <option value="7d" selected>7d</option>
+                <option value="30d">30d</option>
+                <option value="90d">90d</option>
+              </select>
+            </div>
             <p class="page-subtitle" id="active-scope-subtitle">All 3 properties · Last 7 days · Local time</p>
           </div>
-          <select id="mobile-range-select" class="m3-select mobile-range-select" aria-label="Date range">
-            <option value="today">Today</option>
-            <option value="7d" selected>7d</option>
-            <option value="30d">30d</option>
-            <option value="90d">90d</option>
-          </select>
+          <div class="dashboard-title-controls">
+            <nav class="m3-pill-tabs m3-connected-tabs audience-tabs" role="tablist" aria-label="Analytics audience">
+              <button type="button" class="m3-pill-tab active" role="tab" aria-selected="true" data-audience="visitors" id="audience-visitors-btn">
+                <span class="material-symbols-outlined audience-tab-icon" aria-hidden="true">groups</span>
+                <span>Visitors</span>
+              </button>
+              <button type="button" class="m3-pill-tab" role="tab" aria-selected="false" data-audience="owner" id="audience-owner-btn">
+                <span class="material-symbols-outlined audience-tab-icon" aria-hidden="true">person</span>
+                <span>Only my stats</span>
+              </button>
+            </nav>
+
+            <button type="button" class="device-status-pill is-owner" id="device-ignore-btn" aria-pressed="true" title="This device is enrolled as Owner: GoatCounter pageviews are skipped and Music Map plays, stars, and downloads are saved under Only my stats. Click to switch.">
+              <span class="material-symbols-outlined" id="device-ignore-icon" aria-hidden="true">verified_user</span>
+              <span class="device-pill-prefix">This device: </span>
+              <span id="device-ignore-label">Owner ✓</span>
+            </button>
+          </div>
         </div>
 
-        <div class="controls-bar">
-          <nav class="m3-pill-tabs" role="tablist" aria-label="Site switcher">
+        <div class="controls-bar" id="controls-bar">
+          <nav class="m3-pill-tabs" id="site-switcher-tabs" role="tablist" aria-label="Site switcher">
             <button type="button" class="m3-pill-tab active" role="tab" aria-selected="true" data-site="all">
               <span class="material-symbols-outlined tab-icon" aria-hidden="true">language</span>
               <span>All sites</span>
@@ -204,7 +224,7 @@
         <section class="kpi-focal-grid" aria-label="Key traffic metrics">
           <article class="kpi-card kpi-card--hero" id="kpi-card-pageviews">
             <div class="card-header-inline">
-              <span class="kpi-label">Total pageviews</span>
+              <span class="kpi-label" id="kpi-label-pageviews">Total pageviews</span>
               <span class="badge badge-success" id="kpi-hero-badge" hidden>Live</span>
             </div>
             <div class="kpi-loading-slot" id="kpi-pageviews-state" hidden></div>
@@ -217,8 +237,8 @@
 
           <article class="kpi-card" id="kpi-card-unique">
             <div class="card-header-inline">
-              <span class="kpi-label">Unique visits</span>
-              <span class="status-dot-inline" id="kpi-unique-pill"><span class="status-dot green" aria-hidden="true"></span>Session deduplicated</span>
+              <span class="kpi-label" id="kpi-label-unique">Unique visits</span>
+              <span class="status-dot-inline" id="kpi-unique-pill"><span class="status-dot green" aria-hidden="true"></span><span id="kpi-unique-pill-label">Session deduplicated</span></span>
             </div>
             <div class="kpi-loading-slot" id="kpi-unique-state" hidden></div>
             <div class="kpi-value" id="kpi-unique-visits">0</div>
@@ -227,7 +247,7 @@
 
           <article class="kpi-card" id="kpi-card-top-project">
             <div class="card-header-inline">
-              <span class="kpi-label">Top project</span>
+              <span class="kpi-label" id="kpi-label-top-project">Top project</span>
               <a href="https://billtribble.github.io/" target="_blank" rel="noopener noreferrer" class="inline-ext-link" id="kpi-top-project-link" hidden>
                 <span>Open</span>
                 <span class="material-symbols-outlined" aria-hidden="true">open_in_new</span>
@@ -240,7 +260,7 @@
         </section>
 
         <!-- Asymmetric Bento Row: 2fr Interactive Trend Chart + 1fr Top Referrers -->
-        <section class="bento-asymmetric" aria-label="Traffic trend and top referrers">
+        <section class="bento-asymmetric" id="visitor-bento-trend" aria-label="Traffic trend and top referrers">
           <article class="card" id="trend-chart-card">
             <div class="card-header">
               <div class="card-title-group">
@@ -373,7 +393,7 @@
         </article>
 
         <!-- Separate Breakdown Panels: Browsers · Systems · Screen sizes · Locations -->
-        <section class="bento-four-grid" aria-label="Browsers, systems, screen sizes, and locations">
+        <section class="bento-four-grid" id="visitor-bento-four" aria-label="Browsers, systems, screen sizes, and locations">
           <article class="card" id="browsers-card">
             <div class="card-header">
               <div class="card-title-group">
@@ -454,6 +474,6 @@
 
   <div class="runtime-error-toast" id="runtime-error-toast" role="status" hidden></div>
 
-  <script src="./app.js?v=20261125a"></script>
+  <script src="./app.js?v=20261125c"></script>
 </body>
 </html>
