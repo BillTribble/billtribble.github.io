@@ -270,6 +270,41 @@
           </article>
         </section>
 
+        <!-- Music Map Hot List (Cloudflare D1 Stars, Downloads & Recent Activity) -->
+        <article class="card" id="music-map-hotlist-card" aria-labelledby="hotlist-card-heading">
+          <div class="card-header">
+            <div class="card-title-group hotlist-title-wrap">
+              <h2 class="card-title" id="hotlist-card-heading">Music Map hot list</h2>
+              <span class="header-count" id="hotlist-summary-label"></span>
+              <a href="https://billtribble.github.io/music-map/" target="_blank" rel="noopener noreferrer" class="inline-ext-link" id="hotlist-open-map-link">
+                <span>Open Music Map</span>
+                <span class="material-symbols-outlined" aria-hidden="true">open_in_new</span>
+              </a>
+            </div>
+            <nav class="m3-pill-tabs m3-connected-tabs" role="tablist" aria-label="Hot list filter">
+              <button type="button" class="m3-pill-tab active" role="tab" aria-selected="true" data-hotlist-filter="all">All</button>
+              <button type="button" class="m3-pill-tab" role="tab" aria-selected="false" data-hotlist-filter="starred">Starred</button>
+              <button type="button" class="m3-pill-tab" role="tab" aria-selected="false" data-hotlist-filter="downloaded">Downloaded</button>
+            </nav>
+          </div>
+          <div class="hotlist-bento" id="hotlist-bento-body">
+            <div class="hotlist-col">
+              <div class="hotlist-subhead">
+                <span class="kpi-label">Top tracks</span>
+                <span class="header-count" id="hotlist-tracks-count"></span>
+              </div>
+              <div class="hotlist-tracks-list" id="hotlist-tracks-list"></div>
+            </div>
+            <div class="hotlist-recent-well">
+              <div class="hotlist-subhead">
+                <span class="kpi-label">Recent stars and downloads</span>
+                <span class="header-count" id="hotlist-recent-count"></span>
+              </div>
+              <div class="hotlist-recent-list" id="hotlist-recent-list"></div>
+            </div>
+          </div>
+        </article>
+
         <!-- Per-Page / Per-Project Breakdown -->
         <article class="card" id="pages-card">
           <div class="card-header">

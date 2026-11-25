@@ -823,6 +823,267 @@ select:focus,
   color: var(--md-sys-color-on-status-neutral-container);
 }
 
+.badge-star {
+  background-color: var(--md-sys-color-amber-tonal);
+  color: var(--md-sys-color-on-amber-tonal);
+}
+
+.badge-star .material-symbols-outlined,
+.hotlist-event-icon--star .material-symbols-outlined {
+  font-variation-settings: 'FILL' 1, 'wght' 500, 'GRAD' 0, 'opsz' 20;
+}
+
+.badge-download {
+  background-color: var(--md-sys-color-blue-tonal);
+  color: var(--md-sys-color-on-blue-tonal);
+}
+
+.badge-request {
+  background-color: var(--md-sys-color-purple-tonal);
+  color: var(--md-sys-color-on-purple-tonal);
+}
+
+/* --------------------------------------------------------------------------
+   Music Map Hot List Bento (1.35fr Top Tracks + 1fr Recent Activity Well)
+   -------------------------------------------------------------------------- */
+.hotlist-title-wrap {
+  flex-wrap: wrap;
+  align-items: center;
+  row-gap: 4px;
+}
+
+.hotlist-bento {
+  display: grid;
+  grid-template-columns: minmax(0, 1.35fr) minmax(0, 1fr);
+  gap: 20px;
+  align-items: start;
+}
+
+.hotlist-col {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  min-width: 0;
+}
+
+.hotlist-recent-well {
+  background-color: var(--md-sys-color-surface-container);
+  border-radius: 14px;
+  padding: 16px 18px;
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  min-width: 0;
+}
+
+.hotlist-subhead {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: 8px;
+}
+
+.hotlist-tracks-list,
+.hotlist-recent-list {
+  display: flex;
+  flex-direction: column;
+}
+
+.hotlist-track-row {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  padding: 11px 8px;
+  margin: 0 -8px;
+  border-radius: 12px;
+  border-bottom: 1px solid var(--md-sys-color-surface-container-highest);
+  text-decoration: none;
+  color: inherit;
+  transition: background-color 140ms ease;
+}
+
+.hotlist-track-row:last-child {
+  border-bottom: none;
+}
+
+.hotlist-track-row:hover {
+  background-color: var(--md-sys-color-surface-container);
+  text-decoration: none;
+}
+
+.hotlist-track-top {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  min-width: 0;
+}
+
+.hotlist-track-info {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  min-width: 0;
+}
+
+.hotlist-rank {
+  width: 24px;
+  height: 24px;
+  border-radius: 9999px;
+  background-color: var(--md-sys-color-surface-container-high);
+  color: var(--md-sys-color-on-surface-variant);
+  font-size: 12px;
+  font-weight: 600;
+  font-variant-numeric: tabular-nums;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+}
+
+.hotlist-track-titles {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  min-width: 0;
+}
+
+.hotlist-track-name-line {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  min-width: 0;
+}
+
+.hotlist-track-name {
+  font-family: var(--md-ref-typeface-brand);
+  font-size: 14.5px;
+  font-weight: 500;
+  color: var(--md-sys-color-on-surface);
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.hotlist-track-open-icon {
+  font-size: 15px;
+  color: var(--md-sys-color-primary);
+  flex-shrink: 0;
+}
+
+.hotlist-track-era {
+  font-size: 12px;
+  color: var(--md-sys-color-on-surface-variant);
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.hotlist-metric-pills {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  flex-shrink: 0;
+  flex-wrap: wrap;
+  justify-content: flex-end;
+  font-variant-numeric: tabular-nums;
+}
+
+.hotlist-metric-pills .badge .material-symbols-outlined {
+  font-size: 14px;
+}
+
+.hotlist-event-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 10px;
+  padding: 9px 6px;
+  margin: 0 -6px;
+  border-radius: 10px;
+  border-bottom: 1px solid var(--md-sys-color-surface-container-high);
+  text-decoration: none;
+  color: inherit;
+  transition: background-color 140ms ease;
+}
+
+.hotlist-event-row:last-child {
+  border-bottom: none;
+}
+
+.hotlist-event-row:hover {
+  background-color: var(--md-sys-color-surface-container-high);
+  text-decoration: none;
+}
+
+.hotlist-event-left {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  min-width: 0;
+}
+
+.hotlist-event-icon {
+  width: 28px;
+  height: 28px;
+  border-radius: 9999px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+}
+
+.hotlist-event-icon .material-symbols-outlined {
+  font-size: 15px;
+}
+
+.hotlist-event-icon--star {
+  background-color: var(--md-sys-color-amber-tonal);
+  color: var(--md-sys-color-on-amber-tonal);
+}
+
+.hotlist-event-icon--download {
+  background-color: var(--md-sys-color-blue-tonal);
+  color: var(--md-sys-color-on-blue-tonal);
+}
+
+.hotlist-event-icon--request {
+  background-color: var(--md-sys-color-purple-tonal);
+  color: var(--md-sys-color-on-purple-tonal);
+}
+
+.hotlist-event-meta {
+  display: flex;
+  flex-direction: column;
+  gap: 1px;
+  min-width: 0;
+}
+
+.hotlist-event-title {
+  font-size: 13px;
+  font-weight: 500;
+  color: var(--md-sys-color-on-surface);
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.hotlist-event-sub {
+  font-size: 11.5px;
+  color: var(--md-sys-color-on-surface-variant);
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.hotlist-event-time {
+  font-size: 11.5px;
+  color: var(--md-sys-color-on-surface-variant);
+  font-variant-numeric: tabular-nums;
+  white-space: nowrap;
+  flex-shrink: 0;
+}
+
 .kpi-hero-body {
   display: flex;
   align-items: flex-end;
@@ -1463,7 +1724,8 @@ select:focus,
   .kpi-focal-grid > .kpi-card--hero {
     grid-column: 1 / -1;
   }
-  .bento-asymmetric {
+  .bento-asymmetric,
+  .hotlist-bento {
     grid-template-columns: 1fr;
   }
   .bento-four-grid {
@@ -1504,8 +1766,17 @@ select:focus,
   }
   .kpi-focal-grid,
   .bento-asymmetric,
+  .hotlist-bento,
   .bento-four-grid {
     grid-template-columns: 1fr;
+  }
+  .hotlist-track-top {
+    flex-wrap: wrap;
+    row-gap: 6px;
+  }
+  .hotlist-track-row,
+  .hotlist-event-row {
+    min-height: 44px;
   }
   .card,
   .kpi-card {

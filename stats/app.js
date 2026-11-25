@@ -58,8 +58,10 @@
   var CACHE_TTL_MS = 60 * 1000;
   var SNAPSHOT_PATH = "./vault-snapshot.json";
   var TOKEN_WRAP_DOMAIN = "bt-stats-snapshot-wrap-v1:";
+  var DEFAULT_MUSIC_MAP_API = "https://music-map-events.billtribble.workers.dev";
 
   var PROJECT_DIRECTORY = {
+    "/music-map": { name: "Music Map", url: "https://billtribble.github.io/music-map/" },
     "/groove-explorer": { name: "Groove Explorer", url: "https://billtribble.github.io/groove-explorer/" },
     "/sangha-looper": { name: "Sangha-Looper", url: "https://billtribble.github.io/Sangha-Looper/" },
     "/crystal-transformer": { name: "Crystal Transformer", url: "https://billtribble.github.io/crystal-transformer/" },
@@ -91,7 +93,9 @@
     liveBlocked: false,
     loadSeq: 0,
     lastData: null,
-    selectedPage: null
+    selectedPage: null,
+    hotlistFilter: "all",
+    lastHotlist: null
   };
   var memoryCache = {};
   var decryptedSnapshotCache = null;
@@ -1868,6 +1872,365 @@
   }
 
   // --------------------------------------------------------------------------
+  // Music Map Hot List (Cloudflare D1 Live + Encrypted Snapshot Fallback)
+  // --------------------------------------------------------------------------
+  function getMusicMapApiBase() {
+    if (typeof window !== "undefined" && typeof window.BTMM_STATS_HOTLIST_API_URL === "string" && window.BTMM_STATS_HOTLIST_API_URL.trim()) {
+      return window.BTMM_STATS_HOTLIST_API_URL.trim().replace(/\/+$/, "");
+    }
+    return DEFAULT_MUSIC_MAP_API.replace(/\/+$/, "");
+  }
+
+  function formatHotlistEventTime(isoStr) {
+    if (!isoStr) return "";
+    var dt = new Date(isoStr);
+    if (isNaN(dt.getTime())) return String(isoStr);
+    var diffSec = Math.round((Date.now() - dt.getTime()) / 1000);
+    if (diffSec >= 0 && diffSec < 60) return "Just now";
+    if (diffSec >= 60 && diffSec < 3600) return Math.floor(diffSec / 60) + "m ago";
+    if (diffSec >= 3600 && diffSec < 86400) return Math.floor(diffSec / 3600) + "h ago";
+    try {
+      return new Intl.DateTimeFormat(undefined, {
+        month: "short",
+        day: "numeric",
+        hour: "numeric",
+        minute: "2-digit"
+      }).format(dt);
+    } catch (_) {
+      return formatLocalYmd(dt);
+    }
+  }
+
+  function syncHotlistCardVisibility() {
+    var card = document.getElementById("music-map-hotlist-card");
+    if (!card) return false;
+    var show = state.site !== "awake-in";
+    card.hidden = !show;
+    return show;
+  }
+
+  function setHotlistLoading() {
+    if (!syncHotlistCardVisibility()) return;
+    var sumEl = document.getElementById("hotlist-summary-label");
+    if (sumEl) sumEl.textContent = "";
+    renderPanelLoadingInto(document.getElementById("hotlist-tracks-list"));
+    renderPanelLoadingInto(document.getElementById("hotlist-recent-list"));
+  }
+
+  function createMetricPill(cls, iconName, text, titleText) {
+    var pill = document.createElement("span");
+    pill.className = "badge " + cls;
+    if (titleText) pill.title = titleText;
+    var ic = document.createElement("span");
+    ic.className = "material-symbols-outlined";
+    ic.setAttribute("aria-hidden", "true");
+    ic.textContent = iconName;
+    pill.appendChild(ic);
+    var sp = document.createElement("span");
+    sp.textContent = text;
+    pill.appendChild(sp);
+    return pill;
+  }
+
+  function renderMusicMapHotlist(payload) {
+    state.lastHotlist = payload || null;
+    if (!syncHotlistCardVisibility()) return;
+
+    var tracksEl = document.getElementById("hotlist-tracks-list");
+    var recentEl = document.getElementById("hotlist-recent-list");
+    var sumEl = document.getElementById("hotlist-summary-label");
+    var tracksCountEl = document.getElementById("hotlist-tracks-count");
+    var recentCountEl = document.getElementById("hotlist-recent-count");
+
+    if (!tracksEl || !recentEl) return;
+    clearChildren(tracksEl);
+    clearChildren(recentEl);
+
+    if (!payload || !payload.summary) {
+      var emptyMsg = document.createElement("p");
+      emptyMsg.className = "empty-hint";
+      emptyMsg.textContent = "No Music Map star or download activity recorded yet.";
+      tracksEl.appendChild(emptyMsg);
+      var emptyRecent = document.createElement("p");
+      emptyRecent.className = "empty-hint";
+      emptyRecent.textContent = "Waiting for first track star or download.";
+      recentEl.appendChild(emptyRecent);
+      return;
+    }
+
+    var sum = payload.summary;
+    var activeStars = Number(sum.active_stars || 0);
+    var totalDownloads = Number(sum.total_downloads || 0);
+    var totalRequests = Number(sum.total_requests || 0);
+
+    if (sumEl) {
+      var summaryParts = [
+        activeStars.toLocaleString() + (activeStars === 1 ? " star" : " stars"),
+        totalDownloads.toLocaleString() + (totalDownloads === 1 ? " download" : " downloads")
+      ];
+      if (totalRequests > 0) {
+        summaryParts.push(totalRequests.toLocaleString() + (totalRequests === 1 ? " request" : " requests"));
+      }
+      sumEl.textContent = "· " + summaryParts.join(" · ");
+    }
+
+    var rawTracks = Array.isArray(payload.top_tracks) ? payload.top_tracks.slice() : [];
+    var filteredTracks = rawTracks.filter(function (t) {
+      if (state.hotlistFilter === "starred") return Number(t.active_stars || 0) > 0;
+      if (state.hotlistFilter === "downloaded") return Number(t.total_downloads || 0) > 0;
+      return (Number(t.active_stars || 0) + Number(t.total_downloads || 0) + Number(t.total_requests || 0)) > 0;
+    });
+
+    filteredTracks.sort(function (a, b) {
+      if (state.hotlistFilter === "starred") {
+        return (b.active_stars - a.active_stars) || (b.total_downloads - a.total_downloads);
+      }
+      if (state.hotlistFilter === "downloaded") {
+        return (b.total_downloads - a.total_downloads) || (b.active_stars - a.active_stars);
+      }
+      var scoreA = (Number(a.active_stars || 0) * 2) + Number(a.total_downloads || 0) + Number(a.total_requests || 0);
+      var scoreB = (Number(b.active_stars || 0) * 2) + Number(b.total_downloads || 0) + Number(b.total_requests || 0);
+      return scoreB - scoreA;
+    });
+
+    if (tracksCountEl) {
+      tracksCountEl.textContent = filteredTracks.length
+        ? filteredTracks.length + (filteredTracks.length === 1 ? " track" : " tracks")
+        : "";
+    }
+
+    if (!filteredTracks.length) {
+      var emptyTrackP = document.createElement("p");
+      emptyTrackP.className = "empty-hint";
+      emptyTrackP.textContent = state.hotlistFilter === "starred"
+        ? "No starred tracks yet — stars appear here as visitors tap ★ on Music Map."
+        : state.hotlistFilter === "downloaded"
+          ? "No track downloads recorded yet."
+          : "No starred or downloaded tracks yet — events appear live here.";
+      tracksEl.appendChild(emptyTrackP);
+    } else {
+      var maxScore = Math.max.apply(null, filteredTracks.map(function (t) {
+        if (state.hotlistFilter === "starred") return Number(t.active_stars || 0);
+        if (state.hotlistFilter === "downloaded") return Number(t.total_downloads || 0);
+        return (Number(t.active_stars || 0) * 2) + Number(t.total_downloads || 0) + Number(t.total_requests || 0);
+      }).concat([1]));
+
+      filteredTracks.slice(0, 10).forEach(function (t, idx) {
+        var row = document.createElement("a");
+        row.className = "hotlist-track-row";
+        row.href = t.url || ("https://billtribble.github.io/music-map/?track=" + encodeURIComponent(t.track_id));
+        row.target = "_blank";
+        row.rel = "noopener noreferrer";
+
+        var topLine = document.createElement("div");
+        topLine.className = "hotlist-track-top";
+
+        var infoWrap = document.createElement("div");
+        infoWrap.className = "hotlist-track-info";
+
+        var rankBadge = document.createElement("span");
+        rankBadge.className = "hotlist-rank";
+        rankBadge.textContent = String(idx + 1);
+
+        var titlesCol = document.createElement("div");
+        titlesCol.className = "hotlist-track-titles";
+
+        var nameLine = document.createElement("div");
+        nameLine.className = "hotlist-track-name-line";
+        var nameSpan = document.createElement("span");
+        nameSpan.className = "hotlist-track-name";
+        nameSpan.textContent = t.track_title || t.track_id;
+        var openIc = document.createElement("span");
+        openIc.className = "material-symbols-outlined hotlist-track-open-icon";
+        openIc.setAttribute("aria-hidden", "true");
+        openIc.textContent = "open_in_new";
+        nameLine.appendChild(nameSpan);
+        nameLine.appendChild(openIc);
+
+        var eraSub = document.createElement("div");
+        eraSub.className = "hotlist-track-era";
+        var subParts = [];
+        if (t.era) subParts.push(t.era);
+        if (t.mp3_downloads > 0 || t.flac_downloads > 0) {
+          var fmtParts = [];
+          if (t.mp3_downloads > 0) fmtParts.push(t.mp3_downloads + " MP3");
+          if (t.flac_downloads > 0) fmtParts.push(t.flac_downloads + " FLAC");
+          subParts.push(fmtParts.join(" · "));
+        }
+        eraSub.textContent = subParts.join(" · ") || t.track_id;
+
+        titlesCol.appendChild(nameLine);
+        titlesCol.appendChild(eraSub);
+        infoWrap.appendChild(rankBadge);
+        infoWrap.appendChild(titlesCol);
+
+        var pills = document.createElement("div");
+        pills.className = "hotlist-metric-pills";
+        if (Number(t.active_stars || 0) > 0) {
+          pills.appendChild(createMetricPill(
+            "badge-star",
+            "star",
+            String(t.active_stars),
+            t.active_stars + (t.active_stars === 1 ? " active star" : " active stars")
+          ));
+        }
+        if (Number(t.total_downloads || 0) > 0) {
+          pills.appendChild(createMetricPill(
+            "badge-download",
+            "download",
+            String(t.total_downloads),
+            t.total_downloads + (t.total_downloads === 1 ? " download" : " downloads")
+          ));
+        }
+        if (Number(t.total_requests || 0) > 0) {
+          pills.appendChild(createMetricPill(
+            "badge-request",
+            "mail",
+            String(t.total_requests),
+            t.total_requests + (t.total_requests === 1 ? " track request" : " track requests")
+          ));
+        }
+
+        topLine.appendChild(infoWrap);
+        topLine.appendChild(pills);
+
+        var scoreVal = state.hotlistFilter === "starred"
+          ? Number(t.active_stars || 0)
+          : state.hotlistFilter === "downloaded"
+            ? Number(t.total_downloads || 0)
+            : (Number(t.active_stars || 0) * 2) + Number(t.total_downloads || 0) + Number(t.total_requests || 0);
+
+        var barTrack = document.createElement("div");
+        barTrack.className = "share-track";
+        var barFill = document.createElement("div");
+        barFill.className = "share-fill";
+        barFill.style.width = Math.max(4, Math.min(100, (scoreVal / maxScore) * 100)).toFixed(1) + "%";
+        barTrack.appendChild(barFill);
+
+        row.appendChild(topLine);
+        row.appendChild(barTrack);
+        tracksEl.appendChild(row);
+      });
+    }
+
+    var rawRecent = Array.isArray(payload.recent_events) ? payload.recent_events : [];
+    var filteredRecent = rawRecent.filter(function (ev) {
+      if (state.hotlistFilter === "starred") return ev.event_type === "star";
+      if (state.hotlistFilter === "downloaded") return ev.event_type === "download";
+      return true;
+    });
+
+    if (recentCountEl) {
+      recentCountEl.textContent = filteredRecent.length
+        ? filteredRecent.length + " recent"
+        : "";
+    }
+
+    if (!filteredRecent.length) {
+      var noRec = document.createElement("p");
+      noRec.className = "empty-hint";
+      noRec.textContent = "No recent events in this filter.";
+      recentEl.appendChild(noRec);
+    } else {
+      filteredRecent.slice(0, 8).forEach(function (ev) {
+        var erow = document.createElement("a");
+        erow.className = "hotlist-event-row";
+        erow.href = ev.url || ("https://billtribble.github.io/music-map/?track=" + encodeURIComponent(ev.track_id));
+        erow.target = "_blank";
+        erow.rel = "noopener noreferrer";
+
+        var left = document.createElement("div");
+        left.className = "hotlist-event-left";
+
+        var iconWrap = document.createElement("span");
+        var kindCls = ev.event_type === "star"
+          ? "hotlist-event-icon--star"
+          : ev.event_type === "download"
+            ? "hotlist-event-icon--download"
+            : "hotlist-event-icon--request";
+        iconWrap.className = "hotlist-event-icon " + kindCls;
+        var icEl = document.createElement("span");
+        icEl.className = "material-symbols-outlined";
+        icEl.setAttribute("aria-hidden", "true");
+        icEl.textContent = ev.event_type === "star" ? "star" : ev.event_type === "download" ? "download" : "mail";
+        iconWrap.appendChild(icEl);
+
+        var metaCol = document.createElement("div");
+        metaCol.className = "hotlist-event-meta";
+
+        var evTitle = document.createElement("div");
+        evTitle.className = "hotlist-event-title";
+        evTitle.textContent = ev.track_title || ev.track_id;
+
+        var evSub = document.createElement("div");
+        evSub.className = "hotlist-event-sub";
+        var actionWord = ev.event_type === "star"
+          ? "Starred"
+          : ev.event_type === "download"
+            ? ("Downloaded " + (ev.format_label || ev.format || "audio"))
+            : "Requested track";
+        var detailBits = [actionWord];
+        if (ev.era) detailBits.push(ev.era);
+        if (ev.country) detailBits.push(ev.country);
+        evSub.textContent = detailBits.join(" · ");
+
+        metaCol.appendChild(evTitle);
+        metaCol.appendChild(evSub);
+        left.appendChild(iconWrap);
+        left.appendChild(metaCol);
+
+        var timeSpan = document.createElement("span");
+        timeSpan.className = "hotlist-event-time";
+        timeSpan.textContent = formatHotlistEventTime(ev.created_at);
+        if (ev.created_at) timeSpan.title = ev.created_at;
+
+        erow.appendChild(left);
+        erow.appendChild(timeSpan);
+        recentEl.appendChild(erow);
+      });
+    }
+  }
+
+  async function loadMusicMapHotlist(expectedSeq, forceRefresh) {
+    if (!syncHotlistCardVisibility()) return;
+    if (!state.lastHotlist || forceRefresh) {
+      setHotlistLoading();
+    }
+    var apiBase = getMusicMapApiBase();
+    try {
+      var resp = await fetch(apiBase + "/api/hotlist?range=" + encodeURIComponent(state.range), {
+        method: "GET",
+        mode: "cors",
+        credentials: "omit",
+        cache: forceRefresh ? "no-store" : "default"
+      });
+      if (!resp.ok) throw new Error("HTTP " + resp.status);
+      var json = await resp.json();
+      if (expectedSeq !== state.loadSeq) return;
+      if (json && json.ok) {
+        renderMusicMapHotlist(json);
+        return;
+      }
+      throw new Error("Invalid hotlist payload");
+    } catch (_) {
+      try {
+        var snap = await fetchDecryptedSnapshot(Boolean(forceRefresh));
+        if (expectedSeq !== state.loadSeq) return;
+        if (snap && snap.musicMapHotlist) {
+          renderMusicMapHotlist(snap.musicMapHotlist);
+          return;
+        }
+      } catch (_snapErr) {}
+      if (expectedSeq !== state.loadSeq) return;
+      renderMusicMapHotlist({
+        summary: { active_stars: 0, total_downloads: 0, total_requests: 0 },
+        top_tracks: [],
+        recent_events: []
+      });
+    }
+  }
+
+  // --------------------------------------------------------------------------
   // Zone C Page Detail Drawer & Account Popover (3-Way Dismissal)
   // --------------------------------------------------------------------------
   function openPageDrawer(page, data) {
@@ -1957,6 +2320,7 @@
     if (!allHotCached && !(state.liveBlocked && !forceRefresh && decryptedSnapshotCache)) {
       setAllPanelsLoading();
     }
+    loadMusicMapHotlist(seq, Boolean(forceRefresh));
 
     try {
       if (state.liveBlocked && !forceRefresh) {
@@ -2028,6 +2392,7 @@
     decryptedSnapshotCache = null;
     state.liveBlocked = false;
     state.lastData = null;
+    state.lastHotlist = null;
     state.loadSeq++;
     try {
       localStorage.removeItem(SESSION_STORAGE_KEY);
@@ -2250,6 +2615,23 @@
           var trendSvg = document.getElementById("trend-chart-svg");
           var trendReadout = document.getElementById("trend-chart-readout");
           if (trendSvg) renderMainTrendChart(trendSvg, trendReadout, state.lastData);
+        }
+      });
+    });
+
+    // Music Map Hot List filter tabs (All / Starred / Downloaded)
+    document.querySelectorAll("[data-hotlist-filter]").forEach(function (tab) {
+      tab.addEventListener("click", function () {
+        var f = tab.getAttribute("data-hotlist-filter");
+        if (!f || f === state.hotlistFilter) return;
+        state.hotlistFilter = f;
+        document.querySelectorAll("[data-hotlist-filter]").forEach(function (t) {
+          var active = t === tab;
+          t.classList.toggle("active", active);
+          t.setAttribute("aria-selected", active ? "true" : "false");
+        });
+        if (state.lastHotlist) {
+          renderMusicMapHotlist(state.lastHotlist);
         }
       });
     });

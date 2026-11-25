@@ -232,6 +232,27 @@ def main() -> int:
             "bundles": bundles,
         }
 
+    music_map_api = (
+        os.environ.get("MUSIC_MAP_API_URL") or "https://music-map-events.billtribble.workers.dev"
+    ).strip().rstrip("/")
+    music_map_hotlist = None
+    if music_map_api:
+        try:
+            mm_req = urllib.request.Request(
+                f"{music_map_api}/api/hotlist?range=all",
+                method="GET",
+                headers={
+                    "Accept": "application/json",
+                    "User-Agent": "billtribble-stats-snapshot/1.0",
+                },
+            )
+            with urllib.request.urlopen(mm_req, timeout=15) as mm_resp:
+                mm_parsed = json.loads(mm_resp.read().decode("utf-8"))
+                if isinstance(mm_parsed, dict) and mm_parsed.get("ok"):
+                    music_map_hotlist = mm_parsed
+        except Exception as exc:
+            print(f"Warning: Music Map hotlist snapshot skipped: {exc}", file=sys.stderr)
+
     snapshot_obj = {
         "v": 2,
         "bucketTz": "UTC",
@@ -239,6 +260,7 @@ def main() -> int:
         "todayUtc": today_utc,
         "sites": SITES,
         "ranges": ranges_payload,
+        "musicMapHotlist": music_map_hotlist,
     }
 
     envelope = encrypt_snapshot(snapshot_obj, aes_key, token)
