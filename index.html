@@ -122,7 +122,8 @@
       --md-sys-color-brand-glyph: #FFFFFF;
 
       --md-sys-color-cluster-music: #1D4ED8;
-      --md-sys-color-cluster-life: #0F766E;
+      --md-sys-color-cluster-music-create: #4338CA;
+      --md-sys-color-cluster-exp: #0F766E;
       --md-sys-color-cluster-tools: #B45309;
       --md-sys-color-cluster-vis: #7E22CE;
     }
@@ -148,7 +149,8 @@
       --md-sys-color-brand-glyph: #FFFFFF;
 
       --md-sys-color-cluster-music: #60A5FA;
-      --md-sys-color-cluster-life: #2DD4BF;
+      --md-sys-color-cluster-music-create: #818CF8;
+      --md-sys-color-cluster-exp: #2DD4BF;
       --md-sys-color-cluster-tools: #FBBF24;
       --md-sys-color-cluster-vis: #C084FC;
     }
@@ -282,10 +284,13 @@
       color: var(--md-sys-color-on-surface);
     }
 
-    .icon-btn:focus-visible,
-    .project-node:focus-visible {
+    .icon-btn:focus-visible {
       outline: 2px solid var(--md-sys-color-primary);
       outline-offset: 3px;
+    }
+
+    .project-node:focus-visible {
+      outline: none;
     }
 
     .icon-btn svg {
@@ -419,48 +424,45 @@
       position: absolute;
       margin: 0;
       transform: translate(-50%, -50%);
-      display: inline-flex;
-      align-items: center;
-      gap: 7px;
-      padding: 5px 12px;
-      border-radius: 999px;
+      display: inline-block;
+      padding: 2px 6px;
       font-family: var(--font-display);
-      font-size: 16px;
+      font-size: 16.5px;
       font-weight: 700;
       letter-spacing: -0.02em;
-      color: color-mix(in srgb, var(--cluster-accent) 55%, var(--md-sys-color-on-surface));
-      background: color-mix(in srgb, var(--md-sys-color-surface-container) 72%, transparent);
-      backdrop-filter: blur(8px);
-      -webkit-backdrop-filter: blur(8px);
+      color: color-mix(in srgb, var(--cluster-accent) 52%, var(--md-sys-color-on-surface));
+      background: transparent;
+      text-shadow:
+        0 2px 12px var(--md-sys-color-surface-container-lowest),
+        0 0 6px var(--md-sys-color-surface-container-lowest);
       white-space: nowrap;
       pointer-events: auto;
       cursor: default;
       transition: opacity 200ms var(--ease-std), transform 200ms var(--ease-std), color 180ms var(--ease-std);
     }
 
-    .territory-header::before {
-      content: "";
-      width: 7px;
-      height: 7px;
-      border-radius: 50%;
-      background: var(--cluster-accent);
-      box-shadow: 0 0 8px color-mix(in srgb, var(--cluster-accent) 70%, transparent);
-      flex-shrink: 0;
-    }
-
     .territory-header[data-territory="music"] { --cluster-accent: var(--md-sys-color-cluster-music); }
-    .territory-header[data-territory="life"] { --cluster-accent: var(--md-sys-color-cluster-life); }
+    .territory-header[data-territory="music-creation"] { --cluster-accent: var(--md-sys-color-cluster-music-create); }
+    .territory-header[data-territory="experiments"] { --cluster-accent: var(--md-sys-color-cluster-exp); }
     .territory-header[data-territory="tools"] { --cluster-accent: var(--md-sys-color-cluster-tools); }
     .territory-header[data-territory="visualiser"] { --cluster-accent: var(--md-sys-color-cluster-vis); }
 
     .constellation-stage.has-active-node .territory-header:not(.is-active-territory) {
-      opacity: 0.38;
+      opacity: 0.36;
+    }
+
+    .constellation-stage.has-active-node .territory-header.is-related-territory {
+      opacity: 0.76;
+    }
+
+    .constellation-stage.has-active-node .territory-header.is-occluded-by-card {
+      opacity: 0 !important;
+      pointer-events: none;
     }
 
     @media (max-width: 768px) {
       .territory-header {
-        font-size: 15px;
-        padding: 4px 11px;
+        font-size: 15.5px;
       }
     }
 
@@ -484,13 +486,15 @@
       color: var(--md-sys-color-on-surface);
       pointer-events: auto;
       z-index: 6;
+      border: none;
       outline: none;
       -webkit-tap-highlight-color: transparent;
       transition: opacity 200ms var(--ease-std);
     }
 
     .project-node[data-territory="music"] { --cluster-accent: var(--md-sys-color-cluster-music); }
-    .project-node[data-territory="life"] { --cluster-accent: var(--md-sys-color-cluster-life); }
+    .project-node[data-territory="music-creation"] { --cluster-accent: var(--md-sys-color-cluster-music-create); }
+    .project-node[data-territory="experiments"] { --cluster-accent: var(--md-sys-color-cluster-exp); }
     .project-node[data-territory="tools"] { --cluster-accent: var(--md-sys-color-cluster-tools); }
     .project-node[data-territory="visualiser"] { --cluster-accent: var(--md-sys-color-cluster-vis); }
 
@@ -510,7 +514,7 @@
       z-index: 50;
     }
 
-    /* Elevated Studio Card Backdrop (fades in behind 3x zoomed loop + sub-text) */
+    /* Elevated Tonal Studio Card Backdrop (zero border/outline, pure tonal elevation + soft ambient shadow) */
     .node-hover-panel {
       position: absolute;
       left: 50%;
@@ -518,13 +522,12 @@
       width: var(--panel-w);
       padding: var(--panel-top-pad) 14px 14px;
       border-radius: 22px;
-      background: color-mix(in srgb, var(--md-sys-color-surface-container-high) 92%, var(--md-sys-color-surface));
+      background: color-mix(in srgb, var(--md-sys-color-surface-container-high) 94%, var(--md-sys-color-surface));
       backdrop-filter: blur(20px);
       -webkit-backdrop-filter: blur(20px);
-      border: 1px solid color-mix(in srgb, var(--cluster-accent) 42%, var(--md-sys-color-outline-variant));
-      box-shadow:
-        0 20px 48px color-mix(in srgb, var(--md-sys-color-shadow) 42%, transparent),
-        0 0 0 1px color-mix(in srgb, var(--cluster-accent) 16%, transparent);
+      border: none;
+      outline: none;
+      box-shadow: 0 22px 52px color-mix(in srgb, var(--md-sys-color-shadow) 46%, transparent);
       transform: translate(calc(-50% + var(--zoom-dx)), calc(var(--panel-top-offset) + var(--zoom-dy))) scale(0.92);
       transform-origin: center 96px;
       opacity: 0;
@@ -539,10 +542,10 @@
     }
 
     [data-theme="light"] .node-hover-panel {
-      background: color-mix(in srgb, var(--md-sys-color-surface) 94%, var(--md-sys-color-surface-container));
+      background: var(--md-sys-color-surface);
       box-shadow:
-        0 18px 42px color-mix(in srgb, var(--md-sys-color-shadow) 16%, transparent),
-        0 2px 8px color-mix(in srgb, var(--md-sys-color-shadow) 8%, transparent);
+        0 18px 44px color-mix(in srgb, var(--md-sys-color-shadow) 14%, transparent),
+        0 4px 12px color-mix(in srgb, var(--md-sys-color-shadow) 6%, transparent);
     }
 
     /* Native 3x Loop Container: 180x180 scaled to 1/3 (60x60) at rest -> scale(1) (180x180 = exact 3x) on hover */
@@ -555,24 +558,24 @@
       border-radius: 38px;
       overflow: hidden;
       background: var(--md-sys-color-surface-container-highest);
-      border: 3px solid color-mix(in srgb, var(--cluster-accent) 55%, var(--md-sys-color-outline-variant));
+      border: none;
+      outline: none;
       box-shadow:
-        0 8px 22px color-mix(in srgb, var(--md-sys-color-shadow) 36%, transparent),
-        0 0 24px color-mix(in srgb, var(--cluster-accent) 24%, transparent);
+        0 10px 26px color-mix(in srgb, var(--md-sys-color-shadow) 38%, transparent),
+        0 0 24px color-mix(in srgb, var(--cluster-accent) 20%, transparent);
       transform: translate(-50%, -50%) scale(0.3333333);
       transform-origin: center center;
       z-index: 3;
       transition:
         transform 240ms var(--ease-std),
         border-radius 240ms var(--ease-std),
-        border-color 200ms var(--ease-std),
         box-shadow 240ms var(--ease-std);
     }
 
     [data-theme="light"] .node-thumb {
       box-shadow:
-        0 6px 18px color-mix(in srgb, var(--md-sys-color-shadow) 16%, transparent),
-        0 0 18px color-mix(in srgb, var(--cluster-accent) 18%, transparent);
+        0 8px 22px color-mix(in srgb, var(--md-sys-color-shadow) 15%, transparent),
+        0 2px 6px color-mix(in srgb, var(--md-sys-color-shadow) 8%, transparent);
     }
 
     .node-media {
@@ -580,6 +583,8 @@
       height: 100%;
       object-fit: cover;
       display: block;
+      border: none;
+      outline: none;
       pointer-events: none;
     }
 
@@ -659,9 +664,14 @@
       .project-node:focus-visible .node-thumb {
         transform: translate(calc(-50% + var(--zoom-dx)), calc(-50% + var(--zoom-dy))) scale(1);
         border-radius: 16px;
-        border-width: 1.5px;
-        border-color: color-mix(in srgb, var(--cluster-accent) 72%, var(--md-sys-color-outline-variant));
-        box-shadow: 0 10px 28px color-mix(in srgb, var(--md-sys-color-shadow) 34%, transparent);
+        border: none;
+        outline: none;
+        box-shadow: 0 12px 30px color-mix(in srgb, var(--md-sys-color-shadow) 28%, transparent);
+      }
+
+      [data-theme="light"] .project-node:hover .node-thumb,
+      [data-theme="light"] .project-node:focus-visible .node-thumb {
+        box-shadow: 0 10px 26px color-mix(in srgb, var(--md-sys-color-shadow) 12%, transparent);
       }
 
       .project-node:hover .node-hover-panel,
@@ -687,9 +697,13 @@
     .project-node.is-expanded .node-thumb {
       transform: translate(calc(-50% + var(--zoom-dx)), calc(-50% + var(--zoom-dy))) scale(1);
       border-radius: 16px;
-      border-width: 1.5px;
-      border-color: color-mix(in srgb, var(--cluster-accent) 72%, var(--md-sys-color-outline-variant));
-      box-shadow: 0 10px 28px color-mix(in srgb, var(--md-sys-color-shadow) 34%, transparent);
+      border: none;
+      outline: none;
+      box-shadow: 0 12px 30px color-mix(in srgb, var(--md-sys-color-shadow) 28%, transparent);
+    }
+
+    [data-theme="light"] .project-node.is-expanded .node-thumb {
+      box-shadow: 0 10px 26px color-mix(in srgb, var(--md-sys-color-shadow) 12%, transparent);
     }
 
     .project-node.is-expanded .node-hover-panel {
@@ -742,9 +756,13 @@
           <stop offset="0%" stop-color="var(--md-sys-color-cluster-music)" stop-opacity="1" />
           <stop offset="100%" stop-color="var(--md-sys-color-cluster-music)" stop-opacity="0" />
         </radialGradient>
-        <radialGradient id="halo-life" cx="50%" cy="50%" r="50%">
-          <stop offset="0%" stop-color="var(--md-sys-color-cluster-life)" stop-opacity="1" />
-          <stop offset="100%" stop-color="var(--md-sys-color-cluster-life)" stop-opacity="0" />
+        <radialGradient id="halo-music-create" cx="50%" cy="50%" r="50%">
+          <stop offset="0%" stop-color="var(--md-sys-color-cluster-music-create)" stop-opacity="1" />
+          <stop offset="100%" stop-color="var(--md-sys-color-cluster-music-create)" stop-opacity="0" />
+        </radialGradient>
+        <radialGradient id="halo-experiments" cx="50%" cy="50%" r="50%">
+          <stop offset="0%" stop-color="var(--md-sys-color-cluster-exp)" stop-opacity="1" />
+          <stop offset="100%" stop-color="var(--md-sys-color-cluster-exp)" stop-opacity="0" />
         </radialGradient>
         <radialGradient id="halo-tools" cx="50%" cy="50%" r="50%">
           <stop offset="0%" stop-color="var(--md-sys-color-cluster-tools)" stop-opacity="1" />
@@ -754,29 +772,38 @@
           <stop offset="0%" stop-color="var(--md-sys-color-cluster-vis)" stop-opacity="1" />
           <stop offset="100%" stop-color="var(--md-sys-color-cluster-vis)" stop-opacity="0" />
         </radialGradient>
+        <mask id="edge-label-mask" maskUnits="userSpaceOnUse">
+          <rect id="edge-mask-bg" x="0" y="0" width="100%" height="100%" fill="#ffffff" />
+          <g id="edge-mask-cutouts"></g>
+        </mask>
       </defs>
       <g id="svg-halos"></g>
-      <g id="svg-edges"></g>
+      <g id="svg-edges" mask="url(#edge-label-mask)"></g>
       <g id="svg-anchors"></g>
     </svg>
 
     <div id="territory-landmarks" class="territory-landmarks">
       <h2 class="territory-header" data-territory="music">Music</h2>
-      <h2 class="territory-header" data-territory="life">Life sims</h2>
+      <h2 class="territory-header" data-territory="music-creation">Music creation</h2>
+      <h2 class="territory-header" data-territory="experiments">Experiments</h2>
       <h2 class="territory-header" data-territory="tools">Tools</h2>
       <h2 class="territory-header" data-territory="visualiser">Visualiser</h2>
     </div>
 
     <div id="links-container" class="nodes-layer">
-      <!-- Music Constellation -->
+      <!-- Music Exploration Constellation -->
       <a href="https://billtribble.github.io/music-map/" target="_blank" rel="noopener" class="project-node" data-id="music-map" data-territory="music">
         <div class="node-thumb">
-          <img class="node-media" src="thumbs/music-map.webp?v=1" width="180" height="180" alt="Music Map preview">
+          <video class="node-media" autoplay loop muted playsinline preload="auto" poster="thumbs/music-map.webp?v=2" width="180" height="180" aria-label="Music Map preview">
+            <source src="thumbs/music-map.webm?v=2" type="video/webm">
+            <source src="thumbs/music-map.mp4?v=2" type="video/mp4">
+            <img class="node-media" src="thumbs/music-map.gif?v=2" alt="Music Map preview">
+          </video>
         </div>
         <span class="node-rest-title">Music Map</span>
         <div class="node-hover-panel">
           <span class="node-zoom-title">Music Map</span>
-          <span class="node-subtext">Interactive map of my 2001–2026 music catalog by vibe, era, harmony and groove.</span>
+          <span class="node-subtext">Interactive map of my 1997–2026 music catalog by vibe, era, harmony and groove.</span>
           <span class="node-open-pill">Open project ↗</span>
         </div>
       </a>
@@ -813,7 +840,8 @@
         </div>
       </a>
 
-      <a href="https://billtribble.github.io/Sangha-Looper/" target="_blank" rel="noopener" class="project-node" data-id="sangha-looper" data-territory="music">
+      <!-- Music Creation Sub-Constellation (closely linked to Music) -->
+      <a href="https://billtribble.github.io/Sangha-Looper/" target="_blank" rel="noopener" class="project-node" data-id="sangha-looper" data-territory="music-creation">
         <div class="node-thumb">
           <video class="node-media" autoplay loop muted playsinline preload="auto" poster="thumbs/sangha-looper.webp?v=9" width="180" height="180" aria-label="Sangha Looper preview">
             <source src="thumbs/sangha-looper.webm?v=9" type="video/webm">
@@ -829,8 +857,8 @@
         </div>
       </a>
 
-      <!-- Life sims Constellation -->
-      <a href="https://billtribble.github.io/LifeSim/" target="_blank" rel="noopener" class="project-node" data-id="lifesim" data-territory="life">
+      <!-- Experiments Constellation -->
+      <a href="https://billtribble.github.io/LifeSim/" target="_blank" rel="noopener" class="project-node" data-id="lifesim" data-territory="experiments">
         <div class="node-thumb">
           <video class="node-media" autoplay loop muted playsinline preload="auto" poster="thumbs/lifesim.webp?v=9" width="180" height="180" aria-label="LifeSim preview">
             <source src="thumbs/lifesim.webm?v=9" type="video/webm">
@@ -846,7 +874,7 @@
         </div>
       </a>
 
-      <a href="https://billtribble.github.io/crystal-transformer/" target="_blank" rel="noopener" class="project-node" data-id="crystal-transformer" data-territory="life">
+      <a href="https://billtribble.github.io/crystal-transformer/" target="_blank" rel="noopener" class="project-node" data-id="crystal-transformer" data-territory="experiments">
         <div class="node-thumb">
           <video class="node-media" autoplay loop muted playsinline preload="auto" poster="thumbs/crystal-transformer.webp?v=9" width="180" height="180" aria-label="Crystal Transformer preview">
             <source src="thumbs/crystal-transformer.webm?v=9" type="video/webm">
@@ -862,7 +890,7 @@
         </div>
       </a>
 
-      <a href="https://billtribble.github.io/hybridizer/" target="_blank" rel="noopener" class="project-node" data-id="hybridizer" data-territory="life">
+      <a href="https://billtribble.github.io/hybridizer/" target="_blank" rel="noopener" class="project-node" data-id="hybridizer" data-territory="experiments">
         <div class="node-thumb">
           <video class="node-media" autoplay loop muted playsinline preload="auto" poster="thumbs/hybridizer.webp?v=9" width="180" height="180" aria-label="Hybridizer preview">
             <source src="thumbs/hybridizer.webm?v=9" type="video/webm">
@@ -925,78 +953,89 @@
         music: {
           colorVar: "var(--md-sys-color-cluster-music)",
           gradId: "halo-music",
-          desktop: { hx: 0.21, hy: 0.08, cx: 0.21, cy: 0.44, rx: 0.20, ry: 0.30 },
-          mobile: { hx: 0.50, hy: 34, cx: 0.50, cy: 214, rx: 155, ry: 160 }
+          desktop: { hx: 0.20, hy: 0.048, cx: 0.20, cy: 0.34, rx: 0.19, ry: 0.23 },
+          mobile: { hx: 0.50, hy: 34, cx: 0.50, cy: 178, rx: 155, ry: 132 }
         },
-        life: {
-          colorVar: "var(--md-sys-color-cluster-life)",
-          gradId: "halo-life",
-          desktop: { hx: 0.57, hy: 0.10, cx: 0.57, cy: 0.40, rx: 0.16, ry: 0.24 },
-          mobile: { hx: 0.50, hy: 422, cx: 0.50, cy: 562, rx: 150, ry: 130 }
+        "music-creation": {
+          colorVar: "var(--md-sys-color-cluster-music-create)",
+          gradId: "halo-music-create",
+          desktop: { hx: 0.20, hy: 0.545, cx: 0.20, cy: 0.70, rx: 0.14, ry: 0.16 },
+          mobile: { hx: 0.50, hy: 336, cx: 0.50, cy: 404, rx: 140, ry: 92 }
+        },
+        experiments: {
+          colorVar: "var(--md-sys-color-cluster-exp)",
+          gradId: "halo-experiments",
+          desktop: { hx: 0.58, hy: 0.058, cx: 0.58, cy: 0.39, rx: 0.16, ry: 0.24 },
+          mobile: { hx: 0.50, hy: 512, cx: 0.50, cy: 652, rx: 150, ry: 132 }
         },
         tools: {
           colorVar: "var(--md-sys-color-cluster-tools)",
           gradId: "halo-tools",
-          desktop: { hx: 0.48, hy: 0.69, cx: 0.48, cy: 0.82, rx: 0.12, ry: 0.14 },
-          mobile: { hx: 0.50, hy: 734, cx: 0.54, cy: 806, rx: 130, ry: 88 }
+          desktop: { hx: 0.52, hy: 0.645, cx: 0.52, cy: 0.82, rx: 0.12, ry: 0.14 },
+          mobile: { hx: 0.50, hy: 826, cx: 0.54, cy: 898, rx: 130, ry: 88 }
         },
         visualiser: {
           colorVar: "var(--md-sys-color-cluster-vis)",
           gradId: "halo-visualiser",
           satellite: true,
-          desktop: { hx: 0.88, hy: 0.24, cx: 0.88, cy: 0.41, rx: 0.12, ry: 0.18 },
-          mobile: { hx: 0.50, hy: 924, cx: 0.50, cy: 998, rx: 135, ry: 96 }
+          desktop: { hx: 0.88, hy: 0.215, cx: 0.88, cy: 0.41, rx: 0.12, ry: 0.18 },
+          mobile: { hx: 0.50, hy: 1016, cx: 0.50, cy: 1090, rx: 135, ry: 96 }
         }
       };
 
       var NODE_COORDS = {
-        "music-map":           { nx: 0.21, ny: 0.23, mx: 0.30, my: 104 },
-        "groove-explorer":     { nx: 0.08, ny: 0.45, mx: 0.71, my: 174 },
-        "enso-soundscapes":    { nx: 0.34, ny: 0.44, mx: 0.29, my: 256 },
-        "sangha-looper":       { nx: 0.20, ny: 0.65, mx: 0.69, my: 326 },
-        "lifesim":             { nx: 0.56, ny: 0.25, mx: 0.32, my: 492 },
-        "crystal-transformer": { nx: 0.49, ny: 0.48, mx: 0.70, my: 560 },
-        "hybridizer":          { nx: 0.66, ny: 0.45, mx: 0.34, my: 638 },
-        "film-lab":            { nx: 0.48, ny: 0.83, mx: 0.54, my: 806 },
-        "prismata-ui":         { nx: 0.88, ny: 0.41, mx: 0.50, my: 998 }
+        "music-map":           { nx: 0.20, ny: 0.23, mx: 0.30, my: 104 },
+        "groove-explorer":     { nx: 0.07, ny: 0.41, mx: 0.74, my: 178 },
+        "enso-soundscapes":    { nx: 0.33, ny: 0.41, mx: 0.26, my: 252 },
+        "sangha-looper":       { nx: 0.20, ny: 0.74, mx: 0.50, my: 412 },
+        "lifesim":             { nx: 0.57, ny: 0.24, mx: 0.32, my: 582 },
+        "crystal-transformer": { nx: 0.49, ny: 0.47, mx: 0.70, my: 652 },
+        "hybridizer":          { nx: 0.67, ny: 0.45, mx: 0.34, my: 730 },
+        "film-lab":            { nx: 0.52, ny: 0.84, mx: 0.54, my: 898 },
+        "prismata-ui":         { nx: 0.88, ny: 0.41, mx: 0.50, my: 1090 }
       };
 
       var DESKTOP_BRIDGES = [
-        { a: "enso-soundscapes", b: "crystal-transformer", kind: "bridge", territory: "life" },
+        { a: "enso-soundscapes", b: "crystal-transformer", kind: "bridge", territory: "experiments" },
         { a: "sangha-looper", b: "film-lab", kind: "bridge", territory: "tools" },
         { a: "hybridizer", b: "film-lab", kind: "bridge", territory: "tools" },
         { a: "crystal-transformer", b: "prismata-ui", kind: "bridge", territory: "visualiser" }
       ];
 
       var MOBILE_BRIDGES = [
-        { a: "sangha-looper", b: "lifesim", kind: "bridge", territory: "life" },
+        { a: "sangha-looper", b: "lifesim", kind: "bridge", territory: "experiments" },
         { a: "hybridizer", b: "film-lab", kind: "bridge", territory: "tools" },
         { a: "film-lab", b: "prismata-ui", kind: "bridge", territory: "visualiser" }
       ];
 
       var INTRA_EDGES = [
-        // Music intra-constellation
+        // Music exploration intra-constellation
         { a: "music-map", b: "groove-explorer", kind: "intra", territory: "music" },
         { a: "music-map", b: "enso-soundscapes", kind: "intra", territory: "music" },
-        { a: "music-map", b: "sangha-looper", kind: "intra", territory: "music" },
-        { a: "groove-explorer", b: "sangha-looper", kind: "intra", territory: "music" },
-        { a: "enso-soundscapes", b: "sangha-looper", kind: "intra", territory: "music" },
-        // Life sims intra-constellation
-        { a: "lifesim", b: "crystal-transformer", kind: "intra", territory: "life" },
-        { a: "lifesim", b: "hybridizer", kind: "intra", territory: "life" },
-        { a: "crystal-transformer", b: "hybridizer", kind: "intra", territory: "life" }
+        { a: "groove-explorer", b: "enso-soundscapes", kind: "intra", territory: "music" },
+        // Closely coupled Music <-> Music creation kinship chords
+        { a: "groove-explorer", b: "sangha-looper", kind: "intra", territory: "music-creation" },
+        { a: "enso-soundscapes", b: "sangha-looper", kind: "intra", territory: "music-creation" },
+        // Experiments intra-constellation
+        { a: "lifesim", b: "crystal-transformer", kind: "intra", territory: "experiments" },
+        { a: "lifesim", b: "hybridizer", kind: "intra", territory: "experiments" },
+        { a: "crystal-transformer", b: "hybridizer", kind: "intra", territory: "experiments" }
       ];
 
-      var MOBILE_STAGE_H = 1120;
+      var MOBILE_STAGE_H = 1212;
 
       var stage = document.getElementById("constellation-stage");
       var svgEl = document.getElementById("constellation-svg");
       var halosG = document.getElementById("svg-halos");
       var edgesG = document.getElementById("svg-edges");
       var anchorsG = document.getElementById("svg-anchors");
+      var edgeMaskBg = document.getElementById("edge-mask-bg");
+      var edgeMaskCutouts = document.getElementById("edge-mask-cutouts");
       var nodeEls = Array.prototype.slice.call(document.querySelectorAll(".project-node"));
       var headerEls = Array.prototype.slice.call(document.querySelectorAll(".territory-header"));
       var nodeMap = {};
+      var expandedBoxById = {};
+      var headerBoxByTerr = {};
       nodeEls.forEach(function (el) {
         nodeMap[el.getAttribute("data-id")] = el;
       });
@@ -1033,6 +1072,13 @@
         var sh = mobile ? MOBILE_STAGE_H : Math.max(660, Math.round(rect.height || (window.innerHeight - 56)));
 
         svgEl.setAttribute("viewBox", "0 0 " + sw + " " + sh);
+        if (edgeMaskBg) {
+          edgeMaskBg.setAttribute("width", String(sw));
+          edgeMaskBg.setAttribute("height", String(sh));
+        }
+        if (edgeMaskCutouts) {
+          edgeMaskCutouts.innerHTML = "";
+        }
 
         var padX = mobile ? 26 : Math.max(82, Math.round(sw * 0.068));
         var padT = mobile ? 0 : 40;
@@ -1040,8 +1086,9 @@
         var spanW = Math.max(240, sw - padX * 2);
         var spanH = Math.max(480, sh - padT - padB);
 
-        // Position territory headers & render soft halos
+        // Position territory headers & render soft halos + SVG line-mask cutouts
         halosG.innerHTML = "";
+        headerBoxByTerr = {};
         headerEls.forEach(function (hEl) {
           var tKey = hEl.getAttribute("data-territory");
           var cfg = TERRITORIES[tKey];
@@ -1051,6 +1098,25 @@
           var hy = mobile ? cfg.mobile.hy : Math.round(padT + cfg.desktop.hy * spanH);
           hEl.style.left = hx + "px";
           hEl.style.top = hy + "px";
+
+          var hw = Math.max(56, (hEl.offsetWidth || 96) + 14);
+          var hh = Math.max(24, (hEl.offsetHeight || 22) + 6);
+          headerBoxByTerr[tKey] = {
+            left: hx - hw / 2,
+            right: hx + hw / 2,
+            top: hy - hh / 2,
+            bottom: hy + hh / 2
+          };
+          if (edgeMaskCutouts) {
+            var cut = svgCreate("rect");
+            cut.setAttribute("x", String(Math.round(hx - hw / 2)));
+            cut.setAttribute("y", String(Math.round(hy - hh / 2)));
+            cut.setAttribute("width", String(Math.round(hw)));
+            cut.setAttribute("height", String(Math.round(hh)));
+            cut.setAttribute("rx", "10");
+            cut.setAttribute("fill", "#000000");
+            edgeMaskCutouts.appendChild(cut);
+          }
 
           var hcx = mobile ? Math.round(cfg.mobile.cx * sw) : Math.round(padX + cfg.desktop.cx * spanW);
           var hcy = mobile ? cfg.mobile.cy : Math.round(padT + cfg.desktop.cy * spanH);
@@ -1116,6 +1182,12 @@
 
           el.style.setProperty("--zoom-dx", Math.round(dx) + "px");
           el.style.setProperty("--zoom-dy", Math.round(dy) + "px");
+          expandedBoxById[id] = {
+            left: px + dx - halfPanelW - 4,
+            right: px + dx + halfPanelW + 4,
+            top: expandedTop + dy - 4,
+            bottom: expandedBot + dy + 4
+          };
         });
 
         // Draw SVG constellation lines trimmed cleanly outside node card borders
@@ -1154,20 +1226,41 @@
         if (!activeNodeId) {
           stage.classList.remove("has-active-node");
           nodeEls.forEach(function (el) { el.classList.remove("is-active"); });
-          headerEls.forEach(function (h) { h.classList.remove("is-active-territory"); });
+          headerEls.forEach(function (h) {
+            h.classList.remove("is-active-territory");
+            h.classList.remove("is-related-territory");
+            h.classList.remove("is-occluded-by-card");
+          });
           Array.prototype.forEach.call(edgesG.children, function (ln) { ln.classList.remove("is-lit"); });
           return;
         }
 
         var activeEl = nodeMap[activeNodeId];
         var activeTerr = activeEl ? activeEl.getAttribute("data-territory") : null;
+        var isMusicFamily = activeTerr === "music" || activeTerr === "music-creation";
+        var cardBox = expandedBoxById[activeNodeId];
         stage.classList.add("has-active-node");
 
         nodeEls.forEach(function (el) {
           el.classList.toggle("is-active", el.getAttribute("data-id") === activeNodeId);
         });
         headerEls.forEach(function (h) {
-          h.classList.toggle("is-active-territory", h.getAttribute("data-territory") === activeTerr);
+          var ht = h.getAttribute("data-territory");
+          var hb = headerBoxByTerr[ht];
+          var occluded = Boolean(
+            cardBox &&
+            hb &&
+            cardBox.left < hb.right &&
+            cardBox.right > hb.left &&
+            cardBox.top < hb.bottom &&
+            cardBox.bottom > hb.top
+          );
+          h.classList.toggle("is-active-territory", ht === activeTerr);
+          h.classList.toggle(
+            "is-related-territory",
+            ht !== activeTerr && isMusicFamily && (ht === "music" || ht === "music-creation")
+          );
+          h.classList.toggle("is-occluded-by-card", occluded);
         });
         Array.prototype.forEach.call(edgesG.children, function (ln) {
           var isConnected = ln.getAttribute("data-a") === activeNodeId || ln.getAttribute("data-b") === activeNodeId;
