@@ -17,7 +17,7 @@
   <link href="https://fonts.googleapis.com/css2?family=Google+Sans+Flex:opsz,wght@6..144,400..700&family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
   <link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:opsz,wght,FILL,GRAD@20..48,100..700,0..1,-50..200" rel="stylesheet">
 
-  <link rel="stylesheet" href="./gm3-color-tokens.css">
+  <link rel="stylesheet" href="./gm3-color-tokens.css?v=20261125a">
   <script>
     (function () {
       var m = localStorage.getItem("gm3_theme_mode") || "auto";
@@ -25,7 +25,7 @@
       if (dark) document.documentElement.setAttribute("data-theme", "dark");
     })();
   </script>
-  <link rel="stylesheet" href="./styles.css">
+  <link rel="stylesheet" href="./styles.css?v=20261125a">
 </head>
 <body>
   <div class="app-shell">
@@ -270,7 +270,55 @@
           </article>
         </section>
 
-        <!-- Music Map Hot List (Cloudflare D1 Stars, Downloads & Recent Activity) -->
+        <!-- Music Map 2D Popularity Constellation Map -->
+        <article class="card" id="music-map-popularity-card" aria-labelledby="popmap-card-heading">
+          <div class="card-header popmap-header">
+            <div class="card-title-group hotlist-title-wrap">
+              <h2 class="card-title" id="popmap-card-heading">Music Map popularity map</h2>
+              <span class="header-count" id="popmap-summary-label"></span>
+              <a href="https://billtribble.github.io/music-map/" target="_blank" rel="noopener noreferrer" class="inline-ext-link" id="popmap-open-map-link">
+                <span>Open Music Map</span>
+                <span class="material-symbols-outlined" aria-hidden="true">open_in_new</span>
+              </a>
+            </div>
+            <div class="popmap-controls">
+              <nav class="m3-pill-tabs m3-connected-tabs" role="tablist" aria-label="Popularity map metric">
+                <button type="button" class="m3-pill-tab active" role="tab" aria-selected="true" data-popmap-metric="combined">Combined</button>
+                <button type="button" class="m3-pill-tab" role="tab" aria-selected="false" data-popmap-metric="plays">Plays</button>
+                <button type="button" class="m3-pill-tab" role="tab" aria-selected="false" data-popmap-metric="stars">Stars</button>
+                <button type="button" class="m3-pill-tab" role="tab" aria-selected="false" data-popmap-metric="downloads">Downloads</button>
+              </nav>
+              <nav class="m3-pill-tabs m3-connected-tabs" role="tablist" aria-label="Popularity map time window">
+                <button type="button" class="m3-pill-tab active" role="tab" aria-selected="true" data-popmap-scope="window" id="popmap-scope-window-btn">7d</button>
+                <button type="button" class="m3-pill-tab" role="tab" aria-selected="false" data-popmap-scope="all">All time</button>
+              </nav>
+            </div>
+          </div>
+
+          <div class="popmap-stage" id="popmap-stage">
+            <div class="chart-state-slot" id="popmap-state-slot" hidden></div>
+            <canvas class="popmap-canvas" id="popmap-canvas" role="img" aria-label="2D spatial constellation map of Music Map track popularity"></canvas>
+          </div>
+
+          <div class="popmap-inspector" id="popmap-inspector" aria-live="polite">
+            <div class="popmap-inspector-left" id="popmap-inspector-left">
+              <span class="popmap-cluster-dot" id="popmap-inspector-dot" aria-hidden="true"></span>
+              <div class="popmap-inspector-titles">
+                <div class="popmap-inspector-name" id="popmap-inspector-name">Hover or tap any node to inspect track activity</div>
+                <div class="popmap-inspector-sub" id="popmap-inspector-sub">Real Vibe map coordinates · Silhouette shows full catalog</div>
+              </div>
+            </div>
+            <div class="popmap-inspector-right" id="popmap-inspector-right">
+              <div class="hotlist-metric-pills" id="popmap-inspector-pills"></div>
+              <a href="https://billtribble.github.io/music-map/" target="_blank" rel="noopener noreferrer" class="btn btn-tonal btn-compact" id="popmap-inspector-open" hidden>
+                <span>Open track</span>
+                <span class="material-symbols-outlined" aria-hidden="true">open_in_new</span>
+              </a>
+            </div>
+          </div>
+        </article>
+
+        <!-- Music Map Hot List (Cloudflare D1 Plays, Stars, Downloads & Recent Activity) -->
         <article class="card" id="music-map-hotlist-card" aria-labelledby="hotlist-card-heading">
           <div class="card-header">
             <div class="card-title-group hotlist-title-wrap">
@@ -283,6 +331,7 @@
             </div>
             <nav class="m3-pill-tabs m3-connected-tabs" role="tablist" aria-label="Hot list filter">
               <button type="button" class="m3-pill-tab active" role="tab" aria-selected="true" data-hotlist-filter="all">All</button>
+              <button type="button" class="m3-pill-tab" role="tab" aria-selected="false" data-hotlist-filter="played">Played</button>
               <button type="button" class="m3-pill-tab" role="tab" aria-selected="false" data-hotlist-filter="starred">Starred</button>
               <button type="button" class="m3-pill-tab" role="tab" aria-selected="false" data-hotlist-filter="downloaded">Downloaded</button>
             </nav>
@@ -297,7 +346,7 @@
             </div>
             <div class="hotlist-recent-well">
               <div class="hotlist-subhead">
-                <span class="kpi-label">Recent stars and downloads</span>
+                <span class="kpi-label">Recent activity</span>
                 <span class="header-count" id="hotlist-recent-count"></span>
               </div>
               <div class="hotlist-recent-list" id="hotlist-recent-list"></div>
@@ -405,6 +454,6 @@
 
   <div class="runtime-error-toast" id="runtime-error-toast" role="status" hidden></div>
 
-  <script src="./app.js"></script>
+  <script src="./app.js?v=20261125a"></script>
 </body>
 </html>

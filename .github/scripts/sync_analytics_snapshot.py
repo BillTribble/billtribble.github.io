@@ -236,6 +236,7 @@ def main() -> int:
         os.environ.get("MUSIC_MAP_API_URL") or "https://music-map-events.billtribble.workers.dev"
     ).strip().rstrip("/")
     music_map_hotlist = None
+    music_map_popular: dict[str, dict] = {}
     if music_map_api:
         try:
             mm_req = urllib.request.Request(
@@ -253,6 +254,26 @@ def main() -> int:
         except Exception as exc:
             print(f"Warning: Music Map hotlist snapshot skipped: {exc}", file=sys.stderr)
 
+        for pop_range in ("today", "7d", "30d", "90d", "all"):
+            try:
+                pop_req = urllib.request.Request(
+                    f"{music_map_api}/api/popular?range={pop_range}&limit=500",
+                    method="GET",
+                    headers={
+                        "Accept": "application/json",
+                        "User-Agent": "billtribble-stats-snapshot/1.0",
+                    },
+                )
+                with urllib.request.urlopen(pop_req, timeout=15) as pop_resp:
+                    pop_parsed = json.loads(pop_resp.read().decode("utf-8"))
+                    if isinstance(pop_parsed, dict) and pop_parsed.get("ok"):
+                        music_map_popular[pop_range] = pop_parsed
+            except Exception as exc:
+                print(
+                    f"Warning: Music Map popular snapshot ({pop_range}) skipped: {exc}",
+                    file=sys.stderr,
+                )
+
     snapshot_obj = {
         "v": 2,
         "bucketTz": "UTC",
@@ -261,6 +282,7 @@ def main() -> int:
         "sites": SITES,
         "ranges": ranges_payload,
         "musicMapHotlist": music_map_hotlist,
+        "musicMapPopular": music_map_popular or None,
     }
 
     envelope = encrypt_snapshot(snapshot_obj, aes_key, token)

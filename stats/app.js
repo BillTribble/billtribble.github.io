@@ -95,10 +95,18 @@
     lastData: null,
     selectedPage: null,
     hotlistFilter: "all",
-    lastHotlist: null
+    lastHotlist: null,
+    popmapMetric: "combined",
+    popmapScope: "window",
+    popmapHoverId: null,
+    popmapPinnedId: null,
+    lastPopular: null
   };
   var memoryCache = {};
   var decryptedSnapshotCache = null;
+  var catalogGeometryCache = null;
+  var catalogGeometryPromise = null;
+  var popmapScreenNodes = [];
 
   // --------------------------------------------------------------------------
   // Theme Controller (Must initialize in 'auto' mode per BillSkill Pillar 2.5)
@@ -134,6 +142,9 @@
       icon.textContent = "light_mode";
       btn.title = "Theme: Light";
       btn.setAttribute("aria-label", "Theme: Light");
+    }
+    if (typeof paintPopularityCanvas === "function" && catalogGeometryCache) {
+      paintPopularityCanvas();
     }
   }
 
@@ -1872,13 +1883,26 @@
   }
 
   // --------------------------------------------------------------------------
-  // Music Map Hot List (Cloudflare D1 Live + Encrypted Snapshot Fallback)
+  // Music Map 2D Popularity Constellation Map & Hot List (Cloudflare D1 + Snapshot)
   // --------------------------------------------------------------------------
   function getMusicMapApiBase() {
     if (typeof window !== "undefined" && typeof window.BTMM_STATS_HOTLIST_API_URL === "string" && window.BTMM_STATS_HOTLIST_API_URL.trim()) {
       return window.BTMM_STATS_HOTLIST_API_URL.trim().replace(/\/+$/, "");
     }
     return DEFAULT_MUSIC_MAP_API.replace(/\/+$/, "");
+  }
+
+  function formatListenDuration(rawSec) {
+    var sec = Math.max(0, Math.round(Number(rawSec) || 0));
+    if (sec < 60) return sec + "s";
+    var mins = Math.floor(sec / 60);
+    var remSec = sec % 60;
+    if (mins < 60) {
+      return remSec > 0 ? (mins + "m " + remSec + "s") : (mins + "m");
+    }
+    var hrs = Math.floor(mins / 60);
+    var remMin = mins % 60;
+    return remMin > 0 ? (hrs + "h " + remMin + "m") : (hrs + "h");
   }
 
   function formatHotlistEventTime(isoStr) {
@@ -1901,16 +1925,688 @@
     }
   }
 
-  function syncHotlistCardVisibility() {
-    var card = document.getElementById("music-map-hotlist-card");
-    if (!card) return false;
+  function syncMusicMapCardsVisibility() {
     var show = state.site !== "awake-in";
-    card.hidden = !show;
+    var popCard = document.getElementById("music-map-popularity-card");
+    var hotCard = document.getElementById("music-map-hotlist-card");
+    if (popCard) popCard.hidden = !show;
+    if (hotCard) hotCard.hidden = !show;
     return show;
   }
 
+  function syncHotlistCardVisibility() {
+    return syncMusicMapCardsVisibility();
+  }
+
+  function syncPopmapScopeButtons() {
+    var winBtn = document.getElementById("popmap-scope-window-btn");
+    if (winBtn) {
+      winBtn.textContent = state.range === "today" ? "Today" : state.range;
+    }
+    document.querySelectorAll("[data-popmap-scope]").forEach(function (btn) {
+      var active = btn.getAttribute("data-popmap-scope") === state.popmapScope;
+      btn.classList.toggle("active", active);
+      btn.setAttribute("aria-selected", active ? "true" : "false");
+    });
+  }
+
+  function getEffectivePopmapRange() {
+    return state.popmapScope === "all" ? "all" : state.range;
+  }
+
+  function parseCorpusDataToGeometry(corpus) {
+    if (!corpus || !Array.isArray(corpus.tracks)) return null;
+    var meta = corpus.meta || {};
+    var mapObj = corpus.map || {};
+    var trackMap = meta.track_map || corpus.track_map || mapObj.track_map || {};
+    var trackNear = meta.track_near || corpus.track_near || mapObj.track_near || {};
+    var styleGroups = meta.style_groups || corpus.style_groups || mapObj.style_groups || [];
+    var erasById = {};
+    (corpus.eras || []).forEach(function (e) {
+      if (e && e.id) erasById[e.id] = e.label || e.id;
+    });
+
+    var minX = Infinity;
+    var maxX = -Infinity;
+    var minY = Infinity;
+    var maxY = -Infinity;
+    var rawNodes = [];
+
+    corpus.tracks.forEach(function (t) {
+      if (!t || !t.id) return;
+      var tm = trackMap[t.id];
+      var coords = (tm && (tm.vibe || tm.similarity)) || null;
+      if (!Array.isArray(coords) || coords.length < 2) return;
+      var x = Number(coords[0]);
+      var y = Number(coords[1]);
+      if (!isFinite(x) || !isFinite(y)) return;
+      if (x < minX) minX = x;
+      if (x > maxX) maxX = x;
+      if (y < minY) minY = y;
+      if (y > maxY) maxY = y;
+      var eraLabel = t.is_ai
+        ? ("Gen AI (" + (t.year || "2025") + ")")
+        : (erasById[t.era] || t.era || "");
+      rawNodes.push({
+        id: t.id,
+        title: t.title || t.id,
+        era: eraLabel,
+        clusterIdx: Number.isFinite(Number(t.cluster_idx)) ? Number(t.cluster_idx) : 0,
+        clusterLabel: t.cluster_label || "",
+        isAi: Boolean(t.is_ai),
+        isSketch: Boolean(t.is_sketch),
+        rawX: x,
+        rawY: y
+      });
+    });
+
+    if (!rawNodes.length) return null;
+    var spanX = Math.max(0.001, maxX - minX);
+    var spanY = Math.max(0.001, maxY - minY);
+
+    var nodeById = {};
+    rawNodes.forEach(function (n) {
+      n.nx = (n.rawX - minX) / spanX;
+      n.ny = (n.rawY - minY) / spanY;
+      nodeById[n.id] = n;
+    });
+
+    // Build subtle intra-island constellation filaments (short nearest-neighbor links)
+    var edgeKeys = {};
+    var filaments = [];
+    rawNodes.forEach(function (n) {
+      var nearList = trackNear[n.id];
+      if (!Array.isArray(nearList)) return;
+      for (var i = 0; i < Math.min(2, nearList.length); i++) {
+        var entry = nearList[i];
+        var otherId = typeof entry === "string"
+          ? entry
+          : (Array.isArray(entry) ? entry[0] : (entry && entry.id));
+        if (!otherId || !nodeById[otherId] || otherId === n.id) continue;
+        var other = nodeById[otherId];
+        if (other.clusterIdx !== n.clusterIdx) continue;
+        var dx = n.nx - other.nx;
+        var dy = n.ny - other.ny;
+        if (Math.sqrt(dx * dx + dy * dy) > 0.095) continue;
+        var pairKey = n.id < otherId ? (n.id + "|" + otherId) : (otherId + "|" + n.id);
+        if (edgeKeys[pairKey]) continue;
+        edgeKeys[pairKey] = true;
+        filaments.push([n, other]);
+      }
+    });
+
+    var islands = [];
+    styleGroups.forEach(function (g) {
+      if (!g || !isFinite(Number(g.cx)) || !isFinite(Number(g.cy))) return;
+      if (g.id === "d10_genai" && Array.isArray(g.subclusters) && g.subclusters.length > 0) {
+        var sumX = 0;
+        var sumY = 0;
+        var cnt = 0;
+        g.subclusters.forEach(function (sc) {
+          if (sc && isFinite(Number(sc.cx)) && isFinite(Number(sc.cy))) {
+            sumX += Number(sc.cx);
+            sumY += Number(sc.cy);
+            cnt++;
+          }
+        });
+        islands.push({
+          label: g.short_label || g.label || "Gen AI",
+          nx: ((cnt ? sumX / cnt : Number(g.cx)) - minX) / spanX,
+          ny: ((cnt ? sumY / cnt : Number(g.cy)) - minY) / spanY,
+          clusterIdx: Number.isFinite(Number(g.idx)) ? Number(g.idx) : 10
+        });
+        return;
+      }
+      islands.push({
+        label: g.short_label || g.label || "",
+        nx: (Number(g.cx) - minX) / spanX,
+        ny: (Number(g.cy) - minY) / spanY,
+        clusterIdx: Number.isFinite(Number(g.idx)) ? Number(g.idx) : 0
+      });
+    });
+
+    return {
+      nodes: rawNodes,
+      nodeById: nodeById,
+      filaments: filaments,
+      islands: islands
+    };
+  }
+
+  function extractJsonFromDataScript(rawJs) {
+    var text = String(rawJs || "");
+    var firstBrace = text.indexOf("{");
+    var lastBrace = text.lastIndexOf("}");
+    if (firstBrace === -1 || lastBrace <= firstBrace) {
+      throw new Error("Invalid data.js format");
+    }
+    return JSON.parse(text.slice(firstBrace, lastBrace + 1));
+  }
+
+  function loadMusicMapCatalogGeometry() {
+    if (catalogGeometryCache) return Promise.resolve(catalogGeometryCache);
+    if (typeof window !== "undefined" && window.CORPUS_DATA) {
+      catalogGeometryCache = parseCorpusDataToGeometry(window.CORPUS_DATA);
+      if (catalogGeometryCache) return Promise.resolve(catalogGeometryCache);
+    }
+    if (catalogGeometryPromise) return catalogGeometryPromise;
+
+    var candidateUrls = [];
+    if (typeof window !== "undefined" && typeof window.BTMM_STATS_DATA_JS_URL === "string" && window.BTMM_STATS_DATA_JS_URL.trim()) {
+      candidateUrls.push(window.BTMM_STATS_DATA_JS_URL.trim());
+    }
+    candidateUrls.push("/music-map/js/data.js");
+    candidateUrls.push("https://billtribble.github.io/music-map/js/data.js");
+
+    catalogGeometryPromise = (async function () {
+      for (var i = 0; i < candidateUrls.length; i++) {
+        try {
+          var resp = await fetch(candidateUrls[i], { method: "GET", credentials: "omit" });
+          if (!resp.ok) continue;
+          var text = await resp.text();
+          var parsed = extractJsonFromDataScript(text);
+          var geom = parseCorpusDataToGeometry(parsed);
+          if (geom) {
+            catalogGeometryCache = geom;
+            return geom;
+          }
+        } catch (_) {}
+      }
+      catalogGeometryPromise = null;
+      return null;
+    })();
+
+    return catalogGeometryPromise;
+  }
+
+  function samplePopmapTokens() {
+    var cs = getComputedStyle(document.documentElement);
+    function tok(name, fb) {
+      var v = (cs.getPropertyValue(name) || "").trim();
+      return v || fb;
+    }
+    var clusters = [];
+    for (var i = 0; i <= 10; i++) {
+      clusters.push(tok("--md-sys-color-cluster-" + i, "rgb(14, 87, 208)"));
+    }
+    return {
+      isDark: resolveTheme() === "dark",
+      clusters: clusters,
+      primary: tok("--md-sys-color-primary", "rgb(14, 87, 208)"),
+      primaryContainer: tok("--md-sys-color-primary-container", "rgb(211, 227, 253)"),
+      surfaceContainer: tok("--md-sys-color-surface-container", "rgb(240, 244, 249)"),
+      surfaceLowest: tok("--md-sys-color-surface-container-lowest", "rgb(255, 255, 255)"),
+      onSurface: tok("--md-sys-color-on-surface", "rgb(31, 31, 31)"),
+      onSurfaceVariant: tok("--md-sys-color-on-surface-variant", "rgb(68, 71, 70)"),
+      outlineVariant: tok("--md-sys-color-outline-variant", "rgb(196, 199, 197)")
+    };
+  }
+
+  function getPopmapMetricValue(trackStat, metricKey) {
+    if (!trackStat) return 0;
+    if (metricKey === "plays") return Number(trackStat.plays || 0);
+    if (metricKey === "stars") return Number(trackStat.stars || 0);
+    if (metricKey === "downloads") return Number(trackStat.downloads || 0);
+    return Number(trackStat.popularity_score || 0);
+  }
+
+  function formatPopmapMetricBadge(trackStat, metricKey) {
+    if (!trackStat) return "";
+    if (metricKey === "plays") {
+      var p = Number(trackStat.plays || 0);
+      return p + (p === 1 ? " play" : " plays");
+    }
+    if (metricKey === "stars") {
+      var s = Number(trackStat.stars || 0);
+      return s + (s === 1 ? " star" : " stars");
+    }
+    if (metricKey === "downloads") {
+      var d = Number(trackStat.downloads || 0);
+      return d + (d === 1 ? " dl" : " dls");
+    }
+    var sc = Number(trackStat.popularity_score || 0);
+    return (Math.round(sc * 10) / 10) + " pts";
+  }
+
+  function updatePopmapInspector(nodeEntry, pal) {
+    var dotEl = document.getElementById("popmap-inspector-dot");
+    var nameEl = document.getElementById("popmap-inspector-name");
+    var subEl = document.getElementById("popmap-inspector-sub");
+    var pillsEl = document.getElementById("popmap-inspector-pills");
+    var openEl = document.getElementById("popmap-inspector-open");
+    if (!nameEl || !subEl || !pillsEl || !openEl) return;
+
+    clearChildren(pillsEl);
+    var palette = pal || samplePopmapTokens();
+
+    if (!nodeEntry) {
+      var geomCount = catalogGeometryCache ? catalogGeometryCache.nodes.length : 0;
+      var activeCount = popmapScreenNodes.filter(function (x) { return x.metricVal > 0; }).length;
+      if (dotEl) {
+        dotEl.style.backgroundColor = "var(--md-sys-color-outline-variant)";
+        dotEl.classList.remove("is-active");
+      }
+      if (activeCount === 0) {
+        nameEl.textContent = "No plays, stars, or downloads recorded in this window yet";
+        subEl.textContent = geomCount
+          ? ("Catalog constellation ready (" + geomCount + " tracks) · Hover or tap any node to inspect")
+          : "Hover or tap any node on the constellation to inspect";
+      } else {
+        nameEl.textContent = "Hover or tap any glowing node to inspect track popularity";
+        subEl.textContent = activeCount + " active " + (activeCount === 1 ? "track" : "tracks") + " across " + geomCount + " catalog coordinates";
+      }
+      openEl.hidden = true;
+      return;
+    }
+
+    var n = nodeEntry.node;
+    var st = nodeEntry.stat;
+    var clusterColor = palette.clusters[((n.clusterIdx % palette.clusters.length) + palette.clusters.length) % palette.clusters.length];
+    if (dotEl) {
+      dotEl.style.backgroundColor = clusterColor;
+      dotEl.classList.add("is-active");
+    }
+
+    var prefix = nodeEntry.metricRank > 0 ? ("#" + nodeEntry.metricRank + " · ") : "";
+    nameEl.textContent = prefix + n.title;
+
+    var subBits = [];
+    if (n.clusterLabel) subBits.push(n.clusterLabel);
+    if (n.era) subBits.push(n.era);
+    if (st && Number(st.listened_sec || 0) > 0) {
+      subBits.push(formatListenDuration(st.listened_sec) + " listened");
+    }
+    if (st && Number(st.plays || 0) > 0) {
+      subBits.push(Number(st.manual_plays || 0) + " manual · " + Number(st.autoplay_plays || 0) + " auto-play");
+    }
+    if (!st) {
+      subBits.push("0 activity in selected window");
+    }
+    subEl.textContent = subBits.join(" · ");
+
+    if (st) {
+      if (Number(st.popularity_score || 0) > 0) {
+        pillsEl.appendChild(createMetricPill(
+          "badge-score",
+          "bolt",
+          String(Math.round(Number(st.popularity_score) * 10) / 10),
+          "Weighted popularity score"
+        ));
+      }
+      if (Number(st.plays || 0) > 0) {
+        pillsEl.appendChild(createMetricPill(
+          "badge-play",
+          "play_arrow",
+          String(st.plays),
+          st.plays + (st.plays === 1 ? " qualified play" : " qualified plays") + " (" + Number(st.unique_listeners || 0) + " listeners)"
+        ));
+      }
+      if (Number(st.stars || 0) > 0) {
+        pillsEl.appendChild(createMetricPill(
+          "badge-star",
+          "star",
+          String(st.stars),
+          st.stars + (st.stars === 1 ? " star" : " stars")
+        ));
+      }
+      if (Number(st.downloads || 0) > 0) {
+        pillsEl.appendChild(createMetricPill(
+          "badge-download",
+          "download",
+          String(st.downloads),
+          st.downloads + (st.downloads === 1 ? " download" : " downloads")
+        ));
+      }
+    }
+
+    openEl.href = (st && st.url) || ("https://billtribble.github.io/music-map/?track=" + encodeURIComponent(n.id));
+    openEl.hidden = false;
+  }
+
+  function drawRoundedRectPath(ctx, x, y, w, h, r) {
+    var rad = Math.min(r, w / 2, h / 2);
+    ctx.beginPath();
+    ctx.moveTo(x + rad, y);
+    ctx.lineTo(x + w - rad, y);
+    ctx.quadraticCurveTo(x + w, y, x + w, y + rad);
+    ctx.lineTo(x + w, y + h - rad);
+    ctx.quadraticCurveTo(x + w, y + h, x + w - rad, y + h);
+    ctx.lineTo(x + rad, y + h);
+    ctx.quadraticCurveTo(x, y + h, x, y + h - rad);
+    ctx.lineTo(x, y + rad);
+    ctx.quadraticCurveTo(x, y, x + rad, y);
+    ctx.closePath();
+  }
+
+  function paintPopularityCanvas() {
+    var canvas = document.getElementById("popmap-canvas");
+    var stage = document.getElementById("popmap-stage");
+    var stateSlot = document.getElementById("popmap-state-slot");
+    var sumEl = document.getElementById("popmap-summary-label");
+    if (!canvas || !stage || !syncMusicMapCardsVisibility()) return;
+
+    if (!catalogGeometryCache) {
+      return;
+    }
+
+    if (stateSlot) stateSlot.hidden = true;
+    canvas.hidden = false;
+
+    var rect = stage.getBoundingClientRect();
+    var cssW = Math.max(260, Math.round(rect.width || stage.clientWidth || 800));
+    var cssH = Math.max(220, Math.round(rect.height || stage.clientHeight || 356));
+    var dpr = Math.min(2.5, Math.max(1, window.devicePixelRatio || 1));
+    if (canvas.width !== Math.round(cssW * dpr) || canvas.height !== Math.round(cssH * dpr)) {
+      canvas.width = Math.round(cssW * dpr);
+      canvas.height = Math.round(cssH * dpr);
+    }
+
+    var ctx = canvas.getContext("2d");
+    if (!ctx) return;
+    ctx.save();
+    ctx.scale(dpr, dpr);
+    ctx.clearRect(0, 0, cssW, cssH);
+
+    var pal = samplePopmapTokens();
+    var isMobile = cssW < 540;
+    var padX = isMobile ? 20 : 38;
+    var padY = isMobile ? 22 : 30;
+    var plotW = Math.max(80, cssW - padX * 2);
+    var plotH = Math.max(80, cssH - padY * 2);
+
+    var popTracks = (state.lastPopular && Array.isArray(state.lastPopular.tracks)) ? state.lastPopular.tracks : [];
+    var statById = {};
+    popTracks.forEach(function (tr) {
+      if (tr && tr.track_id) statById[tr.track_id] = tr;
+    });
+
+    var activeList = [];
+    var allMapped = [];
+    catalogGeometryCache.nodes.forEach(function (n) {
+      var sx = padX + n.nx * plotW;
+      var sy = padY + n.ny * plotH;
+      var st = statById[n.id] || null;
+      var val = getPopmapMetricValue(st, state.popmapMetric);
+      var entry = {
+        node: n,
+        stat: st,
+        sx: sx,
+        sy: sy,
+        metricVal: val,
+        metricRank: 0,
+        radius: isMobile ? 1.85 : 2.35
+      };
+      allMapped.push(entry);
+      if (val > 0) activeList.push(entry);
+    });
+
+    activeList.sort(function (a, b) {
+      return (b.metricVal - a.metricVal) ||
+             ((b.stat ? b.stat.popularity_score : 0) - (a.stat ? a.stat.popularity_score : 0));
+    });
+    var maxMetric = activeList.length ? Math.max(0.001, activeList[0].metricVal) : 1;
+    activeList.forEach(function (e, idx) {
+      e.metricRank = idx + 1;
+      var norm = Math.sqrt(Math.max(0, e.metricVal) / maxMetric);
+      e.radius = (isMobile ? 4.6 : 5.6) + norm * (isMobile ? 7.4 : 10.6);
+    });
+
+    popmapScreenNodes = allMapped;
+
+    // Update header summary
+    if (sumEl) {
+      var scopeWord = state.popmapScope === "all" ? "all time" : (state.range === "today" ? "today" : state.range);
+      if (activeList.length > 0) {
+        sumEl.textContent = "· " + activeList.length + " active of " + allMapped.length + " tracks · " + scopeWord;
+      } else {
+        sumEl.textContent = "· " + allMapped.length + " catalog tracks · 0 active (" + scopeWord + ")";
+      }
+    }
+
+    // 1. Subtle constellation filaments
+    ctx.lineWidth = 0.8;
+    ctx.strokeStyle = pal.outlineVariant;
+    ctx.globalAlpha = pal.isDark ? 0.16 : 0.22;
+    ctx.beginPath();
+    catalogGeometryCache.filaments.forEach(function (pair) {
+      var a = pair[0];
+      var b = pair[1];
+      ctx.moveTo(padX + a.nx * plotW, padY + a.ny * plotH);
+      ctx.lineTo(padX + b.nx * plotW, padY + b.ny * plotH);
+    });
+    ctx.stroke();
+
+    // 2. Background catalog silhouette dots (tinted lightly by cluster so sonic islands are recognizable)
+    allMapped.forEach(function (e) {
+      if (e.metricVal > 0) return;
+      var cCol = pal.clusters[((e.node.clusterIdx % pal.clusters.length) + pal.clusters.length) % pal.clusters.length];
+      ctx.fillStyle = cCol;
+      ctx.globalAlpha = pal.isDark ? 0.30 : 0.24;
+      ctx.beginPath();
+      ctx.arc(e.sx, e.sy, e.radius, 0, Math.PI * 2);
+      ctx.fill();
+    });
+
+    // 3. Subtle genre-island watermarks
+    ctx.font = (isMobile ? "500 10px " : "500 11px ") + "Inter, system-ui, sans-serif";
+    ctx.textAlign = "center";
+    ctx.textBaseline = "middle";
+    ctx.fillStyle = pal.onSurfaceVariant;
+    ctx.globalAlpha = pal.isDark ? 0.44 : 0.48;
+    var islandBoxes = [];
+    catalogGeometryCache.islands.forEach(function (isl) {
+      if (!isl.label) return;
+      var ix = Math.max(padX + 26, Math.min(cssW - padX - 26, padX + isl.nx * plotW));
+      var iy = Math.max(padY + 10, Math.min(cssH - padY - 10, padY + isl.ny * plotH));
+      var tw = ctx.measureText(isl.label).width + 10;
+      var box = { x1: ix - tw / 2, y1: iy - 8, x2: ix + tw / 2, y2: iy + 8 };
+      var collides = islandBoxes.some(function (b) {
+        return !(box.x2 < b.x1 || box.x1 > b.x2 || box.y2 < b.y1 || box.y1 > b.y2);
+      });
+      if (!collides) {
+        islandBoxes.push(box);
+        ctx.fillText(isl.label, ix, iy);
+      }
+    });
+
+    // 4. Active nodes (lowest -> highest so top tracks sit crisply on top)
+    var focusId = state.popmapHoverId || state.popmapPinnedId || (activeList[0] ? activeList[0].node.id : null);
+    var focusEntry = null;
+    allMapped.forEach(function (e) {
+      if (e.node.id === focusId) focusEntry = e;
+    });
+
+    for (var k = activeList.length - 1; k >= 0; k--) {
+      var act = activeList[k];
+      var col = pal.clusters[((act.node.clusterIdx % pal.clusters.length) + pal.clusters.length) % pal.clusters.length];
+      var glowR = act.radius * 2.55;
+
+      // Soft radial tonal glow
+      ctx.save();
+      ctx.globalAlpha = pal.isDark ? 0.34 : 0.24;
+      var grad = ctx.createRadialGradient(act.sx, act.sy, act.radius * 0.25, act.sx, act.sy, glowR);
+      grad.addColorStop(0, col);
+      grad.addColorStop(1, "rgba(0, 0, 0, 0)");
+      ctx.fillStyle = grad;
+      ctx.beginPath();
+      ctx.arc(act.sx, act.sy, glowR, 0, Math.PI * 2);
+      ctx.fill();
+      ctx.restore();
+
+      // Surface contrast collar
+      ctx.globalAlpha = 0.92;
+      ctx.fillStyle = pal.surfaceContainer;
+      ctx.beginPath();
+      ctx.arc(act.sx, act.sy, act.radius + 1.5, 0, Math.PI * 2);
+      ctx.fill();
+
+      // Core node circle
+      ctx.globalAlpha = 0.96;
+      ctx.fillStyle = col;
+      ctx.beginPath();
+      ctx.arc(act.sx, act.sy, act.radius, 0, Math.PI * 2);
+      ctx.fill();
+    }
+
+    // Focus ring on hovered / pinned / #1 node
+    if (focusEntry) {
+      var fCol = pal.clusters[((focusEntry.node.clusterIdx % pal.clusters.length) + pal.clusters.length) % pal.clusters.length];
+      ctx.globalAlpha = 1;
+      if (focusEntry.metricVal <= 0) {
+        ctx.fillStyle = fCol;
+        ctx.beginPath();
+        ctx.arc(focusEntry.sx, focusEntry.sy, 4.5, 0, Math.PI * 2);
+        ctx.fill();
+      }
+      ctx.lineWidth = 2;
+      ctx.strokeStyle = pal.onSurface;
+      ctx.beginPath();
+      ctx.arc(focusEntry.sx, focusEntry.sy, Math.max(4.5, focusEntry.radius) + 3.8, 0, Math.PI * 2);
+      ctx.stroke();
+    }
+
+    // 5. Collision-free callout pills for top active tracks (+ focused node)
+    var maxCallouts = isMobile ? 3 : 5;
+    var calloutCandidates = [];
+    if (focusEntry && focusEntry.metricVal > 0) {
+      calloutCandidates.push(focusEntry);
+    }
+    for (var cIdx = 0; cIdx < activeList.length && calloutCandidates.length < maxCallouts + 2; cIdx++) {
+      if (activeList[cIdx] !== focusEntry) calloutCandidates.push(activeList[cIdx]);
+    }
+
+    var placedCallouts = [];
+    ctx.font = (isMobile ? "600 11px " : "600 11.5px ") + "Inter, system-ui, sans-serif";
+    ctx.textBaseline = "middle";
+    ctx.textAlign = "left";
+
+    calloutCandidates.forEach(function (cand) {
+      if (placedCallouts.length >= maxCallouts && cand !== focusEntry) return;
+      var shortTitle = cand.node.title.length > 24 ? (cand.node.title.slice(0, 23) + "…") : cand.node.title;
+      var metricSuffix = formatPopmapMetricBadge(cand.stat, state.popmapMetric);
+      var labelText = "#" + cand.metricRank + " " + shortTitle + (metricSuffix ? (" · " + metricSuffix) : "");
+      var textW = Math.ceil(ctx.measureText(labelText).width);
+      var pillW = textW + 16;
+      var pillH = 22;
+
+      var placeRight = cand.sx + cand.radius + 8 + pillW <= cssW - 8;
+      var px = placeRight ? (cand.sx + cand.radius + 7) : Math.max(8, cand.sx - cand.radius - 7 - pillW);
+      var py = Math.max(8, Math.min(cssH - pillH - 8, cand.sy - pillH / 2));
+
+      var box = { x1: px - 3, y1: py - 2, x2: px + pillW + 3, y2: py + pillH + 2 };
+      var overlaps = placedCallouts.some(function (b) {
+        return !(box.x2 < b.x1 || box.x1 > b.x2 || box.y2 < b.y1 || box.y1 > b.y2);
+      });
+      if (overlaps && cand !== focusEntry) return;
+      placedCallouts.push(box);
+
+      ctx.globalAlpha = 0.94;
+      ctx.fillStyle = pal.surfaceLowest;
+      drawRoundedRectPath(ctx, px, py, pillW, pillH, 11);
+      ctx.fill();
+
+      ctx.globalAlpha = 1;
+      ctx.fillStyle = pal.onSurface;
+      ctx.fillText(labelText, px + 8, py + pillH / 2 + 0.5);
+    });
+
+    ctx.restore();
+    updatePopmapInspector(focusEntry, pal);
+  }
+
+  function findNearestPopmapNode(clientX, clientY) {
+    var canvas = document.getElementById("popmap-canvas");
+    if (!canvas || !popmapScreenNodes.length) return null;
+    var rect = canvas.getBoundingClientRect();
+    var x = clientX - rect.left;
+    var y = clientY - rect.top;
+
+    var bestActive = null;
+    var bestActiveDist = 30;
+    var bestAny = null;
+    var bestAnyDist = 16;
+
+    for (var i = 0; i < popmapScreenNodes.length; i++) {
+      var item = popmapScreenNodes[i];
+      var dx = item.sx - x;
+      var dy = item.sy - y;
+      var dist = Math.sqrt(dx * dx + dy * dy);
+      if (item.metricVal > 0) {
+        var effDist = Math.max(0, dist - item.radius * 0.45);
+        if (effDist < bestActiveDist) {
+          bestActiveDist = effDist;
+          bestActive = item;
+        }
+      } else if (dist < bestAnyDist) {
+        bestAnyDist = dist;
+        bestAny = item;
+      }
+    }
+    return bestActive || bestAny;
+  }
+
+  function setPopmapLoading() {
+    if (!syncMusicMapCardsVisibility()) return;
+    var canvas = document.getElementById("popmap-canvas");
+    var stateSlot = document.getElementById("popmap-state-slot");
+    if (canvas) canvas.hidden = true;
+    if (stateSlot) {
+      stateSlot.hidden = false;
+      renderPanelLoadingInto(stateSlot);
+    }
+  }
+
+  async function loadMusicMapPopular(expectedSeq, forceRefresh) {
+    if (!syncMusicMapCardsVisibility()) return;
+    syncPopmapScopeButtons();
+    if ((!state.lastPopular || forceRefresh) && !catalogGeometryCache) {
+      setPopmapLoading();
+    }
+
+    var effectiveRange = getEffectivePopmapRange();
+    var apiBase = getMusicMapApiBase();
+    var geomPromise = loadMusicMapCatalogGeometry();
+
+    var popPayload = null;
+    try {
+      var freshParam = forceRefresh ? "&fresh=1" : "";
+      var resp = await fetch(
+        apiBase + "/api/popular?range=" + encodeURIComponent(effectiveRange) + "&limit=500" + freshParam,
+        {
+          method: "GET",
+          mode: "cors",
+          credentials: "omit",
+          cache: forceRefresh ? "no-store" : "default"
+        }
+      );
+      if (!resp.ok) throw new Error("HTTP " + resp.status);
+      var json = await resp.json();
+      if (json && json.ok) {
+        popPayload = json;
+      }
+    } catch (_) {
+      try {
+        var snap = await fetchDecryptedSnapshot(Boolean(forceRefresh));
+        if (snap && snap.musicMapPopular) {
+          popPayload = snap.musicMapPopular[effectiveRange] || snap.musicMapPopular.all || null;
+        }
+      } catch (_snapErr) {}
+    }
+
+    await geomPromise;
+    if (expectedSeq !== state.loadSeq) return;
+
+    state.lastPopular = popPayload || {
+      ok: true,
+      range: effectiveRange,
+      summary: { active_tracks: 0, plays: 0, stars: 0, downloads: 0 },
+      tracks: []
+    };
+    paintPopularityCanvas();
+  }
+
   function setHotlistLoading() {
-    if (!syncHotlistCardVisibility()) return;
+    if (!syncMusicMapCardsVisibility()) return;
     var sumEl = document.getElementById("hotlist-summary-label");
     if (sumEl) sumEl.textContent = "";
     renderPanelLoadingInto(document.getElementById("hotlist-tracks-list"));
@@ -1934,7 +2630,7 @@
 
   function renderMusicMapHotlist(payload) {
     state.lastHotlist = payload || null;
-    if (!syncHotlistCardVisibility()) return;
+    if (!syncMusicMapCardsVisibility()) return;
 
     var tracksEl = document.getElementById("hotlist-tracks-list");
     var recentEl = document.getElementById("hotlist-recent-list");
@@ -1949,22 +2645,24 @@
     if (!payload || !payload.summary) {
       var emptyMsg = document.createElement("p");
       emptyMsg.className = "empty-hint";
-      emptyMsg.textContent = "No Music Map star or download activity recorded yet.";
+      emptyMsg.textContent = "No Music Map play, star, or download activity recorded yet.";
       tracksEl.appendChild(emptyMsg);
       var emptyRecent = document.createElement("p");
       emptyRecent.className = "empty-hint";
-      emptyRecent.textContent = "Waiting for first track star or download.";
+      emptyRecent.textContent = "Waiting for first qualified play, star, or download.";
       recentEl.appendChild(emptyRecent);
       return;
     }
 
     var sum = payload.summary;
+    var totalPlays = Number(sum.total_plays || 0);
     var activeStars = Number(sum.active_stars || 0);
     var totalDownloads = Number(sum.total_downloads || 0);
     var totalRequests = Number(sum.total_requests || 0);
 
     if (sumEl) {
       var summaryParts = [
+        totalPlays.toLocaleString() + (totalPlays === 1 ? " play" : " plays"),
         activeStars.toLocaleString() + (activeStars === 1 ? " star" : " stars"),
         totalDownloads.toLocaleString() + (totalDownloads === 1 ? " download" : " downloads")
       ];
@@ -1976,21 +2674,37 @@
 
     var rawTracks = Array.isArray(payload.top_tracks) ? payload.top_tracks.slice() : [];
     var filteredTracks = rawTracks.filter(function (t) {
+      if (state.hotlistFilter === "played") return Number(t.total_plays || 0) > 0;
       if (state.hotlistFilter === "starred") return Number(t.active_stars || 0) > 0;
       if (state.hotlistFilter === "downloaded") return Number(t.total_downloads || 0) > 0;
-      return (Number(t.active_stars || 0) + Number(t.total_downloads || 0) + Number(t.total_requests || 0)) > 0;
+      return (Number(t.total_plays || 0) + Number(t.active_stars || 0) + Number(t.total_downloads || 0) + Number(t.total_requests || 0)) > 0;
     });
 
+    function hotlistRowScore(t) {
+      if (state.hotlistFilter === "played") return Number(t.total_plays || 0);
+      if (state.hotlistFilter === "starred") return Number(t.active_stars || 0);
+      if (state.hotlistFilter === "downloaded") return Number(t.total_downloads || 0);
+      if (Number.isFinite(Number(t.popularity_score)) && Number(t.popularity_score) > 0) {
+        return Number(t.popularity_score);
+      }
+      return (Number(t.active_stars || 0) * 5) + (Number(t.total_downloads || 0) * 4) + (Number(t.total_plays || 0) * 1.5) + Number(t.total_requests || 0);
+    }
+
     filteredTracks.sort(function (a, b) {
+      if (state.hotlistFilter === "played") {
+        return (Number(b.total_plays || 0) - Number(a.total_plays || 0)) ||
+               (Number(b.total_listen_sec || 0) - Number(a.total_listen_sec || 0)) ||
+               (Number(b.active_stars || 0) - Number(a.active_stars || 0));
+      }
       if (state.hotlistFilter === "starred") {
-        return (b.active_stars - a.active_stars) || (b.total_downloads - a.total_downloads);
+        return (Number(b.active_stars || 0) - Number(a.active_stars || 0)) ||
+               (Number(b.total_plays || 0) - Number(a.total_plays || 0));
       }
       if (state.hotlistFilter === "downloaded") {
-        return (b.total_downloads - a.total_downloads) || (b.active_stars - a.active_stars);
+        return (Number(b.total_downloads || 0) - Number(a.total_downloads || 0)) ||
+               (Number(b.active_stars || 0) - Number(a.active_stars || 0));
       }
-      var scoreA = (Number(a.active_stars || 0) * 2) + Number(a.total_downloads || 0) + Number(a.total_requests || 0);
-      var scoreB = (Number(b.active_stars || 0) * 2) + Number(b.total_downloads || 0) + Number(b.total_requests || 0);
-      return scoreB - scoreA;
+      return hotlistRowScore(b) - hotlistRowScore(a);
     });
 
     if (tracksCountEl) {
@@ -2002,18 +2716,16 @@
     if (!filteredTracks.length) {
       var emptyTrackP = document.createElement("p");
       emptyTrackP.className = "empty-hint";
-      emptyTrackP.textContent = state.hotlistFilter === "starred"
-        ? "No starred tracks yet — stars appear here as visitors tap ★ on Music Map."
-        : state.hotlistFilter === "downloaded"
-          ? "No track downloads recorded yet."
-          : "No starred or downloaded tracks yet — events appear live here.";
+      emptyTrackP.textContent = state.hotlistFilter === "played"
+        ? "No qualified plays (10s+) recorded yet."
+        : state.hotlistFilter === "starred"
+          ? "No starred tracks yet — stars appear here as visitors tap ★ on Music Map."
+          : state.hotlistFilter === "downloaded"
+            ? "No track downloads recorded yet."
+            : "No played, starred, or downloaded tracks yet — events appear live here.";
       tracksEl.appendChild(emptyTrackP);
     } else {
-      var maxScore = Math.max.apply(null, filteredTracks.map(function (t) {
-        if (state.hotlistFilter === "starred") return Number(t.active_stars || 0);
-        if (state.hotlistFilter === "downloaded") return Number(t.total_downloads || 0);
-        return (Number(t.active_stars || 0) * 2) + Number(t.total_downloads || 0) + Number(t.total_requests || 0);
-      }).concat([1]));
+      var maxScore = Math.max.apply(null, filteredTracks.map(hotlistRowScore).concat([1]));
 
       filteredTracks.slice(0, 10).forEach(function (t, idx) {
         var row = document.createElement("a");
@@ -2051,6 +2763,16 @@
         eraSub.className = "hotlist-track-era";
         var subParts = [];
         if (t.era) subParts.push(t.era);
+        if (Number(t.total_plays || 0) > 0) {
+          var playBreak = Number(t.manual_plays || 0) + " manual";
+          if (Number(t.autoplay_plays || 0) > 0) {
+            playBreak += " · " + Number(t.autoplay_plays || 0) + " auto";
+          }
+          if (Number(t.total_listen_sec || 0) > 0) {
+            playBreak += " · " + formatListenDuration(t.total_listen_sec);
+          }
+          subParts.push(playBreak);
+        }
         if (t.mp3_downloads > 0 || t.flac_downloads > 0) {
           var fmtParts = [];
           if (t.mp3_downloads > 0) fmtParts.push(t.mp3_downloads + " MP3");
@@ -2066,6 +2788,15 @@
 
         var pills = document.createElement("div");
         pills.className = "hotlist-metric-pills";
+        if (Number(t.total_plays || 0) > 0) {
+          pills.appendChild(createMetricPill(
+            "badge-play",
+            "play_arrow",
+            String(t.total_plays),
+            t.total_plays + (t.total_plays === 1 ? " qualified play" : " qualified plays") +
+              " (" + Number(t.manual_plays || 0) + " manual, " + Number(t.autoplay_plays || 0) + " auto-play)"
+          ));
+        }
         if (Number(t.active_stars || 0) > 0) {
           pills.appendChild(createMetricPill(
             "badge-star",
@@ -2094,11 +2825,7 @@
         topLine.appendChild(infoWrap);
         topLine.appendChild(pills);
 
-        var scoreVal = state.hotlistFilter === "starred"
-          ? Number(t.active_stars || 0)
-          : state.hotlistFilter === "downloaded"
-            ? Number(t.total_downloads || 0)
-            : (Number(t.active_stars || 0) * 2) + Number(t.total_downloads || 0) + Number(t.total_requests || 0);
+        var scoreVal = hotlistRowScore(t);
 
         var barTrack = document.createElement("div");
         barTrack.className = "share-track";
@@ -2115,6 +2842,7 @@
 
     var rawRecent = Array.isArray(payload.recent_events) ? payload.recent_events : [];
     var filteredRecent = rawRecent.filter(function (ev) {
+      if (state.hotlistFilter === "played") return ev.event_type === "play";
       if (state.hotlistFilter === "starred") return ev.event_type === "star";
       if (state.hotlistFilter === "downloaded") return ev.event_type === "download";
       return true;
@@ -2143,16 +2871,24 @@
         left.className = "hotlist-event-left";
 
         var iconWrap = document.createElement("span");
-        var kindCls = ev.event_type === "star"
-          ? "hotlist-event-icon--star"
-          : ev.event_type === "download"
-            ? "hotlist-event-icon--download"
-            : "hotlist-event-icon--request";
+        var kindCls = ev.event_type === "play"
+          ? "hotlist-event-icon--play"
+          : ev.event_type === "star"
+            ? "hotlist-event-icon--star"
+            : ev.event_type === "download"
+              ? "hotlist-event-icon--download"
+              : "hotlist-event-icon--request";
         iconWrap.className = "hotlist-event-icon " + kindCls;
         var icEl = document.createElement("span");
         icEl.className = "material-symbols-outlined";
         icEl.setAttribute("aria-hidden", "true");
-        icEl.textContent = ev.event_type === "star" ? "star" : ev.event_type === "download" ? "download" : "mail";
+        icEl.textContent = ev.event_type === "play"
+          ? "play_arrow"
+          : ev.event_type === "star"
+            ? "star"
+            : ev.event_type === "download"
+              ? "download"
+              : "mail";
         iconWrap.appendChild(icEl);
 
         var metaCol = document.createElement("div");
@@ -2164,11 +2900,19 @@
 
         var evSub = document.createElement("div");
         evSub.className = "hotlist-event-sub";
-        var actionWord = ev.event_type === "star"
-          ? "Starred"
-          : ev.event_type === "download"
-            ? ("Downloaded " + (ev.format_label || ev.format || "audio"))
-            : "Requested track";
+        var actionWord = "";
+        if (ev.event_type === "play") {
+          actionWord = ev.source === "autoplay" ? "Auto-played" : "Played";
+          if (Number(ev.listened_sec || 0) > 0) {
+            actionWord += " (" + formatListenDuration(ev.listened_sec) + ")";
+          }
+        } else if (ev.event_type === "star") {
+          actionWord = "Starred";
+        } else if (ev.event_type === "download") {
+          actionWord = "Downloaded " + (ev.format_label || ev.format || "audio");
+        } else {
+          actionWord = "Requested track";
+        }
         var detailBits = [actionWord];
         if (ev.era) detailBits.push(ev.era);
         if (ev.country) detailBits.push(ev.country);
@@ -2192,7 +2936,8 @@
   }
 
   async function loadMusicMapHotlist(expectedSeq, forceRefresh) {
-    if (!syncHotlistCardVisibility()) return;
+    if (!syncMusicMapCardsVisibility()) return;
+    loadMusicMapPopular(expectedSeq, forceRefresh);
     if (!state.lastHotlist || forceRefresh) {
       setHotlistLoading();
     }
@@ -2223,7 +2968,7 @@
       } catch (_snapErr) {}
       if (expectedSeq !== state.loadSeq) return;
       renderMusicMapHotlist({
-        summary: { active_stars: 0, total_downloads: 0, total_requests: 0 },
+        summary: { total_plays: 0, active_stars: 0, total_downloads: 0, total_requests: 0 },
         top_tracks: [],
         recent_events: []
       });
@@ -2393,6 +3138,9 @@
     state.liveBlocked = false;
     state.lastData = null;
     state.lastHotlist = null;
+    state.lastPopular = null;
+    state.popmapHoverId = null;
+    state.popmapPinnedId = null;
     state.loadSeq++;
     try {
       localStorage.removeItem(SESSION_STORAGE_KEY);
@@ -2619,7 +3367,74 @@
       });
     });
 
-    // Music Map Hot List filter tabs (All / Starred / Downloaded)
+    // Music Map Popularity Map metric & scope controls + canvas pointer inspector
+    document.querySelectorAll("[data-popmap-metric]").forEach(function (tab) {
+      tab.addEventListener("click", function () {
+        var m = tab.getAttribute("data-popmap-metric");
+        if (!m || m === state.popmapMetric) return;
+        state.popmapMetric = m;
+        state.popmapHoverId = null;
+        document.querySelectorAll("[data-popmap-metric]").forEach(function (t) {
+          var active = t === tab;
+          t.classList.toggle("active", active);
+          t.setAttribute("aria-selected", active ? "true" : "false");
+        });
+        paintPopularityCanvas();
+      });
+    });
+
+    document.querySelectorAll("[data-popmap-scope]").forEach(function (tab) {
+      tab.addEventListener("click", function () {
+        var sc = tab.getAttribute("data-popmap-scope");
+        if (!sc || sc === state.popmapScope) return;
+        state.popmapScope = sc;
+        syncPopmapScopeButtons();
+        loadMusicMapPopular(state.loadSeq, false);
+      });
+    });
+
+    var popCanvas = document.getElementById("popmap-canvas");
+    if (popCanvas) {
+      popCanvas.addEventListener("pointermove", function (ev) {
+        if (ev.pointerType === "touch") return;
+        var hit = findNearestPopmapNode(ev.clientX, ev.clientY);
+        var nextId = hit ? hit.node.id : null;
+        popCanvas.classList.toggle("is-node-hovered", Boolean(hit));
+        if (nextId !== state.popmapHoverId) {
+          state.popmapHoverId = nextId;
+          paintPopularityCanvas();
+        }
+      });
+
+      popCanvas.addEventListener("pointerleave", function () {
+        popCanvas.classList.remove("is-node-hovered");
+        if (state.popmapHoverId !== null) {
+          state.popmapHoverId = null;
+          paintPopularityCanvas();
+        }
+      });
+
+      popCanvas.addEventListener("click", function (ev) {
+        var hit = findNearestPopmapNode(ev.clientX, ev.clientY);
+        if (!hit) {
+          state.popmapPinnedId = null;
+          paintPopularityCanvas();
+          return;
+        }
+        var targetUrl = (hit.stat && hit.stat.url) || ("https://billtribble.github.io/music-map/?track=" + encodeURIComponent(hit.node.id));
+        var isCoarse = window.matchMedia && window.matchMedia("(pointer: coarse)").matches;
+        if (isCoarse && state.popmapPinnedId !== hit.node.id) {
+          state.popmapPinnedId = hit.node.id;
+          paintPopularityCanvas();
+          return;
+        }
+        state.popmapPinnedId = hit.node.id;
+        paintPopularityCanvas();
+        window.open(targetUrl, "_blank", "noopener,noreferrer");
+      });
+    }
+
+    // Music Map Hot List filter tabs (All / Played / Starred / Downloaded)
     document.querySelectorAll("[data-hotlist-filter]").forEach(function (tab) {
       tab.addEventListener("click", function () {
         var f = tab.getAttribute("data-hotlist-filter");
@@ -2671,6 +3486,9 @@
         var trendSvg = document.getElementById("trend-chart-svg");
         var trendReadout = document.getElementById("trend-chart-readout");
         if (trendSvg && !trendSvg.hidden) renderMainTrendChart(trendSvg, trendReadout, state.lastData);
+      }
+      if (catalogGeometryCache) {
+        paintPopularityCanvas();
       }
     }, { passive: true });
 

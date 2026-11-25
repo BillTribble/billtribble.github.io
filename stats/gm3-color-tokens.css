@@ -83,6 +83,19 @@
   --md-sys-color-cyan-tonal: #CFFAFE;
   --md-sys-color-on-cyan-tonal: #155E75;
 
+  /* 4b. 10-Cluster Music Map Vibe Palette (Light Mode — WCAG AA on tonal stage) */
+  --md-sys-color-cluster-0: #1D4ED8;
+  --md-sys-color-cluster-1: #4338CA;
+  --md-sys-color-cluster-2: #0F766E;
+  --md-sys-color-cluster-3: #15803D;
+  --md-sys-color-cluster-4: #B45309;
+  --md-sys-color-cluster-5: #7E22CE;
+  --md-sys-color-cluster-6: #C2410C;
+  --md-sys-color-cluster-7: #BE123C;
+  --md-sys-color-cluster-8: #0E7490;
+  --md-sys-color-cluster-9: #4D7C0F;
+  --md-sys-color-cluster-10: #A21CAF;
+
   /* 5. Semantic Status Container Tokens (Auto-Adapting Light/Dark) */
   --md-sys-color-status-success-container: var(--md-sys-color-green-tonal);
   --md-sys-color-on-status-success-container: var(--md-sys-color-on-green-tonal);
@@ -256,6 +269,19 @@
   --md-sys-color-on-teal-tonal: #5EEAD4;
   --md-sys-color-cyan-tonal: rgba(22, 78, 99, 0.45);
   --md-sys-color-on-cyan-tonal: #67E8F9;
+
+  /* 10-Cluster Music Map Vibe Palette (Dark Mode — luminous on dark tonal stage) */
+  --md-sys-color-cluster-0: #60A5FA;
+  --md-sys-color-cluster-1: #818CF8;
+  --md-sys-color-cluster-2: #2DD4BF;
+  --md-sys-color-cluster-3: #4ADE80;
+  --md-sys-color-cluster-4: #FBBF24;
+  --md-sys-color-cluster-5: #C084FC;
+  --md-sys-color-cluster-6: #FB923C;
+  --md-sys-color-cluster-7: #FB7185;
+  --md-sys-color-cluster-8: #22D3EE;
+  --md-sys-color-cluster-9: #A3E635;
+  --md-sys-color-cluster-10: #F472B6;
 
   /* Semantic Status Container Tokens (Dark Mode) */
   --md-sys-color-status-success-container: var(--md-sys-color-green-tonal);
