@@ -36,12 +36,21 @@ jobs:
 
       - name: Commit and push encrypted snapshot
         run: |
-          if git diff --quiet -- stats/vault-snapshot.json && [ -f stats/vault-snapshot.json ]; then
-            echo "No changes to stats/vault-snapshot.json"
-            exit 0
-          fi
           git config user.name "Bill Tribble"
           git config user.email "5898620+BillTribble@users.noreply.github.com"
+          if git diff --quiet -- stats/vault-snapshot.json && [ -f stats/vault-snapshot.json ]; then
+            last_commit=$(git log -1 --format=%ct)
+            age_days=$(( ($(date +%s) - last_commit) / 86400 ))
+            if [ "$age_days" -ge 45 ]; then
+              echo "Last commit was ${age_days}d ago; pushing keepalive commit to prevent 60-day schedule pause."
+              git commit --allow-empty -m "chore: keep scheduled workflow active [skip ci]"
+              git pull --rebase -X theirs origin master
+              git push origin HEAD:master
+            else
+              echo "No changes to stats/vault-snapshot.json (last commit ${age_days}d ago)."
+            fi
+            exit 0
+          fi
           git add stats/vault-snapshot.json
           if git diff --cached --quiet; then
             echo "Nothing staged to commit"
