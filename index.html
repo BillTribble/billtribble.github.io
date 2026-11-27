@@ -146,6 +146,7 @@
       --md-sys-color-indigo-wash: #EDE9FE;
       --md-sys-color-brand-flask: #5246E5;
       --md-sys-color-brand-glyph: #FFFFFF;
+      --md-sys-color-dot-grid: #5F6672;
 
       --md-sys-color-cluster-music: #1D4ED8;
       --md-sys-color-cluster-music-create: #4338CA;
@@ -173,6 +174,7 @@
       --md-sys-color-indigo-wash: #3B0B7A;
       --md-sys-color-brand-flask: #5246E5;
       --md-sys-color-brand-glyph: #FFFFFF;
+      --md-sys-color-dot-grid: #9AA0B4;
 
       --md-sys-color-cluster-music: #60A5FA;
       --md-sys-color-cluster-music-create: #818CF8;
@@ -301,6 +303,7 @@
       display: inline-flex;
       align-items: center;
       justify-content: center;
+      text-decoration: none;
       cursor: pointer;
       transition: background 150ms var(--ease-std), color 150ms var(--ease-std);
     }
@@ -331,6 +334,11 @@
 
     /* Spatial Constellation Stage */
     .constellation-stage {
+      --cat-lod-alpha: 1;
+      --node-title-lod-alpha: 1;
+      --node-detail-lod-alpha: 0;
+      --rest-thumb-scale: 0.3333333;
+      --rest-half-px: 30px;
       position: relative;
       width: 100%;
       height: calc(100dvh - var(--bar-h));
@@ -343,6 +351,14 @@
       border-radius: 20px 20px 0 0;
       overflow: hidden;
       user-select: none;
+      touch-action: none;
+      cursor: grab;
+    }
+
+    .constellation-stage.is-dragging,
+    .constellation-stage.is-dragging .project-node,
+    .constellation-stage.is-dragging .territory-header {
+      cursor: grabbing !important;
     }
 
     [data-theme="dark"] .constellation-stage {
@@ -351,6 +367,91 @@
         color-mix(in srgb, var(--md-sys-color-indigo-wash) 22%, var(--md-sys-color-surface-container-lowest)),
         var(--md-sys-color-surface-container-lowest) 76%
       );
+    }
+
+    /* Subtle World-Space Architectural Dot Grid Canvas */
+    .dot-grid-canvas {
+      position: absolute;
+      inset: 0;
+      width: 100%;
+      height: 100%;
+      display: block;
+      pointer-events: none;
+      z-index: 0;
+    }
+
+    /* Subtle Auto-Hiding Camera Reset Pill (visible only when zoomed or panned away from 1.0x home) */
+    .stage-reset-pill {
+      position: absolute;
+      right: 18px;
+      bottom: 18px;
+      z-index: 24;
+      height: 34px;
+      padding: 0 13px 0 10px;
+      border-radius: 999px;
+      border: none;
+      display: inline-flex;
+      align-items: center;
+      gap: 6px;
+      font-family: var(--font-sans);
+      font-size: 12.5px;
+      font-weight: 500;
+      letter-spacing: -0.005em;
+      color: var(--md-sys-color-on-surface-variant);
+      background: color-mix(in srgb, var(--md-sys-color-surface-container-high) 88%, var(--md-sys-color-surface));
+      backdrop-filter: blur(14px);
+      -webkit-backdrop-filter: blur(14px);
+      box-shadow: 0 6px 20px color-mix(in srgb, var(--md-sys-color-shadow) 22%, transparent);
+      cursor: pointer;
+      opacity: 0;
+      visibility: hidden;
+      pointer-events: none;
+      transform: translateY(6px);
+      transition:
+        opacity 180ms var(--ease-std),
+        transform 180ms var(--ease-std),
+        visibility 180ms,
+        background 150ms var(--ease-std),
+        color 150ms var(--ease-std);
+    }
+
+    [data-theme="light"] .stage-reset-pill {
+      background: color-mix(in srgb, var(--md-sys-color-surface) 92%, var(--md-sys-color-surface-container-low));
+      box-shadow:
+        0 6px 20px color-mix(in srgb, var(--md-sys-color-shadow) 10%, transparent),
+        0 1px 4px color-mix(in srgb, var(--md-sys-color-shadow) 6%, transparent);
+    }
+
+    .stage-reset-pill:hover {
+      background: var(--md-sys-color-surface-container-highest);
+      color: var(--md-sys-color-on-surface);
+    }
+
+    .stage-reset-pill:focus-visible {
+      outline: 2px solid var(--md-sys-color-primary);
+      outline-offset: 2px;
+    }
+
+    .stage-reset-pill svg {
+      width: 15px;
+      height: 15px;
+      stroke: currentColor;
+      fill: none;
+      stroke-width: 1.9;
+      stroke-linecap: round;
+      stroke-linejoin: round;
+      flex-shrink: 0;
+    }
+
+    .stage-reset-sep {
+      opacity: 0.45;
+    }
+
+    .constellation-stage.is-camera-transformed .stage-reset-pill {
+      opacity: 1;
+      visibility: visible;
+      pointer-events: auto;
+      transform: translateY(0);
     }
 
     @media (max-width: 768px) {
@@ -362,12 +463,23 @@
         font-size: 16.5px;
       }
 
+      .app-subtitle {
+        display: none;
+      }
+
       .constellation-stage {
+        --rest-half-px: 28px;
         height: var(--mobile-stage-h, 1100px);
         min-height: 0;
         overflow-x: clip;
         overflow-y: visible;
         border-radius: 16px 16px 0 0;
+        touch-action: pan-y;
+        cursor: default;
+      }
+
+      .stage-reset-pill {
+        display: none;
       }
     }
 
@@ -462,9 +574,14 @@
         0 2px 12px var(--md-sys-color-surface-container-lowest),
         0 0 6px var(--md-sys-color-surface-container-lowest);
       white-space: nowrap;
+      opacity: var(--cat-lod-alpha, 1);
       pointer-events: auto;
       cursor: default;
-      transition: opacity 200ms var(--ease-std), transform 200ms var(--ease-std), color 180ms var(--ease-std);
+      transition: opacity 150ms var(--ease-std), transform 200ms var(--ease-std), color 180ms var(--ease-std);
+    }
+
+    .constellation-stage.is-cat-lod-hidden .territory-header {
+      pointer-events: none;
     }
 
     .territory-header[data-territory="music"] { --cluster-accent: var(--md-sys-color-cluster-music); }
@@ -474,11 +591,11 @@
     .territory-header[data-territory="visualiser"] { --cluster-accent: var(--md-sys-color-cluster-vis); }
 
     .constellation-stage.has-active-node .territory-header:not(.is-active-territory) {
-      opacity: 0.36;
+      opacity: calc(0.36 * var(--cat-lod-alpha, 1));
     }
 
     .constellation-stage.has-active-node .territory-header.is-related-territory {
-      opacity: 0.76;
+      opacity: calc(0.76 * var(--cat-lod-alpha, 1));
     }
 
     .constellation-stage.has-active-node .territory-header.is-occluded-by-card {
@@ -529,7 +646,11 @@
     }
 
     .constellation-stage.has-active-node .project-node:not(.is-active) .node-rest-title {
-      opacity: 0.72;
+      opacity: calc(0.72 * var(--node-title-lod-alpha, 1));
+    }
+
+    .constellation-stage.has-active-node .project-node:not(.is-active) .node-rest-sub {
+      opacity: calc(0.68 * var(--node-detail-lod-alpha, 0));
     }
 
     .project-node.is-active {
@@ -570,14 +691,14 @@
         0 4px 12px color-mix(in srgb, var(--md-sys-color-shadow) 6%, transparent);
     }
 
-    /* Native 3x Loop Container: 180x180 scaled to 1/3 (60x60) at rest -> scale(1) (180x180 = exact 3x) on hover */
+    /* Native 3x Loop Container: 180x180 scaled to 1/3 (60x60) at 1.0x rest -> scale(1) (180x180 = exact 3x) on hover */
     .node-thumb {
       position: absolute;
       left: 50%;
       top: 50%;
       width: var(--thumb-zoom);
       height: var(--thumb-zoom);
-      border-radius: 38px;
+      border-radius: calc(13px / var(--rest-thumb-scale, 0.3333333));
       overflow: hidden;
       background: var(--md-sys-color-surface-container-highest);
       border: none;
@@ -585,11 +706,17 @@
       box-shadow:
         0 10px 26px color-mix(in srgb, var(--md-sys-color-shadow) 38%, transparent),
         0 0 24px color-mix(in srgb, var(--cluster-accent) 20%, transparent);
-      transform: translate(-50%, -50%) scale(0.3333333);
+      transform: translate(-50%, -50%) scale(var(--rest-thumb-scale, 0.3333333));
       transform-origin: center center;
       z-index: 3;
       transition:
         transform 240ms var(--ease-std),
+        border-radius 240ms var(--ease-std),
+        box-shadow 240ms var(--ease-std);
+    }
+
+    .constellation-stage.is-camera-moving .project-node:not(:hover):not(:focus-visible):not(.is-expanded) .node-thumb {
+      transition:
         border-radius 240ms var(--ease-std),
         box-shadow 240ms var(--ease-std);
     }
@@ -610,12 +737,21 @@
       pointer-events: none;
     }
 
-    /* Resting Node Title below 1x Loop */
-    .node-rest-title {
+    /* Resting Node Title + Close-Up Zoom Descriptor below 1x Loop */
+    .node-rest-caption {
       position: absolute;
       left: 50%;
-      top: calc(100% + 8px);
+      top: calc(50% + var(--rest-half-px, 30px) + 8px);
       transform: translateX(-50%);
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      gap: 2px;
+      z-index: 2;
+      pointer-events: none;
+    }
+
+    .node-rest-title {
       font-family: var(--font-sans);
       font-size: 13px;
       font-weight: 600;
@@ -628,8 +764,39 @@
       background: color-mix(in srgb, var(--md-sys-color-surface-container-lowest) 78%, transparent);
       backdrop-filter: blur(6px);
       -webkit-backdrop-filter: blur(6px);
-      z-index: 2;
-      transition: opacity 160ms var(--ease-std), transform 180ms var(--ease-std);
+      opacity: var(--node-title-lod-alpha, 1);
+      pointer-events: auto;
+      transition: opacity 140ms var(--ease-std), transform 180ms var(--ease-std);
+    }
+
+    .constellation-stage.is-node-title-lod-hidden .node-rest-title {
+      pointer-events: none;
+    }
+
+    .node-rest-sub {
+      font-family: var(--font-sans);
+      font-size: 11.5px;
+      font-weight: 450;
+      letter-spacing: -0.005em;
+      line-height: 1.3;
+      color: var(--md-sys-color-on-surface-variant);
+      text-align: center;
+      white-space: nowrap;
+      padding: 0 4px;
+      background: transparent;
+      text-shadow:
+        0 1px 8px var(--md-sys-color-surface-container-lowest),
+        0 0 5px var(--md-sys-color-surface-container-lowest),
+        0 0 3px var(--md-sys-color-surface-container-lowest);
+      opacity: var(--node-detail-lod-alpha, 0);
+      pointer-events: none;
+      transition: opacity 150ms var(--ease-std), transform 180ms var(--ease-std);
+    }
+
+    @media (max-width: 768px) {
+      .node-rest-sub {
+        display: none;
+      }
     }
 
     /* Zoomed Title & Sub-Text inside Hover Panel */
@@ -677,12 +844,12 @@
 
     /* Desktop Hover / Keyboard Focus + Mobile Tap-to-Zoom Active State */
     @media (hover: hover) and (pointer: fine) {
-      .project-node:hover,
+      .constellation-stage:not(.is-dragging) .project-node:hover,
       .project-node:focus-visible {
         z-index: 50;
       }
 
-      .project-node:hover .node-thumb,
+      .constellation-stage:not(.is-dragging) .project-node:hover .node-thumb,
       .project-node:focus-visible .node-thumb {
         transform: translate(calc(-50% + var(--zoom-dx)), calc(-50% + var(--zoom-dy))) scale(1);
         border-radius: 16px;
@@ -691,12 +858,12 @@
         box-shadow: 0 12px 30px color-mix(in srgb, var(--md-sys-color-shadow) 28%, transparent);
       }
 
-      [data-theme="light"] .project-node:hover .node-thumb,
+      [data-theme="light"] .constellation-stage:not(.is-dragging) .project-node:hover .node-thumb,
       [data-theme="light"] .project-node:focus-visible .node-thumb {
         box-shadow: 0 10px 26px color-mix(in srgb, var(--md-sys-color-shadow) 12%, transparent);
       }
 
-      .project-node:hover .node-hover-panel,
+      .constellation-stage:not(.is-dragging) .project-node:hover .node-hover-panel,
       .project-node:focus-visible .node-hover-panel {
         opacity: 1;
         visibility: visible;
@@ -704,10 +871,12 @@
         transform: translate(calc(-50% + var(--zoom-dx)), calc(var(--panel-top-offset) + var(--zoom-dy))) scale(1);
       }
 
-      .project-node:hover .node-rest-title,
-      .project-node:focus-visible .node-rest-title {
+      .constellation-stage:not(.is-dragging) .project-node:hover .node-rest-title,
+      .project-node:focus-visible .node-rest-title,
+      .constellation-stage:not(.is-dragging) .project-node:hover .node-rest-sub,
+      .project-node:focus-visible .node-rest-sub {
         opacity: 0;
-        transform: translateX(-50%) translateY(4px);
+        transform: translateY(4px);
         pointer-events: none;
       }
     }
@@ -735,9 +904,10 @@
       transform: translate(calc(-50% + var(--zoom-dx)), calc(var(--panel-top-offset) + var(--zoom-dy))) scale(1);
     }
 
-    .project-node.is-expanded .node-rest-title {
+    .project-node.is-expanded .node-rest-title,
+    .project-node.is-expanded .node-rest-sub {
       opacity: 0;
-      transform: translateX(-50%) translateY(4px);
+      transform: translateY(4px);
       pointer-events: none;
     }
 
@@ -745,6 +915,8 @@
       .node-thumb,
       .node-hover-panel,
       .node-rest-title,
+      .node-rest-sub,
+      .stage-reset-pill,
       .const-edge,
       .project-node,
       .territory-header {
@@ -773,6 +945,13 @@
       <span class="app-subtitle">Projects</span>
     </div>
     <div class="bar-actions">
+      <a id="home-link-btn" href="https://billtribble.com" class="icon-btn" aria-label="Home (billtribble.com)" title="Back to billtribble.com">
+        <svg viewBox="0 0 24 24" aria-hidden="true">
+          <path d="M3.5 10.5L12 3.5l8.5 7" />
+          <path d="M5.5 9v10.5a1 1 0 0 0 1 1h11a1 1 0 0 0 1-1V9" />
+          <path d="M9.75 20.5v-6a.75.75 0 0 1 .75-.75h3a.75.75 0 0 1 .75.75v6" />
+        </svg>
+      </a>
       <button id="theme-toggle-btn" type="button" class="icon-btn" aria-label="Theme: Auto (system)" title="Theme: Auto (system)">
         <span id="theme-toggle-icon" aria-hidden="true"></span>
       </button>
@@ -780,6 +959,8 @@
   </header>
 
   <main id="constellation-stage" class="constellation-stage" aria-label="Projects grouped by similarity">
+    <canvas id="dot-grid-canvas" class="dot-grid-canvas" aria-hidden="true"></canvas>
+
     <svg id="constellation-svg" class="constellation-svg" aria-hidden="true">
       <defs>
         <radialGradient id="halo-music" cx="50%" cy="50%" r="50%">
@@ -830,7 +1011,10 @@
             <img class="node-media" src="thumbs/music-map.gif?v=16" width="720" height="720" alt="Music Map preview">
           </video>
         </div>
-        <span class="node-rest-title">Music Map</span>
+        <span class="node-rest-caption">
+          <span class="node-rest-title">Music Map</span>
+          <span class="node-rest-sub">1997–2026 catalog · Vibe &amp; era</span>
+        </span>
         <div class="node-hover-panel">
           <span class="node-zoom-title">Music Map</span>
           <span class="node-subtext">Interactive map of my 1997–2026 music catalog by vibe, era, harmony and groove.</span>
@@ -846,7 +1030,10 @@
             <img class="node-media" src="thumbs/groove-explorer.gif?v=16" width="720" height="720" alt="Groove Explorer preview">
           </video>
         </div>
-        <span class="node-rest-title">Groove Explorer</span>
+        <span class="node-rest-caption">
+          <span class="node-rest-title">Groove Explorer</span>
+          <span class="node-rest-sub">Global drum rhythms &amp; world map</span>
+        </span>
         <div class="node-hover-panel">
           <span class="node-zoom-title">Groove Explorer</span>
           <span class="node-subtext">Discover global drum rhythms with etymology, displayed on a world map and grouped by similarity.</span>
@@ -862,7 +1049,10 @@
             <img class="node-media" src="thumbs/enso-soundscapes.gif?v=16" width="720" height="720" alt="Enso Soundscapes preview">
           </video>
         </div>
-        <span class="node-rest-title">Enso Soundscapes</span>
+        <span class="node-rest-caption">
+          <span class="node-rest-title">Enso Soundscapes</span>
+          <span class="node-rest-sub">Generative ambient tape-loop studio</span>
+        </span>
         <div class="node-hover-panel">
           <span class="node-zoom-title">Enso Soundscapes</span>
           <span class="node-subtext">Generative ambient soundscapes and probabilistic tape-loop studio.</span>
@@ -879,7 +1069,10 @@
             <img class="node-media" src="thumbs/sangha-looper.gif?v=16" width="720" height="720" alt="Sangha Looper preview">
           </video>
         </div>
-        <span class="node-rest-title">Sangha Looper</span>
+        <span class="node-rest-caption">
+          <span class="node-rest-title">Sangha Looper</span>
+          <span class="node-rest-sub">Multiplayer live performance looper</span>
+        </span>
         <div class="node-hover-panel">
           <span class="node-zoom-title">Sangha Looper</span>
           <span class="node-subtext">A multiplayer looper for musicians. Built for live performance.</span>
@@ -896,7 +1089,10 @@
             <img class="node-media" src="thumbs/lifesim.gif?v=16" width="720" height="720" alt="LifeSim preview">
           </video>
         </div>
-        <span class="node-rest-title">LifeSim</span>
+        <span class="node-rest-caption">
+          <span class="node-rest-title">LifeSim</span>
+          <span class="node-rest-sub">Interactive 3D biological ecosystem</span>
+        </span>
         <div class="node-hover-panel">
           <span class="node-zoom-title">LifeSim</span>
           <span class="node-subtext">An interactive 3D ecosystem.</span>
@@ -912,7 +1108,10 @@
             <img class="node-media" src="thumbs/crystal-transformer.gif?v=16" width="720" height="720" alt="Crystal Transformer preview">
           </video>
         </div>
-        <span class="node-rest-title">Crystal Transformer</span>
+        <span class="node-rest-caption">
+          <span class="node-rest-title">Crystal Transformer</span>
+          <span class="node-rest-sub">Ray-traced procedural crystals</span>
+        </span>
         <div class="node-hover-panel">
           <span class="node-zoom-title">Crystal Transformer</span>
           <span class="node-subtext">Ray traced crystal experiment with procedural growth and generative ambient soundtrack.</span>
@@ -928,7 +1127,10 @@
             <img class="node-media" src="thumbs/hybridizer.gif?v=16" width="720" height="720" alt="Hybridizer preview">
           </video>
         </div>
-        <span class="node-rest-title">Hybridizer</span>
+        <span class="node-rest-caption">
+          <span class="node-rest-title">Hybridizer</span>
+          <span class="node-rest-sub">Procedural botanical breeding</span>
+        </span>
         <div class="node-hover-panel">
           <span class="node-zoom-title">Hybridizer</span>
           <span class="node-subtext">Botanical hybridisation and procedural plant breeding study.</span>
@@ -945,7 +1147,10 @@
             <img class="node-media" src="thumbs/film-lab.gif?v=16" width="720" height="720" alt="Film Lab preview">
           </video>
         </div>
-        <span class="node-rest-title">Film Lab</span>
+        <span class="node-rest-caption">
+          <span class="node-rest-title">Film Lab</span>
+          <span class="node-rest-sub">Slide-film grain &amp; light leaks</span>
+        </span>
         <div class="node-hover-panel">
           <span class="node-zoom-title">Film Lab</span>
           <span class="node-subtext">Slide-film look, scanned grain and light leaks for your photos, in the browser.</span>
@@ -962,7 +1167,10 @@
             <img class="node-media" src="thumbs/prismata-ui.gif?v=16" width="720" height="720" alt="Prismata UI preview">
           </video>
         </div>
-        <span class="node-rest-title">Prismata UI</span>
+        <span class="node-rest-caption">
+          <span class="node-rest-title">Prismata UI</span>
+          <span class="node-rest-sub">Interactive LLM structure visualiser</span>
+        </span>
         <div class="node-hover-panel">
           <span class="node-zoom-title">Prismata UI</span>
           <span class="node-subtext">Visualising LLM structure.</span>
@@ -970,6 +1178,17 @@
         </div>
       </a>
     </div>
+
+    <button id="stage-reset-btn" type="button" class="stage-reset-pill" aria-label="Reset view" title="Reset view (double-click canvas)">
+      <svg viewBox="0 0 24 24" aria-hidden="true">
+        <circle cx="12" cy="12" r="3" />
+        <path d="M12 2v3M12 19v3M2 12h3M19 12h3" />
+        <path d="M5 9V5h4M19 9V5h-4M5 15v4h4M19 15v4h-4" />
+      </svg>
+      <span id="stage-zoom-readout">100%</span>
+      <span class="stage-reset-sep" aria-hidden="true">·</span>
+      <span>Reset view</span>
+    </button>
   </main>
 
   <script>
@@ -1053,14 +1272,33 @@
       ];
 
       var MOBILE_STAGE_H = 1212;
+      var MIN_ZOOM = 0.55;
+      var MAX_ZOOM = 3.2;
+      var DRAG_THRESHOLD_PX = 5;
+
+      // Kinetic pan & log-scale zoom inertia constants (matched to Music Map map-physics.js)
+      var VEL_EWMA_TAU_MS = 45;
+      var HOLD_CUTOFF_MS = 80;
+      var MIN_LAUNCH_SPEED = 0.12;
+      var MAX_SPEED = 3.2;
+      var TAU_INERTIA_MS = 195;
+      var STOP_SPEED = 0.045;
+      var TAU_ZOOM_MS = 128;
+      var ZOOM_IMMEDIATE_BITE = 0.22;
+      var MAX_ZOOM_VEL_LOGK_MS = 0.014;
+      var STOP_ZOOM_FRAME_LOGK = 0.00038;
 
       var stage = document.getElementById("constellation-stage");
+      var dotCanvas = document.getElementById("dot-grid-canvas");
+      var dotCtx = dotCanvas ? dotCanvas.getContext("2d") : null;
       var svgEl = document.getElementById("constellation-svg");
       var halosG = document.getElementById("svg-halos");
       var edgesG = document.getElementById("svg-edges");
       var anchorsG = document.getElementById("svg-anchors");
       var edgeMaskBg = document.getElementById("edge-mask-bg");
       var edgeMaskCutouts = document.getElementById("edge-mask-cutouts");
+      var resetBtn = document.getElementById("stage-reset-btn");
+      var zoomReadoutEl = document.getElementById("stage-zoom-readout");
       var nodeEls = Array.prototype.slice.call(document.querySelectorAll(".project-node"));
       var headerEls = Array.prototype.slice.call(document.querySelectorAll(".territory-header"));
       var nodeMap = {};
@@ -1071,6 +1309,59 @@
       });
 
       var activeNodeId = null;
+      var sw = 1280;
+      var sh = 800;
+      var dpr = 1;
+      var zoom = { k: 1, x: 0, y: 0 };
+      var dotGridRgb = [95, 102, 114];
+
+      // Cached world coordinates & persistent SVG element references for 0-churn 60fps camera frames
+      var worldTerritories = {};
+      var worldNodes = {};
+      var svgBuiltForMobile = null;
+      var haloElByTerr = {};
+      var orbitElByTerr = {};
+      var cutoutElByTerr = {};
+      var edgeLineEls = [];
+      var lastLodTelemetry = {
+        catAlpha: 1,
+        nodeTitleAlpha: 1,
+        nodeDetailAlpha: 0,
+        restScale: 0.3333333
+      };
+
+      // Camera momentum & tween state
+      var momentumRaf = 0;
+      var lastMomentumTs = 0;
+      var coastVx = 0;
+      var coastVy = 0;
+      var coastVelLogK = 0;
+      var zoomFocalX = 0;
+      var zoomFocalY = 0;
+      var cameraTweenRaf = 0;
+      var cameraMovingClearRaf = 0;
+
+      function clamp(v, lo, hi) {
+        return v < lo ? lo : (v > hi ? hi : v);
+      }
+
+      function clamp01(x) {
+        return x <= 0 ? 0 : (x >= 1 ? 1 : x);
+      }
+
+      function smoothstep(e0, e1, x) {
+        if (e1 <= e0) return x >= e1 ? 1 : 0;
+        var t = clamp01((x - e0) / (e1 - e0));
+        return t * t * (3 - 2 * t);
+      }
+
+      function prefersReducedMotion() {
+        try {
+          return Boolean(window.matchMedia && window.matchMedia("(prefers-reduced-motion: reduce)").matches);
+        } catch (_) {
+          return false;
+        }
+      }
 
       function svgCreate(tag, cls) {
         var el = document.createElementNS(SVG_NS, tag);
@@ -1091,86 +1382,303 @@
         }
       }
 
-      function layoutConstellation() {
+      function parseCssColorToRgb(raw, fallback) {
+        var s = String(raw || "").trim();
+        if (!s) return fallback;
+        if (s.charAt(0) === "#") {
+          var hex = s.slice(1);
+          if (hex.length === 3) {
+            return [
+              parseInt(hex.charAt(0) + hex.charAt(0), 16),
+              parseInt(hex.charAt(1) + hex.charAt(1), 16),
+              parseInt(hex.charAt(2) + hex.charAt(2), 16)
+            ];
+          }
+          if (hex.length >= 6) {
+            var r = parseInt(hex.slice(0, 2), 16);
+            var g = parseInt(hex.slice(2, 4), 16);
+            var b = parseInt(hex.slice(4, 6), 16);
+            if (isFinite(r) && isFinite(g) && isFinite(b)) return [r, g, b];
+          }
+        }
+        var m = s.match(/rgba?\(\s*([0-9.]+)[,\s]+([0-9.]+)[,\s]+([0-9.]+)/i);
+        if (m) {
+          return [Math.round(Number(m[1])), Math.round(Number(m[2])), Math.round(Number(m[3]))];
+        }
+        return fallback;
+      }
+
+      function sampleDotGridColor() {
+        try {
+          var cs = getComputedStyle(document.documentElement);
+          var raw = cs.getPropertyValue("--md-sys-color-dot-grid");
+          var isDark = document.documentElement.getAttribute("data-theme") === "dark";
+          dotGridRgb = parseCssColorToRgb(raw, isDark ? [154, 160, 180] : [95, 102, 114]);
+        } catch (_) {}
+      }
+
+      function markCameraMoving() {
+        if (cameraMovingClearRaf) {
+          cancelAnimationFrame(cameraMovingClearRaf);
+          cameraMovingClearRaf = 0;
+        }
+        stage.classList.add("is-camera-moving");
+      }
+
+      function scheduleCameraSettled() {
+        if (cameraMovingClearRaf) cancelAnimationFrame(cameraMovingClearRaf);
+        cameraMovingClearRaf = requestAnimationFrame(function () {
+          cameraMovingClearRaf = 0;
+          if (!momentumRaf && !cameraTweenRaf && !stage.classList.contains("is-dragging")) {
+            stage.classList.remove("is-camera-moving");
+          }
+        });
+      }
+
+      function clampCamera() {
+        if (isMobileView()) {
+          zoom.k = 1;
+          zoom.x = 0;
+          zoom.y = 0;
+          return;
+        }
+        zoom.k = clamp(isFinite(zoom.k) ? zoom.k : 1, MIN_ZOOM, MAX_ZOOM);
+        var scaledW = sw * zoom.k;
+        var scaledH = sh * zoom.k;
+        var keepX = sw * 0.32;
+        var keepY = sh * 0.32;
+        var centerX = (sw - scaledW) * 0.5;
+        var centerY = (sh - scaledH) * 0.5;
+        var minX = Math.min(centerX, keepX - scaledW);
+        var maxX = Math.max(centerX, sw - keepX);
+        var minY = Math.min(centerY, keepY - scaledH);
+        var maxY = Math.max(centerY, sh - keepY);
+        zoom.x = clamp(isFinite(zoom.x) ? zoom.x : 0, minX, maxX);
+        zoom.y = clamp(isFinite(zoom.y) ? zoom.y : 0, minY, maxY);
+      }
+
+      function paintDotGrid() {
+        if (!dotCtx || !dotCanvas) return;
         var mobile = isMobileView();
-        if (mobile) {
-          stage.style.setProperty("--mobile-stage-h", MOBILE_STAGE_H + "px");
+        var k = mobile ? 1 : zoom.k;
+        var zx = mobile ? 0 : zoom.x;
+        var zy = mobile ? 0 : zoom.y;
+        var isDark = document.documentElement.getAttribute("data-theme") === "dark";
+
+        dotCtx.save();
+        dotCtx.setTransform(dpr, 0, 0, dpr, 0, 0);
+        dotCtx.clearRect(0, 0, sw, sh);
+
+        var baseGrid = 26;
+        var zoomOutCalm = 0.72 + 0.28 * smoothstep(0.55, 0.92, k);
+        var primaryAlpha = (isDark ? 0.165 : 0.205) * zoomOutCalm;
+        var subAlpha = mobile ? 0 : primaryAlpha * 0.72 * smoothstep(1.60, 2.55, k);
+        var rgbStr = dotGridRgb[0] + "," + dotGridRgb[1] + "," + dotGridRgb[2];
+        var twoPi = Math.PI * 2;
+
+        // Primary world-space architectural dot lattice
+        var stepPx = baseGrid * k;
+        if (stepPx >= 6) {
+          var i0 = Math.floor((-zx - 4) / stepPx);
+          var i1 = Math.ceil((sw - zx + 4) / stepPx);
+          var j0 = Math.floor((-zy - 4) / stepPx);
+          var j1 = Math.ceil((sh - zy + 4) / stepPx);
+          var primaryR = 1.0;
+          dotCtx.fillStyle = "rgba(" + rgbStr + "," + primaryAlpha.toFixed(4) + ")";
+          var count = 0;
+          dotCtx.beginPath();
+          for (var j = j0; j <= j1; j++) {
+            var sy = j * stepPx + zy;
+            for (var i = i0; i <= i1; i++) {
+              var sx = i * stepPx + zx;
+              dotCtx.moveTo(sx + primaryR, sy);
+              dotCtx.arc(sx, sy, primaryR, 0, twoPi);
+              count++;
+              if (count >= 256) {
+                dotCtx.fill();
+                dotCtx.beginPath();
+                count = 0;
+              }
+            }
+          }
+          if (count > 0) dotCtx.fill();
         }
 
-        var rect = stage.getBoundingClientRect();
-        var sw = Math.max(320, Math.round(rect.width || window.innerWidth));
-        var sh = mobile ? MOBILE_STAGE_H : Math.max(660, Math.round(rect.height || (window.innerHeight - 56)));
-
-        svgEl.setAttribute("viewBox", "0 0 " + sw + " " + sh);
-        if (edgeMaskBg) {
-          edgeMaskBg.setAttribute("width", String(sw));
-          edgeMaskBg.setAttribute("height", String(sh));
+        // Secondary half-step subdivision dots fade in smoothly when zoomed in close (> 1.60x)
+        if (subAlpha > 0.004) {
+          var halfStepPx = (baseGrid * 0.5) * k;
+          if (halfStepPx >= 8) {
+            var hi0 = Math.floor((-zx - 4) / halfStepPx);
+            var hi1 = Math.ceil((sw - zx + 4) / halfStepPx);
+            var hj0 = Math.floor((-zy - 4) / halfStepPx);
+            var hj1 = Math.ceil((sh - zy + 4) / halfStepPx);
+            var subR = 0.88;
+            dotCtx.fillStyle = "rgba(" + rgbStr + "," + subAlpha.toFixed(4) + ")";
+            var subCount = 0;
+            dotCtx.beginPath();
+            for (var hj = hj0; hj <= hj1; hj++) {
+              var hjOdd = (hj & 1) !== 0;
+              var hsy = hj * halfStepPx + zy;
+              for (var hi = hi0; hi <= hi1; hi++) {
+                if (!hjOdd && (hi & 1) === 0) continue; // skip primary lattice intersections
+                var hsx = hi * halfStepPx + zx;
+                dotCtx.moveTo(hsx + subR, hsy);
+                dotCtx.arc(hsx, hsy, subR, 0, twoPi);
+                subCount++;
+                if (subCount >= 256) {
+                  dotCtx.fill();
+                  dotCtx.beginPath();
+                  subCount = 0;
+                }
+              }
+            }
+            if (subCount > 0) dotCtx.fill();
+          }
         }
-        if (edgeMaskCutouts) {
-          edgeMaskCutouts.innerHTML = "";
-        }
 
-        var padX = mobile ? 26 : Math.max(82, Math.round(sw * 0.068));
-        var padT = mobile ? 0 : 40;
-        var padB = mobile ? 0 : 68;
-        var spanW = Math.max(240, sw - padX * 2);
-        var spanH = Math.max(480, sh - padT - padB);
+        dotCtx.restore();
+      }
 
-        // Position territory headers & render soft halos + SVG line-mask cutouts
+      function rebuildSvgStructure(mobile) {
+        if (svgBuiltForMobile === mobile) return;
+        svgBuiltForMobile = mobile;
         halosG.innerHTML = "";
-        headerBoxByTerr = {};
+        edgesG.innerHTML = "";
+        anchorsG.innerHTML = "";
+        if (edgeMaskCutouts) edgeMaskCutouts.innerHTML = "";
+
+        haloElByTerr = {};
+        orbitElByTerr = {};
+        cutoutElByTerr = {};
+        edgeLineEls = [];
+
         headerEls.forEach(function (hEl) {
           var tKey = hEl.getAttribute("data-territory");
           var cfg = TERRITORIES[tKey];
           if (!cfg) return;
 
-          var hx = mobile ? Math.round(cfg.mobile.hx * sw) : Math.round(padX + cfg.desktop.hx * spanW);
-          var hy = mobile ? cfg.mobile.hy : Math.round(padT + cfg.desktop.hy * spanH);
-          hEl.style.left = hx + "px";
-          hEl.style.top = hy + "px";
-
-          var hw = Math.max(56, (hEl.offsetWidth || 96) + 14);
-          var hh = Math.max(24, (hEl.offsetHeight || 22) + 6);
-          headerBoxByTerr[tKey] = {
-            left: hx - hw / 2,
-            right: hx + hw / 2,
-            top: hy - hh / 2,
-            bottom: hy + hh / 2
-          };
           if (edgeMaskCutouts) {
             var cut = svgCreate("rect");
-            cut.setAttribute("x", String(Math.round(hx - hw / 2)));
-            cut.setAttribute("y", String(Math.round(hy - hh / 2)));
-            cut.setAttribute("width", String(Math.round(hw)));
-            cut.setAttribute("height", String(Math.round(hh)));
             cut.setAttribute("rx", "10");
             cut.setAttribute("fill", "#000000");
             edgeMaskCutouts.appendChild(cut);
+            cutoutElByTerr[tKey] = cut;
           }
 
-          var hcx = mobile ? Math.round(cfg.mobile.cx * sw) : Math.round(padX + cfg.desktop.cx * spanW);
-          var hcy = mobile ? cfg.mobile.cy : Math.round(padT + cfg.desktop.cy * spanH);
-          var hrx = mobile ? cfg.mobile.rx : Math.round(cfg.desktop.rx * sw);
-          var hry = mobile ? cfg.mobile.ry : Math.round(cfg.desktop.ry * sh);
-
           var halo = svgCreate("ellipse", "const-halo");
-          halo.setAttribute("cx", String(hcx));
-          halo.setAttribute("cy", String(hcy));
-          halo.setAttribute("rx", String(hrx));
-          halo.setAttribute("ry", String(hry));
           halo.setAttribute("fill", "url(#" + cfg.gradId + ")");
           halosG.appendChild(halo);
+          haloElByTerr[tKey] = halo;
 
           if (cfg.satellite) {
             var orbit = svgCreate("circle", "satellite-orbit");
-            orbit.setAttribute("cx", String(hcx));
-            orbit.setAttribute("cy", String(hcy));
-            orbit.setAttribute("r", String(mobile ? 68 : Math.max(76, Math.round(Math.min(sw, sh) * 0.105))));
             halosG.appendChild(orbit);
+            orbitElByTerr[tKey] = orbit;
           }
         });
 
-        // Position nodes & compute exact edge-safe 3x hover offsets (--zoom-dx, --zoom-dy)
+        var activeEdges = INTRA_EDGES.concat(mobile ? MOBILE_BRIDGES : DESKTOP_BRIDGES);
+        activeEdges.forEach(function (e) {
+          var tCfg = TERRITORIES[e.territory] || TERRITORIES.music;
+          var line = svgCreate("line", "const-edge is-" + e.kind);
+          line.setAttribute("stroke", tCfg.colorVar);
+          line.setAttribute("data-a", e.a);
+          line.setAttribute("data-b", e.b);
+          line.setAttribute("data-territory", e.territory);
+          edgesG.appendChild(line);
+          edgeLineEls.push({ el: line, a: e.a, b: e.b, kind: e.kind, territory: e.territory });
+        });
+      }
+
+      function renderCameraFrame() {
+        var mobile = isMobileView();
+        var k = mobile ? 1 : zoom.k;
+        var zx = mobile ? 0 : zoom.x;
+        var zy = mobile ? 0 : zoom.y;
+
+        // Semantic zoom LOD crossfades (matched to Music Map nodemap.js / map-labels.js):
+        // - Zoomed out (< 1.0x toward 0.55x): category headers stay 1.0, project titles fade out -> 0.
+        // - Default 1.0x: category headers 1.0, project titles 1.0, close-up subtitles tucked (0).
+        // - Zoomed in (> 1.15x through 1.72x+): category headers fade out -> 0, project titles + subtitles -> 1.0.
+        var catAlpha = mobile ? 1 : (1 - smoothstep(1.15, 1.68, k));
+        var nodeTitleAlpha = mobile ? 1 : smoothstep(0.67, 0.96, k);
+        var nodeDetailAlpha = mobile ? 0 : smoothstep(1.22, 1.72, k);
+        var restScale = mobile ? 0.3333333 : clamp(0.3333333 * Math.pow(k, 0.58), 0.21, 0.68);
+        var restHalfPx = mobile ? 28 : (90 * restScale);
+
+        lastLodTelemetry.catAlpha = catAlpha;
+        lastLodTelemetry.nodeTitleAlpha = nodeTitleAlpha;
+        lastLodTelemetry.nodeDetailAlpha = nodeDetailAlpha;
+        lastLodTelemetry.restScale = restScale;
+
+        stage.style.setProperty("--cat-lod-alpha", catAlpha.toFixed(4));
+        stage.style.setProperty("--node-title-lod-alpha", nodeTitleAlpha.toFixed(4));
+        stage.style.setProperty("--node-detail-lod-alpha", nodeDetailAlpha.toFixed(4));
+        stage.style.setProperty("--rest-thumb-scale", restScale.toFixed(5));
+        stage.style.setProperty("--rest-half-px", restHalfPx.toFixed(2) + "px");
+
+        stage.classList.toggle("is-cat-lod-hidden", catAlpha < 0.04);
+        stage.classList.toggle("is-node-title-lod-hidden", nodeTitleAlpha < 0.12);
+
+        var isTransformed = !mobile && (Math.abs(k - 1) > 0.015 || Math.hypot(zx, zy) > 6);
+        stage.classList.toggle("is-camera-transformed", isTransformed);
+        if (zoomReadoutEl) {
+          zoomReadoutEl.textContent = Math.round(k * 100) + "%";
+        }
+
+        // 1. Project territory headers, halos, orbits & luminance mask cutouts
+        headerBoxByTerr = {};
+        var maskGray = Math.round(255 * (1 - catAlpha));
+        var maskFill = "rgb(" + maskGray + "," + maskGray + "," + maskGray + ")";
+
+        headerEls.forEach(function (hEl) {
+          var tKey = hEl.getAttribute("data-territory");
+          var wt = worldTerritories[tKey];
+          if (!wt) return;
+
+          var hsx = wt.wx * k + zx;
+          var hsy = wt.wy * k + zy;
+          hEl.style.left = hsx.toFixed(1) + "px";
+          hEl.style.top = hsy.toFixed(1) + "px";
+
+          headerBoxByTerr[tKey] = {
+            left: hsx - wt.hw / 2,
+            right: hsx + wt.hw / 2,
+            top: hsy - wt.hh / 2,
+            bottom: hsy + wt.hh / 2
+          };
+
+          var cut = cutoutElByTerr[tKey];
+          if (cut) {
+            if (catAlpha <= 0.02) {
+              cut.setAttribute("width", "0");
+              cut.setAttribute("height", "0");
+            } else {
+              cut.setAttribute("x", (hsx - wt.hw / 2).toFixed(1));
+              cut.setAttribute("y", (hsy - wt.hh / 2).toFixed(1));
+              cut.setAttribute("width", wt.hw.toFixed(1));
+              cut.setAttribute("height", wt.hh.toFixed(1));
+              cut.setAttribute("fill", maskFill);
+            }
+          }
+
+          var halo = haloElByTerr[tKey];
+          if (halo) {
+            halo.setAttribute("cx", (wt.hcx * k + zx).toFixed(1));
+            halo.setAttribute("cy", (wt.hcy * k + zy).toFixed(1));
+            halo.setAttribute("rx", (wt.hrx * k).toFixed(1));
+            halo.setAttribute("ry", (wt.hry * k).toFixed(1));
+          }
+
+          var orbit = orbitElByTerr[tKey];
+          if (orbit) {
+            orbit.setAttribute("cx", (wt.hcx * k + zx).toFixed(1));
+            orbit.setAttribute("cy", (wt.hcy * k + zy).toFixed(1));
+            orbit.setAttribute("r", (wt.orbitR * k).toFixed(1));
+          }
+        });
+
+        // 2. Project nodes & keep 3x hover preview cards dynamically clamped inside viewport
         var screenPos = {};
         var panelW = mobile ? 204 : 212;
         var halfPanelW = panelW / 2;
@@ -1181,28 +1689,25 @@
 
         nodeEls.forEach(function (el) {
           var id = el.getAttribute("data-id");
-          var c = NODE_COORDS[id];
-          if (!c) return;
+          var wn = worldNodes[id];
+          if (!wn) return;
 
-          var px = mobile ? Math.round(padX + c.mx * spanW) : Math.round(padX + c.nx * spanW);
-          var py = mobile ? c.my : Math.round(padT + c.ny * spanH);
+          var sx = wn.wx * k + zx;
+          var sy = wn.wy * k + zy;
+          el.style.left = sx.toFixed(1) + "px";
+          el.style.top = sy.toFixed(1) + "px";
+          screenPos[id] = { x: sx, y: sy, territory: wn.territory };
 
-          el.style.left = px + "px";
-          el.style.top = py + "px";
-          screenPos[id] = { x: px, y: py, territory: el.getAttribute("data-territory") };
-
-          var panel = el.querySelector(".node-hover-panel");
-          var panelH = (panel && panel.offsetHeight) ? panel.offsetHeight : 276;
-
+          var panelH = wn.panelH;
           var dx = 0;
-          if (px - halfPanelW < edgeMarginX) {
-            dx = edgeMarginX - (px - halfPanelW);
-          } else if (px + halfPanelW > sw - edgeMarginX) {
-            dx = (sw - edgeMarginX) - (px + halfPanelW);
+          if (sx - halfPanelW < edgeMarginX) {
+            dx = edgeMarginX - (sx - halfPanelW);
+          } else if (sx + halfPanelW > sw - edgeMarginX) {
+            dx = (sw - edgeMarginX) - (sx + halfPanelW);
           }
 
           var dy = 0;
-          var expandedTop = py - topOffset;
+          var expandedTop = sy - topOffset;
           var expandedBot = expandedTop + panelH;
           if (expandedTop < edgeMarginTop) {
             dy = edgeMarginTop - expandedTop;
@@ -1213,41 +1718,120 @@
           el.style.setProperty("--zoom-dx", Math.round(dx) + "px");
           el.style.setProperty("--zoom-dy", Math.round(dy) + "px");
           expandedBoxById[id] = {
-            left: px + dx - halfPanelW - 4,
-            right: px + dx + halfPanelW + 4,
+            left: sx + dx - halfPanelW - 4,
+            right: sx + dx + halfPanelW + 4,
             top: expandedTop + dy - 4,
             bottom: expandedBot + dy + 4
           };
         });
 
-        // Draw SVG constellation lines trimmed cleanly outside node card borders
-        edgesG.innerHTML = "";
-        anchorsG.innerHTML = "";
-        var activeEdges = INTRA_EDGES.concat(mobile ? MOBILE_BRIDGES : DESKTOP_BRIDGES);
-        var trimR = mobile ? 34 : 36;
-        activeEdges.forEach(function (e) {
-          var pa = screenPos[e.a];
-          var pb = screenPos[e.b];
-          if (!pa || !pb) return;
+        // 3. Project SVG constellation lines trimmed cleanly outside resting node thumbs
+        var trimR = mobile ? 34 : (restHalfPx + 6);
+        for (var i = 0; i < edgeLineEls.length; i++) {
+          var item = edgeLineEls[i];
+          var pa = screenPos[item.a];
+          var pb = screenPos[item.b];
+          if (!pa || !pb) continue;
           var vx = pb.x - pa.x;
           var vy = pb.y - pa.y;
           var dist = Math.hypot(vx, vy);
-          if (dist <= trimR * 2 + 4) return;
+          if (dist <= trimR * 2 + 4) {
+            item.el.setAttribute("visibility", "hidden");
+            continue;
+          }
+          item.el.removeAttribute("visibility");
           var ux = vx / dist;
           var uy = vy / dist;
-          var tCfg = TERRITORIES[e.territory] || TERRITORIES.music;
-          var line = svgCreate("line", "const-edge is-" + e.kind);
-          line.setAttribute("x1", (pa.x + ux * trimR).toFixed(1));
-          line.setAttribute("y1", (pa.y + uy * trimR).toFixed(1));
-          line.setAttribute("x2", (pb.x - ux * trimR).toFixed(1));
-          line.setAttribute("y2", (pb.y - uy * trimR).toFixed(1));
-          line.setAttribute("stroke", tCfg.colorVar);
-          line.setAttribute("data-a", e.a);
-          line.setAttribute("data-b", e.b);
-          line.setAttribute("data-territory", e.territory);
-          edgesG.appendChild(line);
+          item.el.setAttribute("x1", (pa.x + ux * trimR).toFixed(1));
+          item.el.setAttribute("y1", (pa.y + uy * trimR).toFixed(1));
+          item.el.setAttribute("x2", (pb.x - ux * trimR).toFixed(1));
+          item.el.setAttribute("y2", (pb.y - uy * trimR).toFixed(1));
+        }
+
+        paintDotGrid();
+        if (activeNodeId) {
+          syncActiveHighlights(activeNodeId);
+        }
+      }
+
+      function layoutConstellation() {
+        var mobile = isMobileView();
+        if (mobile) {
+          stage.style.setProperty("--mobile-stage-h", MOBILE_STAGE_H + "px");
+        }
+
+        var prevSw = sw;
+        var prevSh = sh;
+        var rect = stage.getBoundingClientRect();
+        sw = Math.max(320, Math.round(rect.width || window.innerWidth));
+        sh = mobile ? MOBILE_STAGE_H : Math.max(660, Math.round(rect.height || (window.innerHeight - 56)));
+        dpr = Math.min(2, window.devicePixelRatio || 1);
+
+        if (dotCanvas) {
+          var cw = Math.round(sw * dpr);
+          var ch = Math.round(sh * dpr);
+          if (dotCanvas.width !== cw || dotCanvas.height !== ch) {
+            dotCanvas.width = cw;
+            dotCanvas.height = ch;
+          }
+        }
+
+        svgEl.setAttribute("viewBox", "0 0 " + sw + " " + sh);
+        if (edgeMaskBg) {
+          edgeMaskBg.setAttribute("width", String(sw));
+          edgeMaskBg.setAttribute("height", String(sh));
+        }
+
+        var padX = mobile ? 26 : Math.max(82, Math.round(sw * 0.068));
+        var padT = mobile ? 0 : 40;
+        var padB = mobile ? 0 : 68;
+        var spanW = Math.max(240, sw - padX * 2);
+        var spanH = Math.max(480, sh - padT - padB);
+
+        worldTerritories = {};
+        headerEls.forEach(function (hEl) {
+          var tKey = hEl.getAttribute("data-territory");
+          var cfg = TERRITORIES[tKey];
+          if (!cfg) return;
+          var wx = mobile ? Math.round(cfg.mobile.hx * sw) : Math.round(padX + cfg.desktop.hx * spanW);
+          var wy = mobile ? cfg.mobile.hy : Math.round(padT + cfg.desktop.hy * spanH);
+          var hw = Math.max(56, (hEl.offsetWidth || 96) + 14);
+          var hh = Math.max(24, (hEl.offsetHeight || 22) + 6);
+          var hcx = mobile ? Math.round(cfg.mobile.cx * sw) : Math.round(padX + cfg.desktop.cx * spanW);
+          var hcy = mobile ? cfg.mobile.cy : Math.round(padT + cfg.desktop.cy * spanH);
+          var hrx = mobile ? cfg.mobile.rx : Math.round(cfg.desktop.rx * sw);
+          var hry = mobile ? cfg.mobile.ry : Math.round(cfg.desktop.ry * sh);
+          var orbitR = mobile ? 68 : Math.max(76, Math.round(Math.min(sw, sh) * 0.105));
+          worldTerritories[tKey] = {
+            wx: wx, wy: wy, hw: hw, hh: hh,
+            hcx: hcx, hcy: hcy, hrx: hrx, hry: hry, orbitR: orbitR
+          };
         });
 
+        worldNodes = {};
+        nodeEls.forEach(function (el) {
+          var id = el.getAttribute("data-id");
+          var c = NODE_COORDS[id];
+          if (!c) return;
+          var wx = mobile ? Math.round(padX + c.mx * spanW) : Math.round(padX + c.nx * spanW);
+          var wy = mobile ? c.my : Math.round(padT + c.ny * spanH);
+          var panel = el.querySelector(".node-hover-panel");
+          var panelH = (panel && panel.offsetHeight) ? panel.offsetHeight : 276;
+          worldNodes[id] = {
+            wx: wx,
+            wy: wy,
+            panelH: panelH,
+            territory: el.getAttribute("data-territory")
+          };
+        });
+
+        if (!mobile && prevSw > 0 && prevSh > 0 && (prevSw !== sw || prevSh !== sh) && (Math.abs(zoom.x) > 0.5 || Math.abs(zoom.y) > 0.5)) {
+          zoom.x *= sw / prevSw;
+          zoom.y *= sh / prevSh;
+        }
+        clampCamera();
+        rebuildSvgStructure(mobile);
+        renderCameraFrame();
         syncActiveHighlights(activeNodeId);
       }
 
@@ -1303,12 +1887,466 @@
         syncActiveHighlights(null);
       }
 
+      // Camera momentum & smooth spring-back reset controller
+      function stopCameraMotion() {
+        coastVx = 0;
+        coastVy = 0;
+        coastVelLogK = 0;
+        if (momentumRaf) {
+          cancelAnimationFrame(momentumRaf);
+          momentumRaf = 0;
+        }
+        if (cameraTweenRaf) {
+          cancelAnimationFrame(cameraTweenRaf);
+          cameraTweenRaf = 0;
+        }
+      }
+
+      function applyLogZoomStep(dLogK, focalX, focalY) {
+        if (!isFinite(dLogK) || Math.abs(dLogK) < 1e-7) return false;
+        var prevK = zoom.k;
+        var nextK = clamp(prevK * Math.exp(dLogK), MIN_ZOOM, MAX_ZOOM);
+        if (Math.abs(nextK - prevK) < 1e-6) return false;
+        var ratio = nextK / prevK;
+        zoom.x = focalX - (focalX - zoom.x) * ratio;
+        zoom.y = focalY - (focalY - zoom.y) * ratio;
+        zoom.k = nextK;
+        clampCamera();
+        return true;
+      }
+
+      function stepMomentum(now) {
+        var rawDt = now - lastMomentumTs;
+        lastMomentumTs = now;
+        var dt = clamp(rawDt > 0 ? rawDt : 16.67, 1, 64);
+
+        var hasZoom = Math.abs(coastVelLogK * 16.67) >= STOP_ZOOM_FRAME_LOGK;
+        var hasPan = Math.hypot(coastVx, coastVy) >= STOP_SPEED;
+
+        if (hasZoom) {
+          var zDecay = Math.exp(-dt / TAU_ZOOM_MS);
+          var zEffDt = TAU_ZOOM_MS * (1 - zDecay);
+          var movedK = applyLogZoomStep(coastVelLogK * zEffDt, zoomFocalX, zoomFocalY);
+          coastVelLogK = movedK ? (coastVelLogK * zDecay) : 0;
+        } else {
+          coastVelLogK = 0;
+        }
+
+        if (hasPan) {
+          var pDecay = Math.exp(-dt / TAU_INERTIA_MS);
+          var pEffDt = TAU_INERTIA_MS * (1 - pDecay);
+          var prevX = zoom.x;
+          var prevY = zoom.y;
+          zoom.x += coastVx * pEffDt;
+          zoom.y += coastVy * pEffDt;
+          clampCamera();
+          if (Math.abs(zoom.x - prevX) < 0.005) coastVx = 0;
+          if (Math.abs(zoom.y - prevY) < 0.005) coastVy = 0;
+          coastVx *= pDecay;
+          coastVy *= pDecay;
+        } else {
+          coastVx = 0;
+          coastVy = 0;
+          clampCamera();
+        }
+
+        renderCameraFrame();
+
+        var stillPan = Math.hypot(coastVx, coastVy) >= STOP_SPEED;
+        var stillZoom = Math.abs(coastVelLogK * 16.67) >= STOP_ZOOM_FRAME_LOGK;
+        if (stillPan || stillZoom) {
+          momentumRaf = requestAnimationFrame(stepMomentum);
+        } else {
+          coastVx = 0;
+          coastVy = 0;
+          coastVelLogK = 0;
+          momentumRaf = 0;
+          scheduleCameraSettled();
+        }
+      }
+
+      function ensureMomentumLoop() {
+        if (!momentumRaf) {
+          lastMomentumTs = performance.now();
+          momentumRaf = requestAnimationFrame(stepMomentum);
+        }
+      }
+
+      function addZoomImpulse(dLogTotal, focalX, focalY) {
+        if (!isFinite(dLogTotal) || Math.abs(dLogTotal) < 1e-6) return;
+        var clampedTotal = clamp(dLogTotal, -0.65, 0.65);
+        coastVx = 0;
+        coastVy = 0;
+        if (cameraTweenRaf) {
+          cancelAnimationFrame(cameraTweenRaf);
+          cameraTweenRaf = 0;
+        }
+        markCameraMoving();
+        zoomFocalX = focalX;
+        zoomFocalY = focalY;
+        if (prefersReducedMotion()) {
+          coastVelLogK = 0;
+          applyLogZoomStep(clampedTotal, focalX, focalY);
+          renderCameraFrame();
+          scheduleCameraSettled();
+          return;
+        }
+        if (coastVelLogK !== 0 && Math.sign(clampedTotal) !== Math.sign(coastVelLogK)) {
+          coastVelLogK = 0;
+        }
+        applyLogZoomStep(clampedTotal * ZOOM_IMMEDIATE_BITE, focalX, focalY);
+        renderCameraFrame();
+        var remLog = clampedTotal * (1 - ZOOM_IMMEDIATE_BITE);
+        coastVelLogK = clamp(coastVelLogK + remLog / TAU_ZOOM_MS, -MAX_ZOOM_VEL_LOGK_MS, MAX_ZOOM_VEL_LOGK_MS);
+        ensureMomentumLoop();
+      }
+
+      function animateZoomTo(targetK, targetX, targetY, durMs) {
+        stopCameraMotion();
+        if (isMobileView()) return;
+        var endK = clamp(targetK, MIN_ZOOM, MAX_ZOOM);
+        var saved = { k: zoom.k, x: zoom.x, y: zoom.y };
+        zoom.k = endK;
+        zoom.x = targetX;
+        zoom.y = targetY;
+        clampCamera();
+        var endX = zoom.x;
+        var endY = zoom.y;
+        zoom.k = saved.k;
+        zoom.x = saved.x;
+        zoom.y = saved.y;
+
+        if (prefersReducedMotion() || (durMs !== undefined && durMs <= 0)) {
+          zoom.k = endK;
+          zoom.x = endX;
+          zoom.y = endY;
+          renderCameraFrame();
+          scheduleCameraSettled();
+          return;
+        }
+
+        var duration = durMs || 280;
+        var startTs = performance.now();
+        markCameraMoving();
+        function stepTween(now) {
+          var u = clamp01((now - startTs) / duration);
+          var ease = 1 - Math.pow(1 - u, 3);
+          zoom.k = saved.k + (endK - saved.k) * ease;
+          zoom.x = saved.x + (endX - saved.x) * ease;
+          zoom.y = saved.y + (endY - saved.y) * ease;
+          clampCamera();
+          renderCameraFrame();
+          if (u < 1) {
+            cameraTweenRaf = requestAnimationFrame(stepTween);
+          } else {
+            cameraTweenRaf = 0;
+            scheduleCameraSettled();
+          }
+        }
+        cameraTweenRaf = requestAnimationFrame(stepTween);
+      }
+
+      function resetCameraView(animate) {
+        animateZoomTo(1, 0, 0, animate === false ? 0 : 280);
+      }
+
+      // Interactive pan & zoom bindings on constellation stage (desktop > 768px canvas mode)
+      (function bindStageCamera() {
+        var activePointers = new Map();
+        var dragging = false;
+        var moved = false;
+        var startClientX = 0;
+        var startClientY = 0;
+        var baseZoomX = 0;
+        var baseZoomY = 0;
+        var lastPtrX = 0;
+        var lastPtrY = 0;
+        var lastPtrTs = 0;
+        var lastMoveTs = 0;
+        var ewmaVx = 0;
+        var ewmaVy = 0;
+        var hasVelSample = false;
+        var pinchPrevDist = 0;
+        var pinchPrevMid = null;
+        var suppressClickUntil = 0;
+
+        function stageLocalXY(clientX, clientY) {
+          var r = stage.getBoundingClientRect();
+          return [clientX - r.left, clientY - r.top];
+        }
+
+        function resetVelTracker(x, y, now) {
+          lastPtrX = x;
+          lastPtrY = y;
+          lastPtrTs = now;
+          lastMoveTs = 0;
+          ewmaVx = 0;
+          ewmaVy = 0;
+          hasVelSample = false;
+        }
+
+        function clampVel(vx, vy) {
+          var sp = Math.hypot(vx, vy);
+          if (sp <= MAX_SPEED || sp === 0) return [vx, vy];
+          var sc = MAX_SPEED / sp;
+          return [vx * sc, vy * sc];
+        }
+
+        function recordDragStep(x, y) {
+          var now = performance.now();
+          var dt = now - lastPtrTs;
+          var dx = x - lastPtrX;
+          var dy = y - lastPtrY;
+          var stepDist = Math.hypot(dx, dy);
+          if (dt > HOLD_CUTOFF_MS) {
+            ewmaVx = 0;
+            ewmaVy = 0;
+            hasVelSample = false;
+          }
+          if (dt >= 0.5) {
+            var effDt = Math.max(4, dt);
+            var clamped = clampVel(dx / effDt, dy / effDt);
+            if (!hasVelSample) {
+              ewmaVx = clamped[0];
+              ewmaVy = clamped[1];
+              hasVelSample = stepDist >= 0.4;
+            } else {
+              var alpha = 1 - Math.exp(-dt / VEL_EWMA_TAU_MS);
+              ewmaVx += alpha * (clamped[0] - ewmaVx);
+              ewmaVy += alpha * (clamped[1] - ewmaVy);
+              var c2 = clampVel(ewmaVx, ewmaVy);
+              ewmaVx = c2[0];
+              ewmaVy = c2[1];
+            }
+          }
+          lastPtrX = x;
+          lastPtrY = y;
+          lastPtrTs = now;
+          if (stepDist >= 0.4) lastMoveTs = now;
+        }
+
+        stage.addEventListener("dragstart", function (ev) {
+          ev.preventDefault();
+        });
+
+        stage.addEventListener("pointerdown", function (ev) {
+          if (isMobileView()) return;
+          if (ev.button !== 0 && ev.pointerType === "mouse") return;
+          if (ev.target && ev.target.closest("#stage-reset-btn")) return;
+
+          stopCameraMotion();
+          var now = performance.now();
+          activePointers.set(ev.pointerId, { x: ev.clientX, y: ev.clientY });
+
+          if (activePointers.size === 2) {
+            var pts = Array.from(activePointers.values());
+            pinchPrevDist = Math.hypot(pts[1].x - pts[0].x, pts[1].y - pts[0].y);
+            pinchPrevMid = stageLocalXY((pts[0].x + pts[1].x) * 0.5, (pts[0].y + pts[1].y) * 0.5);
+            dragging = false;
+            moved = true;
+            markCameraMoving();
+            resetVelTracker(ev.clientX, ev.clientY, now);
+            return;
+          }
+
+          dragging = true;
+          moved = false;
+          startClientX = ev.clientX;
+          startClientY = ev.clientY;
+          baseZoomX = zoom.x;
+          baseZoomY = zoom.y;
+          resetVelTracker(ev.clientX, ev.clientY, now);
+        });
+
+        window.addEventListener("pointermove", function (ev) {
+          if (isMobileView()) return;
+          if (activePointers.has(ev.pointerId)) {
+            activePointers.set(ev.pointerId, { x: ev.clientX, y: ev.clientY });
+          }
+
+          if (activePointers.size === 2) {
+            var pts = Array.from(activePointers.values());
+            var dist = Math.hypot(pts[1].x - pts[0].x, pts[1].y - pts[0].y);
+            var mid = stageLocalXY((pts[0].x + pts[1].x) * 0.5, (pts[0].y + pts[1].y) * 0.5);
+            if (pinchPrevDist > 8 && pinchPrevMid && dist > 8) {
+              var prevK = zoom.k;
+              var nextK = clamp(prevK * (dist / pinchPrevDist), MIN_ZOOM, MAX_ZOOM);
+              var ratio = nextK / prevK;
+              zoom.x = mid[0] - (pinchPrevMid[0] - zoom.x) * ratio;
+              zoom.y = mid[1] - (pinchPrevMid[1] - zoom.y) * ratio;
+              zoom.k = nextK;
+              clampCamera();
+              renderCameraFrame();
+            }
+            pinchPrevDist = dist;
+            pinchPrevMid = mid;
+            return;
+          }
+
+          if (!dragging) return;
+          var dx = ev.clientX - startClientX;
+          var dy = ev.clientY - startClientY;
+          var travel = Math.hypot(dx, dy);
+
+          if (!moved && travel >= DRAG_THRESHOLD_PX) {
+            moved = true;
+            baseZoomX = zoom.x - dx;
+            baseZoomY = zoom.y - dy;
+            stage.classList.add("is-dragging");
+            markCameraMoving();
+            if (activeNodeId) syncActiveHighlights(null);
+          }
+
+          if (moved) {
+            recordDragStep(ev.clientX, ev.clientY);
+            zoom.x = baseZoomX + dx;
+            zoom.y = baseZoomY + dy;
+            clampCamera();
+            renderCameraFrame();
+          } else {
+            lastPtrX = ev.clientX;
+            lastPtrY = ev.clientY;
+            lastPtrTs = performance.now();
+          }
+        });
+
+        function finishPointer(ev) {
+          var now = performance.now();
+          var wasPinching = activePointers.size === 2;
+          activePointers.delete(ev.pointerId);
+
+          if (wasPinching) {
+            suppressClickUntil = now + 280;
+            if (activePointers.size === 1) {
+              var rem = Array.from(activePointers.values())[0];
+              dragging = true;
+              moved = false;
+              startClientX = rem.x;
+              startClientY = rem.y;
+              baseZoomX = zoom.x;
+              baseZoomY = zoom.y;
+              resetVelTracker(rem.x, rem.y, now);
+              return;
+            }
+            dragging = false;
+            stage.classList.remove("is-dragging");
+            scheduleCameraSettled();
+            return;
+          }
+
+          if (activePointers.size === 1) {
+            var remSingle = Array.from(activePointers.values())[0];
+            dragging = true;
+            moved = false;
+            startClientX = remSingle.x;
+            startClientY = remSingle.y;
+            baseZoomX = zoom.x;
+            baseZoomY = zoom.y;
+            resetVelTracker(remSingle.x, remSingle.y, now);
+            return;
+          }
+
+          if (dragging && moved) {
+            suppressClickUntil = now + 280;
+            if (ev.type !== "pointercancel" && !prefersReducedMotion() && hasVelSample && lastMoveTs > 0) {
+              var idleMs = now - lastMoveTs;
+              if (idleMs <= HOLD_CUTOFF_MS) {
+                var atten = idleMs > 18 ? Math.exp(-(idleMs - 18) / TAU_INERTIA_MS) : 1;
+                var lvx = ewmaVx * atten;
+                var lvy = ewmaVy * atten;
+                if (Math.hypot(lvx, lvy) >= MIN_LAUNCH_SPEED) {
+                  coastVx = lvx;
+                  coastVy = lvy;
+                  ensureMomentumLoop();
+                }
+              }
+            }
+          }
+
+          dragging = false;
+          moved = false;
+          ewmaVx = 0;
+          ewmaVy = 0;
+          hasVelSample = false;
+          stage.classList.remove("is-dragging");
+          scheduleCameraSettled();
+        }
+
+        window.addEventListener("pointerup", finishPointer);
+        window.addEventListener("pointercancel", finishPointer);
+
+        // Strict click guard: >= 5px drag never accidentally opens a project link
+        stage.addEventListener("click", function (ev) {
+          if (performance.now() < suppressClickUntil) {
+            suppressClickUntil = 0;
+            ev.preventDefault();
+            ev.stopPropagation();
+          }
+        }, true);
+
+        // Wheel / trackpad pinch zoom centered on cursor (+ Shift/horizontal trackpad pan)
+        stage.addEventListener("wheel", function (ev) {
+          if (isMobileView()) return;
+          ev.preventDefault();
+          var local = stageLocalXY(ev.clientX, ev.clientY);
+          var px = local[0];
+          var py = local[1];
+          var isPinchZoom = ev.ctrlKey || ev.metaKey;
+
+          if (!isPinchZoom && (ev.shiftKey || Math.abs(ev.deltaX) > Math.abs(ev.deltaY) * 1.15)) {
+            stopCameraMotion();
+            markCameraMoving();
+            var mult = ev.deltaMode === 1 ? 18 : (ev.deltaMode === 2 ? sh * 0.85 : 1);
+            var dx = (ev.shiftKey && Math.abs(ev.deltaX) < 0.5) ? ev.deltaY * mult : ev.deltaX * mult;
+            var dy = (ev.shiftKey && Math.abs(ev.deltaX) < 0.5) ? 0 : ev.deltaY * mult;
+            zoom.x -= dx;
+            zoom.y -= dy;
+            clampCamera();
+            renderCameraFrame();
+            scheduleCameraSettled();
+            return;
+          }
+
+          var multZoom = ev.deltaMode === 1 ? 18 : (ev.deltaMode === 2 ? 120 : 1);
+          var dLog = -ev.deltaY * multZoom * (isPinchZoom ? 0.0082 : 0.0024);
+          addZoomImpulse(dLog, px, py);
+        }, { passive: false });
+
+        // Double-click empty canvas: reset to 1.0x home framing when zoomed/panned, or zoom into point at 1.0x
+        stage.addEventListener("dblclick", function (ev) {
+          if (isMobileView()) return;
+          if (ev.target && ev.target.closest(".project-node, #stage-reset-btn")) return;
+          ev.preventDefault();
+          var isAwayFromHome = Math.abs(zoom.k - 1) > 0.015 || Math.hypot(zoom.x, zoom.y) > 6;
+          if (isAwayFromHome) {
+            resetCameraView(true);
+            return;
+          }
+          var local = stageLocalXY(ev.clientX, ev.clientY);
+          var targetK = 1.75;
+          var ratio = targetK / zoom.k;
+          animateZoomTo(
+            targetK,
+            local[0] - (local[0] - zoom.x) * ratio,
+            local[1] - (local[1] - zoom.y) * ratio,
+            280
+          );
+        });
+
+        if (resetBtn) {
+          resetBtn.addEventListener("click", function (ev) {
+            ev.stopPropagation();
+            resetCameraView(true);
+          });
+        }
+      })();
+
       // Wire desktop hover/focus & mobile tap-to-zoom
       nodeEls.forEach(function (el) {
         var id = el.getAttribute("data-id");
 
         el.addEventListener("mouseenter", function () {
-          if (!isCoarseOrMobile()) {
+          if (!isCoarseOrMobile() && !stage.classList.contains("is-dragging")) {
             syncActiveHighlights(id);
           }
         });
@@ -1353,6 +2391,13 @@
           collapseMobileExpanded();
           if (document.activeElement && document.activeElement.classList.contains("project-node")) {
             document.activeElement.blur();
+          }
+          return;
+        }
+        if (ev.key === "0" && !ev.ctrlKey && !ev.metaKey && !ev.altKey && !isMobileView()) {
+          var tag = document.activeElement && document.activeElement.tagName;
+          if (tag !== "INPUT" && tag !== "TEXTAREA") {
+            resetCameraView(true);
           }
         }
       });
@@ -1408,6 +2453,8 @@
             localStorage.setItem("gm3_theme_mode", mode);
           } catch (_) {}
         }
+        sampleDotGridColor();
+        paintDotGrid();
       }
 
       var initialMode = document.documentElement.getAttribute("data-theme-mode") || "auto";
@@ -1444,6 +2491,45 @@
       document.addEventListener("visibilitychange", function () {
         if (!document.hidden) kickVideos();
       });
+
+      window.BT_CONSTELLATION = {
+        getZoom: function () { return { k: zoom.k, x: zoom.x, y: zoom.y }; },
+        setZoom: function (nextK, nextX, nextY) {
+          stopCameraMotion();
+          if (typeof nextK === "number" && isFinite(nextK)) {
+            var prevK = zoom.k;
+            var clampedK = clamp(nextK, MIN_ZOOM, MAX_ZOOM);
+            if (typeof nextX === "number" && typeof nextY === "number") {
+              zoom.x = nextX;
+              zoom.y = nextY;
+            } else {
+              var cx = sw * 0.5;
+              var cy = sh * 0.5;
+              var ratio = clampedK / prevK;
+              zoom.x = cx - (cx - zoom.x) * ratio;
+              zoom.y = cy - (cy - zoom.y) * ratio;
+            }
+            zoom.k = clampedK;
+          }
+          clampCamera();
+          renderCameraFrame();
+          return { k: zoom.k, x: zoom.x, y: zoom.y };
+        },
+        resetZoom: function (animate) {
+          resetCameraView(Boolean(animate));
+        },
+        isCoasting: function () {
+          return Boolean(momentumRaf || cameraTweenRaf);
+        },
+        getLodState: function () {
+          return {
+            catAlpha: lastLodTelemetry.catAlpha,
+            nodeTitleAlpha: lastLodTelemetry.nodeTitleAlpha,
+            nodeDetailAlpha: lastLodTelemetry.nodeDetailAlpha,
+            restScale: lastLodTelemetry.restScale
+          };
+        }
+      };
     })();
   </script>
 </body>
