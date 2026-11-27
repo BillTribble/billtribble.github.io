@@ -75,8 +75,14 @@ class PacedGoatCounterClient:
                         wait_s = 1.5 * (attempt + 1)
                     time.sleep(wait_s)
                     continue
-                if err.code >= 500 and attempt < 4:
-                    time.sleep(1.5 * (attempt + 1))
+                if (err.code >= 500 or err.code == 404) and attempt < 4:
+                    wait_s = 2.0 * (attempt + 1)
+                    print(
+                        f"Warning: transient GoatCounter HTTP {err.code} (attempt {attempt + 1}/5); "
+                        f"retrying in {wait_s:.1f}s...",
+                        file=sys.stderr,
+                    )
+                    time.sleep(wait_s)
                     continue
                 raise RuntimeError(f"GoatCounter HTTP {err.code} on {url}") from None
             except urllib.error.URLError as err:
