@@ -290,7 +290,49 @@
     .bar-actions {
       display: inline-flex;
       align-items: center;
-      gap: 6px;
+      gap: 8px;
+      flex-shrink: 0;
+    }
+
+    .home-pill-btn {
+      height: 38px;
+      padding: 0 14px 0 11px;
+      border-radius: 999px;
+      border: none;
+      background: var(--md-sys-color-surface-container-high);
+      color: var(--md-sys-color-on-surface-variant);
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      gap: 5px;
+      font-family: var(--font-sans);
+      font-size: 13px;
+      font-weight: 500;
+      letter-spacing: -0.005em;
+      line-height: 1;
+      white-space: nowrap;
+      text-decoration: none;
+      cursor: pointer;
+      transition: background 150ms var(--ease-std), color 150ms var(--ease-std);
+    }
+
+    .home-pill-btn:hover {
+      background: var(--md-sys-color-surface-container-highest);
+      color: var(--md-sys-color-on-surface);
+    }
+
+    .home-pill-btn:focus-visible {
+      outline: 2px solid var(--md-sys-color-primary);
+      outline-offset: 3px;
+    }
+
+    .home-pill-btn svg {
+      width: 19px;
+      height: 19px;
+      fill: currentColor;
+      stroke: none;
+      flex-shrink: 0;
+      display: block;
     }
 
     .icon-btn {
@@ -945,12 +987,11 @@
       <span class="app-subtitle">Projects</span>
     </div>
     <div class="bar-actions">
-      <a id="home-link-btn" href="https://billtribble.com" class="icon-btn" aria-label="Home (billtribble.com)" title="Back to billtribble.com">
-        <svg viewBox="0 0 24 24" aria-hidden="true">
-          <path d="M3.5 10.5L12 3.5l8.5 7" />
-          <path d="M5.5 9v10.5a1 1 0 0 0 1 1h11a1 1 0 0 0 1-1V9" />
-          <path d="M9.75 20.5v-6a.75.75 0 0 1 .75-.75h3a.75.75 0 0 1 .75.75v6" />
+      <a id="home-link-btn" href="https://billtribble.com" class="home-pill-btn" aria-label="Home (billtribble.com)" title="Back to billtribble.com">
+        <svg viewBox="0 -960 960 960" fill="currentColor" aria-hidden="true">
+          <path d="M240-200h120v-240h240v240h120v-360L480-740 240-560v360Zm-80 80v-480l320-240 320 240v480H520v-240h-80v240H160Zm320-350Z" />
         </svg>
+        <span>billtribble.com</span>
       </a>
       <button id="theme-toggle-btn" type="button" class="icon-btn" aria-label="Theme: Auto (system)" title="Theme: Auto (system)">
         <span id="theme-toggle-icon" aria-hidden="true"></span>
