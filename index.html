@@ -152,7 +152,6 @@
       --md-sys-color-cluster-music-create: #4338CA;
       --md-sys-color-cluster-exp: #0F766E;
       --md-sys-color-cluster-tools: #B45309;
-      --md-sys-color-cluster-vis: #7E22CE;
     }
 
     [data-theme="dark"] {
@@ -180,7 +179,6 @@
       --md-sys-color-cluster-music-create: #818CF8;
       --md-sys-color-cluster-exp: #2DD4BF;
       --md-sys-color-cluster-tools: #FBBF24;
-      --md-sys-color-cluster-vis: #C084FC;
     }
   </style>
   <style>
@@ -545,14 +543,6 @@
       opacity: 0.11;
     }
 
-    .satellite-orbit {
-      fill: color-mix(in srgb, var(--md-sys-color-cluster-vis) 4%, transparent);
-      stroke: color-mix(in srgb, var(--md-sys-color-cluster-vis) 34%, transparent);
-      stroke-width: 1.2;
-      stroke-dasharray: 4 5;
-      transition: stroke-opacity 220ms var(--ease-std), opacity 220ms var(--ease-std);
-    }
-
     .const-edge {
       stroke-linecap: round;
       transition: opacity 200ms var(--ease-std), stroke-width 200ms var(--ease-std);
@@ -630,7 +620,6 @@
     .territory-header[data-territory="music-creation"] { --cluster-accent: var(--md-sys-color-cluster-music-create); }
     .territory-header[data-territory="experiments"] { --cluster-accent: var(--md-sys-color-cluster-exp); }
     .territory-header[data-territory="tools"] { --cluster-accent: var(--md-sys-color-cluster-tools); }
-    .territory-header[data-territory="visualiser"] { --cluster-accent: var(--md-sys-color-cluster-vis); }
 
     .constellation-stage.has-active-node .territory-header:not(.is-active-territory) {
       opacity: calc(0.36 * var(--cat-lod-alpha, 1));
@@ -681,7 +670,6 @@
     .project-node[data-territory="music-creation"] { --cluster-accent: var(--md-sys-color-cluster-music-create); }
     .project-node[data-territory="experiments"] { --cluster-accent: var(--md-sys-color-cluster-exp); }
     .project-node[data-territory="tools"] { --cluster-accent: var(--md-sys-color-cluster-tools); }
-    .project-node[data-territory="visualiser"] { --cluster-accent: var(--md-sys-color-cluster-vis); }
 
     .constellation-stage.has-active-node .project-node:not(.is-active) {
       opacity: 0.62;
@@ -1020,10 +1008,6 @@
           <stop offset="0%" stop-color="var(--md-sys-color-cluster-tools)" stop-opacity="1" />
           <stop offset="100%" stop-color="var(--md-sys-color-cluster-tools)" stop-opacity="0" />
         </radialGradient>
-        <radialGradient id="halo-visualiser" cx="50%" cy="50%" r="50%">
-          <stop offset="0%" stop-color="var(--md-sys-color-cluster-vis)" stop-opacity="1" />
-          <stop offset="100%" stop-color="var(--md-sys-color-cluster-vis)" stop-opacity="0" />
-        </radialGradient>
         <mask id="edge-label-mask" maskUnits="userSpaceOnUse">
           <rect id="edge-mask-bg" x="0" y="0" width="100%" height="100%" fill="#ffffff" />
           <g id="edge-mask-cutouts"></g>
@@ -1039,7 +1023,6 @@
       <h2 class="territory-header" data-territory="music-creation">Music creation</h2>
       <h2 class="territory-header" data-territory="experiments">Experiments</h2>
       <h2 class="territory-header" data-territory="tools">Tools</h2>
-      <h2 class="territory-header" data-territory="visualiser">Visualiser</h2>
     </div>
 
     <div id="links-container" class="nodes-layer">
@@ -1179,6 +1162,25 @@
         </div>
       </a>
 
+      <a href="https://billtribble.github.io/Prismata-UI/" target="_blank" rel="noopener" class="project-node" data-id="prismata-ui" data-territory="experiments">
+        <div class="node-thumb">
+          <video class="node-media" autoplay loop muted playsinline preload="auto" poster="thumbs/prismata-ui.webp?v=16" width="720" height="720" aria-label="Prismata UI preview">
+            <source src="thumbs/prismata-ui.webm?v=16" type="video/webm">
+            <source src="thumbs/prismata-ui.mp4?v=16" type="video/mp4">
+            <img class="node-media" src="thumbs/prismata-ui.gif?v=16" width="720" height="720" alt="Prismata UI preview">
+          </video>
+        </div>
+        <span class="node-rest-caption">
+          <span class="node-rest-title">Prismata UI</span>
+          <span class="node-rest-sub">Interactive LLM structure visualiser</span>
+        </span>
+        <div class="node-hover-panel">
+          <span class="node-zoom-title">Prismata UI</span>
+          <span class="node-subtext">Visualising LLM structure.</span>
+          <span class="node-open-pill">Open project ↗</span>
+        </div>
+      </a>
+
       <!-- Tools Territory -->
       <a href="https://billtribble.github.io/film-lab/" target="_blank" rel="noopener" class="project-node" data-id="film-lab" data-territory="tools">
         <div class="node-thumb">
@@ -1195,26 +1197,6 @@
         <div class="node-hover-panel">
           <span class="node-zoom-title">Film Lab</span>
           <span class="node-subtext">Slide-film look, scanned grain and light leaks for your photos, in the browser.</span>
-          <span class="node-open-pill">Open project ↗</span>
-        </div>
-      </a>
-
-      <!-- Visualiser Satellite Space -->
-      <a href="https://billtribble.github.io/Prismata-UI/" target="_blank" rel="noopener" class="project-node" data-id="prismata-ui" data-territory="visualiser">
-        <div class="node-thumb">
-          <video class="node-media" autoplay loop muted playsinline preload="auto" poster="thumbs/prismata-ui.webp?v=16" width="720" height="720" aria-label="Prismata UI preview">
-            <source src="thumbs/prismata-ui.webm?v=16" type="video/webm">
-            <source src="thumbs/prismata-ui.mp4?v=16" type="video/mp4">
-            <img class="node-media" src="thumbs/prismata-ui.gif?v=16" width="720" height="720" alt="Prismata UI preview">
-          </video>
-        </div>
-        <span class="node-rest-caption">
-          <span class="node-rest-title">Prismata UI</span>
-          <span class="node-rest-sub">Interactive LLM structure visualiser</span>
-        </span>
-        <div class="node-hover-panel">
-          <span class="node-zoom-title">Prismata UI</span>
-          <span class="node-subtext">Visualising LLM structure.</span>
           <span class="node-open-pill">Open project ↗</span>
         </div>
       </a>
@@ -1243,59 +1225,50 @@
         music: {
           colorVar: "var(--md-sys-color-cluster-music)",
           gradId: "halo-music",
-          desktop: { hx: 0.20, hy: 0.048, cx: 0.20, cy: 0.34, rx: 0.19, ry: 0.23 },
+          desktop: { hx: 0.26, hy: 0.072, cx: 0.26, cy: 0.36, rx: 0.19, ry: 0.23 },
           mobile: { hx: 0.50, hy: 34, cx: 0.50, cy: 178, rx: 155, ry: 132 }
         },
         "music-creation": {
           colorVar: "var(--md-sys-color-cluster-music-create)",
           gradId: "halo-music-create",
-          desktop: { hx: 0.20, hy: 0.545, cx: 0.20, cy: 0.70, rx: 0.14, ry: 0.16 },
+          desktop: { hx: 0.26, hy: 0.575, cx: 0.26, cy: 0.72, rx: 0.14, ry: 0.16 },
           mobile: { hx: 0.50, hy: 336, cx: 0.50, cy: 404, rx: 140, ry: 92 }
         },
         experiments: {
           colorVar: "var(--md-sys-color-cluster-exp)",
           gradId: "halo-experiments",
-          desktop: { hx: 0.58, hy: 0.058, cx: 0.58, cy: 0.39, rx: 0.16, ry: 0.24 },
-          mobile: { hx: 0.50, hy: 512, cx: 0.50, cy: 652, rx: 150, ry: 132 }
+          desktop: { hx: 0.735, hy: 0.072, cx: 0.735, cy: 0.43, rx: 0.20, ry: 0.26 },
+          mobile: { hx: 0.50, hy: 512, cx: 0.50, cy: 682, rx: 162, ry: 150 }
         },
         tools: {
           colorVar: "var(--md-sys-color-cluster-tools)",
           gradId: "halo-tools",
-          desktop: { hx: 0.52, hy: 0.645, cx: 0.52, cy: 0.82, rx: 0.12, ry: 0.14 },
-          mobile: { hx: 0.50, hy: 826, cx: 0.54, cy: 898, rx: 130, ry: 88 }
-        },
-        visualiser: {
-          colorVar: "var(--md-sys-color-cluster-vis)",
-          gradId: "halo-visualiser",
-          satellite: true,
-          desktop: { hx: 0.88, hy: 0.215, cx: 0.88, cy: 0.41, rx: 0.12, ry: 0.18 },
-          mobile: { hx: 0.50, hy: 1016, cx: 0.50, cy: 1090, rx: 135, ry: 96 }
+          desktop: { hx: 0.50, hy: 0.675, cx: 0.50, cy: 0.82, rx: 0.13, ry: 0.14 },
+          mobile: { hx: 0.50, hy: 888, cx: 0.50, cy: 962, rx: 135, ry: 88 }
         }
       };
 
       var NODE_COORDS = {
-        "music-map":           { nx: 0.20, ny: 0.23, mx: 0.30, my: 104 },
-        "groove-explorer":     { nx: 0.07, ny: 0.41, mx: 0.74, my: 178 },
-        "enso-soundscapes":    { nx: 0.33, ny: 0.41, mx: 0.26, my: 252 },
-        "sangha-looper":       { nx: 0.20, ny: 0.74, mx: 0.50, my: 412 },
-        "lifesim":             { nx: 0.57, ny: 0.24, mx: 0.32, my: 582 },
-        "crystal-transformer": { nx: 0.49, ny: 0.47, mx: 0.70, my: 652 },
-        "hybridizer":          { nx: 0.67, ny: 0.45, mx: 0.34, my: 730 },
-        "film-lab":            { nx: 0.52, ny: 0.84, mx: 0.54, my: 898 },
-        "prismata-ui":         { nx: 0.88, ny: 0.41, mx: 0.50, my: 1090 }
+        "music-map":           { nx: 0.26, ny: 0.24, mx: 0.30, my: 104 },
+        "groove-explorer":     { nx: 0.13, ny: 0.42, mx: 0.74, my: 178 },
+        "enso-soundscapes":    { nx: 0.39, ny: 0.42, mx: 0.26, my: 252 },
+        "sangha-looper":       { nx: 0.26, ny: 0.75, mx: 0.50, my: 412 },
+        "lifesim":             { nx: 0.73, ny: 0.24, mx: 0.50, my: 582 },
+        "crystal-transformer": { nx: 0.60, ny: 0.43, mx: 0.22, my: 684 },
+        "prismata-ui":         { nx: 0.87, ny: 0.41, mx: 0.78, my: 676 },
+        "hybridizer":          { nx: 0.74, ny: 0.63, mx: 0.50, my: 782 },
+        "film-lab":            { nx: 0.50, ny: 0.84, mx: 0.50, my: 962 }
       };
 
       var DESKTOP_BRIDGES = [
         { a: "enso-soundscapes", b: "crystal-transformer", kind: "bridge", territory: "experiments" },
         { a: "sangha-looper", b: "film-lab", kind: "bridge", territory: "tools" },
-        { a: "hybridizer", b: "film-lab", kind: "bridge", territory: "tools" },
-        { a: "crystal-transformer", b: "prismata-ui", kind: "bridge", territory: "visualiser" }
+        { a: "hybridizer", b: "film-lab", kind: "bridge", territory: "tools" }
       ];
 
       var MOBILE_BRIDGES = [
         { a: "sangha-looper", b: "lifesim", kind: "bridge", territory: "experiments" },
-        { a: "hybridizer", b: "film-lab", kind: "bridge", territory: "tools" },
-        { a: "film-lab", b: "prismata-ui", kind: "bridge", territory: "visualiser" }
+        { a: "hybridizer", b: "film-lab", kind: "bridge", territory: "tools" }
       ];
 
       var INTRA_EDGES = [
@@ -1306,13 +1279,15 @@
         // Closely coupled Music <-> Music creation kinship chords
         { a: "groove-explorer", b: "sangha-looper", kind: "intra", territory: "music-creation" },
         { a: "enso-soundscapes", b: "sangha-looper", kind: "intra", territory: "music-creation" },
-        // Experiments intra-constellation
+        // Experiments 4-node diamond intra-constellation
         { a: "lifesim", b: "crystal-transformer", kind: "intra", territory: "experiments" },
-        { a: "lifesim", b: "hybridizer", kind: "intra", territory: "experiments" },
-        { a: "crystal-transformer", b: "hybridizer", kind: "intra", territory: "experiments" }
+        { a: "lifesim", b: "prismata-ui", kind: "intra", territory: "experiments" },
+        { a: "crystal-transformer", b: "prismata-ui", kind: "intra", territory: "experiments" },
+        { a: "crystal-transformer", b: "hybridizer", kind: "intra", territory: "experiments" },
+        { a: "prismata-ui", b: "hybridizer", kind: "intra", territory: "experiments" }
       ];
 
-      var MOBILE_STAGE_H = 1212;
+      var MOBILE_STAGE_H = 1084;
       var MIN_ZOOM = 0.55;
       var MAX_ZOOM = 3.2;
       var DRAG_THRESHOLD_PX = 5;
@@ -1361,7 +1336,6 @@
       var worldNodes = {};
       var svgBuiltForMobile = null;
       var haloElByTerr = {};
-      var orbitElByTerr = {};
       var cutoutElByTerr = {};
       var edgeLineEls = [];
       var lastLodTelemetry = {
@@ -1589,7 +1563,6 @@
         if (edgeMaskCutouts) edgeMaskCutouts.innerHTML = "";
 
         haloElByTerr = {};
-        orbitElByTerr = {};
         cutoutElByTerr = {};
         edgeLineEls = [];
 
@@ -1610,12 +1583,6 @@
           halo.setAttribute("fill", "url(#" + cfg.gradId + ")");
           halosG.appendChild(halo);
           haloElByTerr[tKey] = halo;
-
-          if (cfg.satellite) {
-            var orbit = svgCreate("circle", "satellite-orbit");
-            halosG.appendChild(orbit);
-            orbitElByTerr[tKey] = orbit;
-          }
         });
 
         var activeEdges = INTRA_EDGES.concat(mobile ? MOBILE_BRIDGES : DESKTOP_BRIDGES);
@@ -1709,13 +1676,6 @@
             halo.setAttribute("cy", (wt.hcy * k + zy).toFixed(1));
             halo.setAttribute("rx", (wt.hrx * k).toFixed(1));
             halo.setAttribute("ry", (wt.hry * k).toFixed(1));
-          }
-
-          var orbit = orbitElByTerr[tKey];
-          if (orbit) {
-            orbit.setAttribute("cx", (wt.hcx * k + zx).toFixed(1));
-            orbit.setAttribute("cy", (wt.hcy * k + zy).toFixed(1));
-            orbit.setAttribute("r", (wt.orbitR * k).toFixed(1));
           }
         });
 
@@ -1842,10 +1802,9 @@
           var hcy = mobile ? cfg.mobile.cy : Math.round(padT + cfg.desktop.cy * spanH);
           var hrx = mobile ? cfg.mobile.rx : Math.round(cfg.desktop.rx * sw);
           var hry = mobile ? cfg.mobile.ry : Math.round(cfg.desktop.ry * sh);
-          var orbitR = mobile ? 68 : Math.max(76, Math.round(Math.min(sw, sh) * 0.105));
           worldTerritories[tKey] = {
             wx: wx, wy: wy, hw: hw, hh: hh,
-            hcx: hcx, hcy: hcy, hrx: hrx, hry: hry, orbitR: orbitR
+            hcx: hcx, hcy: hcy, hrx: hrx, hry: hry
           };
         });
 
